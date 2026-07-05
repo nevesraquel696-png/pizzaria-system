@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - Estação da Pizza</title>
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+    <!-- Tela de login -->
+    <div id="tela-login" class="tela-login">
+        <div class="card-login">
+            <img src="../imagens/logo.png" alt="Estação da Pizza" class="logo-login">
+            <h2>Login Administrativo</h2>
+            <input type="email" id="login-email" placeholder="Email">
+            <input type="password" id="login-senha" placeholder="Senha">
+            <button id="btn-login">Entrar</button>
+            <p id="login-erro" class="erro" style="display:none;"></p>
+        </div>
+    </div>
+
+    <!-- Painel (só aparece depois do login) -->
+    <div id="painel" style="display:none;">
+        <header>
+            <div class="logo-topo">
+                <img src="../imagens/logo.png" alt="Estação da Pizza">
+                <h2>Painel Administrativo</h2>
+            </div>
+            <div>
+                <label>Abre: <input type="time" id="abertura" value="17:30"></label>
+                <label style="margin-left: 10px;">Fecha: <input type="time" id="fechamento" value="23:30"></label>
+                <button id="btn-salvar-horario">Salvar Horário</button>
+                <button id="btn-logout">Sair</button>
+            </div>
+        </header>
+
+        <nav class="abas">
+            <button class="aba-btn ativa" data-aba="pedidos">📥 Pedidos</button>
+            <button class="aba-btn" data-aba="novo-pedido">➕ Criar Pedido</button>
+            <button class="aba-btn" data-aba="cardapio">🛠️ Cardápio</button>
+            <button class="aba-btn" data-aba="precos">💲 Preços</button>
+        </nav>
+
+        <!-- ABA: Pedidos recebidos -->
+        <section id="aba-pedidos" class="aba-conteudo">
+            <h3>Pedidos Recebidos</h3>
+            <div id="lista-pedidos"><p>Carregando pedidos...</p></div>
+        </section>
+
+        <!-- ABA: Criar pedido manualmente -->
+        <section id="aba-novo-pedido" class="aba-conteudo" style="display:none;">
+            <h3>Criar Pedido Manualmente</h3>
+            <p class="dica">Use esta tela para lançar pedidos feitos por telefone ou balcão. Não é bloqueado pelo horário de funcionamento.</p>
+
+            <form id="form-pedido-admin">
+                <label>Nome do Cliente: <input type="text" id="adm-nome" required></label>
+
+                <label>Categoria da Pizza:
+                    <select id="adm-categoria" required onchange="carregarSaboresAdmin()">
+                        <option value="">Selecione...</option>
+                        <option value="tradicional">Tradicional</option>
+                        <option value="especial">Especial</option>
+                        <option value="doce">Doce</option>
+                        <option value="promocao">Promoção</option>
+                    </select>
+                </label>
+
+                <label>Tamanho:
+                    <select id="adm-fatias" required onchange="atualizarPrecoAdmin()">
+                        <option value="">Selecione...</option>
+                        <option value="4">4 fatias</option>
+                        <option value="6">6 fatias</option>
+                        <option value="8">8 fatias</option>
+                        <option value="12">12 fatias</option>
+                        <option value="14">14 fatias</option>
+                    </select>
+                </label>
+                <p id="adm-preco-tamanho" class="preco-info"></p>
+
+                <div id="adm-container-sabores"><p class="carregando">Selecione a categoria primeiro.</p></div>
+
+                <label>Borda:
+                    <select id="adm-borda"><option value="">Sem borda</option></select>
+                </label>
+
+                <div id="adm-container-bebidas"></div>
+
+                <label>Tipo de Entrega:
+                    <select id="adm-tipo-entrega" required onchange="controlarCamposEntregaAdmin(this.value)">
+                        <option value="local">Consumo no Local</option>
+                        <option value="retirada">Retirada</option>
+                        <option value="entrega">Entrega</option>
+                    </select>
+                </label>
+
+                <div id="adm-campos-entrega" style="display:none;">
+                    <label>Telefone: <input type="text" id="adm-telefone"></label>
+                    <label>Endereço: <textarea id="adm-endereco"></textarea></label>
+                </div>
+
+                <label>Forma de Pagamento:
+                    <select id="adm-forma-pagamento" required onchange="controlarTrocoAdmin(this.value)">
+                        <option value="pix">Pix</option>
+                        <option value="cartao">Cartão</option>
+                        <option value="dinheiro">Dinheiro</option>
+                    </select>
+                </label>
+
+                <div id="adm-campo-troco" style="display:none;">
+                    <label>Troco para: <input type="number" id="adm-troco" step="0.01"></label>
+                </div>
+
+                <button type="button" id="btn-lancar-pedido">Lançar Pedido</button>
+            </form>
+        </section>
+
+        <!-- ABA: Gerenciar cardápio -->
+        <section id="aba-cardapio" class="aba-conteudo" style="display:none;">
+            <div class="grid-2">
+                <div>
+                    <fieldset>
+                        <legend><strong>Adicionar Novo Produto</strong></legend>
+                        <label>Nome do Item: <input type="text" id="prod-nome" placeholder="Ex: Moda da Casa"></label>
+                        <label>Tipo:
+                            <select id="prod-tipo" onchange="alternarCampoCategoria()">
+                                <option value="sabor_pizza">Sabor de Pizza</option>
+                                <option value="bebida">Bebida</option>
+                                <option value="borda">Borda</option>
+                                <option value="outros">Outros</option>
+                            </select>
+                        </label>
+                        <label id="campo-categoria-produto">Categoria (só para sabor de pizza):
+                            <select id="prod-categoria">
+                                <option value="tradicional">Tradicional</option>
+                                <option value="especial">Especial</option>
+                                <option value="doce">Doce</option>
+                                <option value="promocao">Promoção</option>
+                            </select>
+                        </label>
+                        <label id="campo-preco-produto">Preço (bebida/borda/outros):
+                            <input type="number" id="prod-preco" step="0.01" placeholder="0.00">
+                        </label>
+                        <button onclick="adicionarProduto()">Salvar no Cardápio</button>
+                    </fieldset>
+                </div>
+                <div>
+                    <h3>Itens Cadastrados</h3>
+                    <ul id="lista-produtos-cardapio"><li>Carregando...</li></ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA: Grade de preços por categoria/tamanho -->
+        <section id="aba-precos" class="aba-conteudo" style="display:none;">
+            <h3>Preços por Categoria e Tamanho</h3>
+            <p class="dica">Esses valores valem para todos os sabores da categoria, igual ao cardápio físico.</p>
+            <table id="tabela-precos">
+                <thead>
+                    <tr><th>Categoria</th><th>4 fatias</th><th>6 fatias</th><th>8 fatias</th><th>12 fatias</th><th>14 fatias</th></tr>
+                </thead>
+                <tbody id="corpo-tabela-precos"></tbody>
+            </table>
+            <button id="btn-salvar-precos">Salvar Preços</button>
+        </section>
+    </div>
+
+    <audio id="som-sino" src="../sounds/sino.mp3" preload="auto"></audio>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
