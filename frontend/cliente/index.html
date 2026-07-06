@@ -3,145 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estação da Pizza - Faça seu Pedido</title>
+    <title>Estação da Pizza - Cardápio</title>
     <link rel="stylesheet" href="../css/theme.css">
     <link rel="stylesheet" href="css/cliente.css">
 </head>
 <body>
 
-    <header class="cabecalho-app">
-        <div class="logo-topo">
-            <img src="../imagens/logo.png" alt="Estação da Pizza">
-            <div>
-                <h1>Estação da Pizza</h1>
-                <p class="subtitulo">Desde 2008 · Monte seu pedido, estação por estação</p>
-            </div>
+    <header class="topo-loja">
+        <img src="../imagens/logo.png" alt="Estação da Pizza">
+        <div class="topo-info">
+            <h1>Estação da Pizza</h1>
+            <p>Desde 2008</p>
         </div>
+        <button class="icone-busca" id="btn-busca" aria-label="Buscar">🔍</button>
     </header>
 
-    <!-- Trilho de progresso: cada seção do pedido é uma "estação" nessa linha -->
-    <div class="trilho-wrap">
-        <svg class="trilho-svg" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true">
-            <line class="trilho-base" x1="2" y1="5" x2="98" y2="5"></line>
-            <line class="trilho-percorrido" id="trilho-percorrido" x1="2" y1="5" x2="2" y2="5"></line>
-        </svg>
-        <div class="locomotiva" id="locomotiva">🚂</div>
-        <div class="pontos-estacao" id="pontos-estacao"></div>
+    <div class="faixa-status" id="faixa-status">Carregando horário...</div>
+
+    <div class="barra-busca oculto" id="barra-busca">
+        <input type="text" id="input-busca" placeholder="Pesquise pelo nome do sabor...">
     </div>
-    <p class="estacao-atual" id="estacao-atual">Estação 1 de 8 · Identificação</p>
 
-    <div class="container">
-        <div id="aviso-fechado" class="aviso-fechado" style="display:none;"></div>
+    <nav class="chips-categoria" id="chips-categoria">
+        <button class="chip ativo" data-cat="tradicional">Tradicional</button>
+        <button class="chip" data-cat="especial">Especial</button>
+        <button class="chip" data-cat="doce">Doce</button>
+        <button class="chip" data-cat="promocao">Promoção</button>
+        <button class="chip" data-cat="bebidas">Bebidas</button>
+    </nav>
 
-        <form id="form-pedido">
-            <section class="passo" data-estacao="1" data-nome="Identificação">
-                <span class="rotulo-estacao">Estação 1 · Identificação</span>
-                <h3>Como podemos te chamar?</h3>
-                <label for="nome">Seu Nome:</label>
-                <input type="text" id="nome" required placeholder="Digite seu nome">
-            </section>
+    <main id="secoes-cardapio">
+        <p class="carregando">Carregando cardápio...</p>
+    </main>
 
-            <section class="passo" data-estacao="2" data-nome="Categoria">
-                <span class="rotulo-estacao">Estação 2 · Categoria</span>
-                <h3>Qual linha você vai pegar?</h3>
-                <select id="categoria" required onchange="carregarSaboresDaCategoria()">
-                    <option value="">Selecione...</option>
-                    <option value="tradicional">Pizza Tradicional</option>
-                    <option value="especial">Pizza Especial</option>
-                    <option value="doce">Pizza Doce</option>
-                    <option value="promocao">Pizza Promoção</option>
-                </select>
-            </section>
+    <!-- Ficha do produto (abre ao tocar num sabor) -->
+    <div class="sheet-fundo oculto" id="sheet-fundo-produto">
+        <div class="sheet" id="sheet-produto">
+            <button class="fechar-sheet" id="fechar-sheet-produto">×</button>
+            <div class="sheet-imagem" id="sheet-imagem">🍕</div>
+            <h2 id="sheet-titulo">Nome do sabor</h2>
 
-            <section class="passo" data-estacao="3" data-nome="Tamanho">
-                <span class="rotulo-estacao">Estação 3 · Tamanho</span>
-                <h3>Quantas fatias descem nessa parada?</h3>
-                <select id="fatias" required>
-                    <option value="">Selecione...</option>
-                    <option value="4">4 fatias</option>
-                    <option value="6">6 fatias</option>
-                    <option value="8">8 fatias</option>
-                    <option value="12">12 fatias</option>
-                    <option value="14">14 fatias</option>
-                </select>
-                <p id="preco-tamanho"></p>
-            </section>
+            <label>Tamanho</label>
+            <select id="sheet-fatias">
+                <option value="4">4 fatias</option>
+                <option value="6">6 fatias</option>
+                <option value="8">8 fatias</option>
+                <option value="12">12 fatias</option>
+                <option value="14">14 fatias</option>
+            </select>
+            <p id="sheet-preco"></p>
 
-            <section class="passo" data-estacao="4" data-nome="Sabores">
-                <span class="rotulo-estacao">Estação 4 · Sabores</span>
-                <h3>Escolha até 3 sabores</h3>
-                <div id="container-sabores" class="grade-opcoes">
-                    <p class="carregando">Selecione a categoria primeiro.</p>
+            <label>Mais sabores nessa pizza? (opcional, até 3 no total)</label>
+            <div id="sheet-sabores-extra" class="grade-opcoes"></div>
+
+            <label>Borda Recheada</label>
+            <select id="sheet-borda">
+                <option value="">Sem borda</option>
+            </select>
+
+            <div class="linha-quantidade">
+                <label>Quantidade</label>
+                <div class="stepper">
+                    <button type="button" id="qtd-menos">−</button>
+                    <span id="qtd-valor">1</span>
+                    <button type="button" id="qtd-mais">+</button>
                 </div>
-            </section>
+            </div>
 
-            <section class="passo" data-estacao="5" data-nome="Borda">
-                <span class="rotulo-estacao">Estação 5 · Borda</span>
-                <h3>Vai de borda recheada?</h3>
-                <select id="borda">
-                    <option value="">Não, seguir direto sem borda</option>
-                </select>
-            </section>
-
-            <section class="passo" data-estacao="6" data-nome="Bebidas">
-                <span class="rotulo-estacao">Estação 6 · Bebidas</span>
-                <h3>Quer descer com uma bebida?</h3>
-                <div id="container-bebidas" class="grade-opcoes">
-                    <p class="carregando">Carregando bebidas...</p>
-                </div>
-            </section>
-
-            <section class="passo" data-estacao="7" data-nome="Entrega">
-                <span class="rotulo-estacao">Estação 7 · Entrega</span>
-                <h3>Pra onde vai essa pizza?</h3>
-                <select id="tipo-entrega" required onchange="controlarCamposEntrega(this.value)">
-                    <option value="local">Consumo no Local</option>
-                    <option value="retirada">Retirada</option>
-                    <option value="entrega">Entrega</option>
-                </select>
-
-                <div id="campos-entrega" style="display: none; margin-top: 15px;">
-                    <label for="telefone">Telefone / WhatsApp:</label>
-                    <input type="text" id="telefone" placeholder="(00) 00000-0000">
-
-                    <label for="endereco" style="margin-top: 10px; display: block;">Endereço Completo:</label>
-                    <textarea id="endereco" placeholder="Rua, Número, Bairro e Ponto de Referência"></textarea>
-                </div>
-            </section>
-
-            <section class="passo" data-estacao="8" data-nome="Pagamento">
-                <span class="rotulo-estacao">Estação 8 · Pagamento</span>
-                <h3>Como vai pagar a passagem?</h3>
-                <select id="forma-pagamento" required onchange="controlarTroco(this.value)">
-                    <option value="pix">Pix</option>
-                    <option value="cartao">Cartão</option>
-                    <option value="dinheiro">Dinheiro</option>
-                </select>
-
-                <div id="campo-troco" style="display: none; margin-top: 15px;">
-                    <label for="troco">Precisa de troco para quanto?</label>
-                    <input type="number" id="troco" step="0.01" placeholder="Ex: 50.00">
-                </div>
-            </section>
-
-            <section class="passo final-passo">
-                <button type="button" id="btn-adicionar-carrinho">Conferir Pedido →</button>
-            </section>
-        </form>
-
-        <section id="resumo-pedido" class="passo bilhete" style="display:none;">
-            <span class="rotulo-estacao">Bilhete de Embarque</span>
-            <h3>Confira seu Pedido</h3>
-            <div id="resumo-conteudo"></div>
-            <p class="linha-total">Total <span class="etiqueta-preco" id="resumo-total">R$ 0,00</span></p>
-            <button type="button" id="btn-confirmar-pedido">Confirmar Pedido</button>
-            <button type="button" id="btn-editar-pedido" class="btn-secundario">Editar</button>
-        </section>
+            <button id="btn-add-carrinho" class="botao-principal">Adicionar ao Carrinho</button>
+        </div>
     </div>
+
+    <!-- Carrinho / Checkout -->
+    <div class="sheet-fundo oculto" id="sheet-fundo-carrinho">
+        <div class="sheet" id="sheet-carrinho">
+            <button class="fechar-sheet" id="fechar-sheet-carrinho">×</button>
+            <h2>Seu Carrinho</h2>
+
+            <div id="itens-carrinho"><p class="carregando">Carrinho vazio.</p></div>
+            <p class="linha-total">Total <span class="etiqueta-preco" id="carrinho-total">R$ 0,00</span></p>
+
+            <hr>
+
+            <label for="nome">Seu Nome:</label>
+            <input type="text" id="nome" placeholder="Digite seu nome">
+
+            <label for="tipo-entrega">Como deseja receber?</label>
+            <select id="tipo-entrega" onchange="controlarCamposEntrega(this.value)">
+                <option value="local">Consumo no Local</option>
+                <option value="retirada">Retirada</option>
+                <option value="entrega">Entrega</option>
+            </select>
+
+            <div id="campos-entrega" class="oculto">
+                <label for="telefone">Telefone / WhatsApp:</label>
+                <input type="text" id="telefone" placeholder="(00) 00000-0000">
+                <label for="endereco">Endereço Completo:</label>
+                <textarea id="endereco" placeholder="Rua, Número, Bairro e Ponto de Referência"></textarea>
+            </div>
+
+            <label for="forma-pagamento">Forma de Pagamento</label>
+            <select id="forma-pagamento" onchange="controlarTroco(this.value)">
+                <option value="pix">Pix</option>
+                <option value="cartao">Cartão</option>
+                <option value="dinheiro">Dinheiro</option>
+            </select>
+
+            <div id="campo-troco" class="oculto">
+                <label for="troco">Precisa de troco para quanto?</label>
+                <input type="number" id="troco" step="0.01" placeholder="Ex: 50.00">
+            </div>
+
+            <p id="aviso-carrinho" class="erro oculto"></p>
+            <button id="btn-confirmar-pedido" class="botao-principal">Confirmar Pedido</button>
+        </div>
+    </div>
+
+    <!-- Barra flutuante do carrinho -->
+    <button class="barra-carrinho oculto" id="barra-carrinho">
+        <span id="carrinho-resumo">0 itens</span>
+        <span>Ver Carrinho →</span>
+    </button>
+
+    <!-- Navegação inferior -->
+    <nav class="nav-inferior">
+        <button class="nav-item ativo" id="nav-inicio">🏠<span>Início</span></button>
+        <button class="nav-item" id="nav-carrinho">🧺<span>Carrinho</span></button>
+    </nav>
 
     <audio id="som-confirmacao" src="../sounds/sino.mp3" preload="auto"></audio>
 
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="../js/api.js"></script>
     <script src="js/cliente.js"></script>
 </body>

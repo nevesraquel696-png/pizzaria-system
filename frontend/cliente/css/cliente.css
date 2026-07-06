@@ -1,117 +1,121 @@
-/* ============================================
-   Cabeçalho
-   ============================================ */
-.cabecalho-app {
+body { padding-bottom: 70px; } /* espaço pra barra inferior fixa */
+
+/* ---------- Topo ---------- */
+.topo-loja {
     background: var(--cor-verde-escuro);
-    padding: 18px 20px;
-    position: sticky; top: 0; z-index: 20;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 30;
 }
-.cabecalho-app .logo-topo h1 { color: #fff; font-size: 26px; }
-.cabecalho-app .subtitulo { color: var(--cor-creme); margin: 2px 0 0; font-size: 12px; letter-spacing: 0.3px; }
+.topo-loja img { width: 46px; height: 46px; object-fit: contain; }
+.topo-info h1 { color: #fff; font-size: 19px; margin: 0; font-family: var(--fonte-display); font-weight: 400; }
+.topo-info p { color: var(--cor-creme); font-size: 11px; margin: 2px 0 0; }
+.icone-busca { margin-left: auto; background: rgba(255,255,255,0.15); border: none; border-radius: 50%; width: 38px; height: 38px; font-size: 16px; }
 
-/* ============================================
-   Trilho de progresso - a assinatura visual da página.
-   "Estação da Pizza": cada etapa do pedido é uma estação
-   numa linha de trem; a locomotiva avança conforme o
-   cliente preenche o formulário.
-   ============================================ */
-.trilho-wrap {
-    position: relative;
-    max-width: 640px;
-    margin: 22px auto 6px;
-    padding: 0 30px;
-    height: 26px;
+.faixa-status {
+    background: var(--cor-texto); color: #fff; text-align: center;
+    padding: 8px; font-size: 13px; font-weight: 600;
 }
-.trilho-svg { width: 100%; height: 100%; overflow: visible; }
-.trilho-base { stroke: #cbb98f; stroke-width: 1.6; stroke-dasharray: 1.2 1.6; }
-.trilho-percorrido { stroke: var(--cor-vermelho); stroke-width: 1.8; transition: x2 0.5s ease; }
-.locomotiva {
-    position: absolute; top: 50%; left: 2%;
-    transform: translate(-50%, -60%);
-    font-size: 22px;
-    transition: left 0.5s ease;
-    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.25));
-}
-.pontos-estacao { position: absolute; top: 0; bottom: 0; left: 30px; right: 30px; }
-.pontos-estacao .ponto {
-    position: absolute; top: 50%; transform: translate(-50%, -50%);
-    width: 7px; height: 7px; border-radius: 50%;
-    background: var(--cor-branco); border: 1.6px solid var(--cor-terracota);
-}
-.estacao-atual {
-    text-align: center;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    color: var(--cor-verde-escuro);
-    text-transform: uppercase;
-    margin: 4px 0 18px;
-}
+.faixa-status.aberta { background: var(--cor-verde); }
 
-/* ============================================
-   Container principal - com trilha de espiral na
-   lateral, lembrando o caderno físico do cardápio
-   ============================================ */
-.container {
-    max-width: 640px; margin: 0 auto 40px; position: relative;
-    background: var(--cor-branco);
-    padding: 28px 28px 28px 46px;
-    border-radius: var(--raio-borda);
-    box-shadow: var(--sombra-card);
+.barra-busca { padding: 10px 16px; background: #fff; border-bottom: 1px solid #eee; }
+.barra-busca input { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid #ddd; font-family: inherit; }
+
+/* ---------- Chips de categoria ---------- */
+.chips-categoria {
+    display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto;
+    background: #fff; border-bottom: 1px solid #eee; position: sticky; top: 74px; z-index: 20;
 }
-.container::before {
-    content: '';
-    position: absolute; left: 14px; top: 18px; bottom: 18px; width: 10px;
-    background-image: radial-gradient(circle, #cbb98f 2.6px, transparent 3px);
-    background-size: 10px 24px;
-    background-repeat: repeat-y;
+.chip {
+    background: var(--cor-creme); border: 1px solid #e2d4ae; border-radius: 20px;
+    padding: 7px 16px; font-size: 13px; font-weight: 600; white-space: nowrap; flex-shrink: 0;
+}
+.chip.ativo { background: var(--cor-vermelho); border-color: var(--cor-vermelho); color: #fff; }
+
+/* ---------- Seções e cards ---------- */
+.secao-categoria { padding: 18px 16px 4px; }
+.secao-categoria h2 { font-family: var(--fonte-display); font-weight: 400; font-size: 19px; margin: 0 0 10px; color: var(--cor-texto); }
+
+.trilho-cards { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.card-produto {
+    background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 10px;
+    width: 140px; flex-shrink: 0; text-align: left; box-shadow: var(--sombra-card);
+}
+.card-imagem {
+    width: 100%; height: 80px; background: var(--cor-creme); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; font-size: 34px; margin-bottom: 8px;
+}
+.card-nome { font-weight: 600; font-size: 13px; margin-bottom: 4px; line-height: 1.25; }
+.card-preco { font-size: 12px; color: var(--cor-verde-escuro); font-weight: 600; }
+.card-bebida { display: flex; flex-direction: column; }
+.btn-add-rapido {
+    margin-top: 8px; background: var(--cor-vermelho); color: #fff; border: none;
+    border-radius: 6px; padding: 6px; font-size: 12px; font-weight: 600;
 }
 
-.passo { margin-bottom: 26px; padding-bottom: 18px; border-bottom: 1px dashed #e2d4ae; }
-.passo:last-child, .final-passo { border-bottom: none; }
-.passo h3 {
-    margin: 4px 0 12px; color: var(--cor-texto);
-    font-family: var(--fonte-display); font-weight: 400; font-size: 19px; letter-spacing: 0.3px;
-}
-
-label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; }
-input[type="text"], input[type="number"], select, textarea {
-    width: 100%; padding: 10px; margin-top: 4px; border: 1px solid #d8cba3; border-radius: 6px;
-    font-family: inherit; font-size: 15px; background: #fffdf7;
-}
-input:focus, select:focus, textarea:focus { outline: 2px solid var(--cor-verde); outline-offset: 1px; }
-
-button {
-    background: var(--cor-vermelho); color: #fff; border: none; padding: 12px 22px;
-    border-radius: 6px; font-size: 15px; font-weight: 600; margin-right: 10px;
-}
-button:hover { background: var(--cor-vermelho-escuro); }
-.btn-secundario { background: transparent; color: var(--cor-vermelho); border: 1.5px solid var(--cor-vermelho); }
-.btn-secundario:hover { background: #f7e9e9; }
-
-#btn-adicionar-carrinho { width: 100%; }
-
-.aviso-fechado { background: #f8d7da; color: #721c24; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-weight: 600; }
-.carregando, .erro { color: #8a8272; font-style: italic; }
+.carregando, .erro { padding: 0 16px; color: #8a8272; font-style: italic; }
 .erro { color: var(--cor-vermelho); }
 
-/* Grade de checkboxes (sabores / bebidas) como cartõezinhos, não lista crua */
-.grade-opcoes { display: flex; flex-wrap: wrap; gap: 8px; }
-.grade-opcoes label {
-    display: flex; align-items: center; gap: 6px;
-    background: var(--cor-creme); border: 1px solid #e2d4ae; border-radius: 20px;
-    padding: 7px 14px; font-weight: 500; font-size: 14px; margin: 0; cursor: pointer;
+/* ---------- Sheets (ficha de produto / carrinho) ---------- */
+.sheet-fundo {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 50;
+    display: flex; align-items: flex-end; justify-content: center;
 }
-.grade-opcoes input[type="checkbox"] { width: auto; margin: 0; }
-
-#preco-tamanho:empty { display: none; }
-
-/* Bilhete de resumo final, estilo passagem de trem */
-.bilhete {
-    border: 2px dashed var(--cor-verde-escuro);
-    border-radius: 8px;
-    padding: 18px;
-    background: #fbf6e6;
+.sheet-fundo.oculto { display: none; }
+.sheet {
+    background: #fff; width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto;
+    border-radius: 18px 18px 0 0; padding: 22px 20px 26px; position: relative;
 }
-.linha-total { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+.fechar-sheet {
+    position: absolute; top: 14px; right: 16px; background: var(--cor-creme); border: none;
+    width: 32px; height: 32px; border-radius: 50%; font-size: 18px; line-height: 1;
+}
+.sheet-imagem { font-size: 48px; text-align: center; margin-bottom: 6px; }
+.sheet h2 { text-align: center; font-family: var(--fonte-display); font-weight: 400; margin: 0 0 16px; }
+.sheet label { display: block; font-weight: 600; font-size: 13px; margin: 14px 0 5px; }
+.sheet select, .sheet input, .sheet textarea {
+    width: 100%; padding: 9px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; font-size: 14px;
+}
+.sheet .grade-opcoes { display: flex; flex-wrap: wrap; gap: 6px; }
+.sheet .grade-opcoes label {
+    display: flex; align-items: center; gap: 4px; margin: 0;
+    background: var(--cor-creme); border-radius: 16px; padding: 5px 10px; font-weight: 500; font-size: 13px;
+}
+.sheet .grade-opcoes input { width: auto; }
+
+.linha-quantidade { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
+.stepper { display: flex; align-items: center; gap: 14px; }
+.stepper button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--cor-verde-escuro); background: #fff; color: var(--cor-verde-escuro); font-size: 18px; font-weight: bold; }
+.stepper span { font-weight: 700; font-size: 16px; min-width: 18px; text-align: center; }
+
+.botao-principal {
+    width: 100%; margin-top: 18px; background: var(--cor-vermelho); color: #fff; border: none;
+    padding: 13px; border-radius: 10px; font-weight: 700; font-size: 15px;
+}
+.botao-principal:hover { background: var(--cor-vermelho-escuro); }
+
+.linha-item-carrinho { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid #f0f0f0; gap: 10px; }
+.preco-item { font-size: 13px; color: var(--cor-verde-escuro); font-weight: 600; margin-top: 2px; }
+.btn-remover { background: none; border: none; color: var(--cor-vermelho); font-size: 12px; font-weight: 600; text-decoration: underline; flex-shrink: 0; }
+.linha-total { display: flex; align-items: center; gap: 10px; font-weight: 700; margin-top: 10px; }
+.oculto { display: none !important; }
+
+/* ---------- Barra flutuante do carrinho ---------- */
+.barra-carrinho {
+    position: fixed; bottom: 62px; left: 16px; right: 16px; z-index: 40;
+    background: var(--cor-verde); color: #fff; border: none; border-radius: 10px;
+    padding: 13px 16px; display: flex; justify-content: space-between; align-items: center;
+    font-weight: 700; font-size: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+}
+
+/* ---------- Navegação inferior ---------- */
+.nav-inferior {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 35;
+    background: #fff; border-top: 1px solid #eee; display: flex;
+}
+.nav-item {
+    flex: 1; background: none; border: none; padding: 8px 0 6px; display: flex; flex-direction: column;
+    align-items: center; gap: 2px; font-size: 20px; color: #999;
+}
+.nav-item span { font-size: 11px; font-weight: 600; }
+.nav-item.ativo { color: var(--cor-vermelho); }

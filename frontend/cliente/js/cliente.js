@@ -1,51 +1,16 @@
 let PRODUTOS = { sabores: [], bordas: [], bebidas: [] };
-let PRECOS_PIZZA = []; // [{ categoria, fatias, preco }]
-let carrinho = null;
+let PRECOS_PIZZA = [];
+let CARRINHO = []; // itens acumulados: { tipo_item, pizza_categoria, fatias, sabor_ids, borda_id, quantidade, _nome, _preco }
+let SABOR_ATUAL = null; // sabor que abriu a ficha de produto no momento
 
-const ESTACOES = [...document.querySelectorAll('.passo[data-estacao]')];
+const NOMES_CATEGORIA = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
+const ICONES_CATEGORIA = { tradicional: '🍕', especial: '✨', doce: '🍫', promocao: '🔥' };
 
 document.addEventListener('DOMContentLoaded', async () => {
-    await Promise.all([carregarProdutos(), carregarPrecos()]);
-    renderizarBordas();
-    renderizarBebidas();
-    configurarTrilhoDeProgresso();
-
-    document.getElementById('fatias').addEventListener('change', atualizarPrecoTamanho);
-    document.getElementById('btn-adicionar-carrinho').addEventListener('click', revisarPedido);
-    document.getElementById('btn-confirmar-pedido').addEventListener('click', confirmarPedido);
-    document.getElementById('btn-editar-pedido').addEventListener('click', voltarParaEdicao);
+    await Promise.all([carregarProdutos(), carregarPrecos(), carregarStatusLoja()]);
+    renderizarCardapio();
+    configurarEventos();
 });
-
-// Trilho de progresso: observa qual "estação" (seção) está visível na tela
-// e move a locomotiva + o texto "Estação X de Y" de acordo.
-function configurarTrilhoDeProgresso() {
-    const total = ESTACOES.length;
-    const pontosContainer = document.getElementById('pontos-estacao');
-    pontosContainer.innerHTML = ESTACOES.map((_, i) => {
-        const pct = total > 1 ? (i / (total - 1)) * 96 + 2 : 50;
-        return `<span class="ponto" style="left:${pct}%"></span>`;
-    }).join('');
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const index = ESTACOES.indexOf(entry.target);
-                moverTrilho(index, total);
-            }
-        });
-    }, { rootMargin: '-40% 0px -50% 0px', threshold: 0 });
-
-    ESTACOES.forEach(secao => observer.observe(secao));
-    moverTrilho(0, total);
-}
-
-function moverTrilho(index, total) {
-    const pct = total > 1 ? (index / (total - 1)) * 96 + 2 : 2;
-    document.getElementById('trilho-percorrido').setAttribute('x2', pct);
-    document.getElementById('locomotiva').style.left = pct + '%';
-    document.getElementById('estacao-atual').textContent =
-        `Estação ${index + 1} de ${total} · ${ESTACOES[index].dataset.nome}`;
-}
 
 async function carregarProdutos() {
     try {
@@ -54,8 +19,7 @@ async function carregarProdutos() {
         PRODUTOS.bordas = produtos.filter(p => p.tipo === 'borda');
         PRODUTOS.bebidas = produtos.filter(p => p.tipo === 'bebida');
     } catch (err) {
-        console.error(err);
-        document.getElementById('container-sabores').innerHTML =
+        document.getElementById('secoes-cardapio').innerHTML =
             `<p class="erro">Não foi possível carregar o cardápio. Verifique se o servidor está rodando.</p>`;
     }
 }
@@ -68,204 +32,346 @@ async function carregarPrecos() {
     }
 }
 
+async function carregarStatusLoja() {
+    const faixa = document.getElementById('faixa-status');
+    try {
+        const config = await apiFetch('/config');
+        const agora = new Date();
+        const horaAtual = agora.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour12: false });
+        const aberto = horaAtual >= config.horario_abertura && horaAtual <= config.horario_fechamento;
+
+        if (aberto) {
+            faixa.textContent = `Loja aberta · Fecha às ${config.horario_fechamento?.slice(0, 5)}`;
+            faixa.classList.add('aberta');
+        } else {
+            faixa.textContent = `Loja fechada · Abre hoje às ${config.horario_abertura?.slice(0, 5)}`;
+            faixa.classList.remove('aberta');
+        }
+    } catch (err) {
+        faixa.style.display = 'none';
+    }
+}
+
 function obterPreco(categoria, fatias) {
     const item = PRECOS_PIZZA.find(p => p.categoria === categoria && Number(p.fatias) === Number(fatias));
     return item ? Number(item.preco) : null;
 }
 
-// Chamado quando o cliente escolhe a categoria (onchange no HTML)
-function carregarSaboresDaCategoria() {
-    const categoria = document.getElementById('categoria').value;
-    const container = document.getElementById('container-sabores');
+function precoAPartirDe(categoria) {
+    const precos = PRECOS_PIZZA.filter(p => p.categoria === categoria).map(p => Number(p.preco));
+    return precos.length ? Math.min(...precos) : null;
+}
 
-    if (!categoria) {
-        container.innerHTML = '<p class="carregando">Selecione a categoria primeiro.</p>';
-        return;
+// ---------- Renderização do cardápio (catálogo por categoria) ----------
+function renderizarCardapio() {
+    const main = document.getElementById('secoes-cardapio');
+    const categorias = ['tradicional', 'especial', 'doce', 'promocao'];
+    let html = '';
+
+    categorias.forEach(cat => {
+        const sabores = PRODUTOS.sabores.filter(s => s.categoria === cat);
+        if (sabores.length === 0) return;
+        const desde = precoAPartirDe(cat);
+
+        html += `
+            <section class="secao-categoria" id="secao-${cat}">
+                <h2>${ICONES_CATEGORIA[cat]} ${NOMES_CATEGORIA[cat]}</h2>
+                <div class="trilho-cards">
+                    ${sabores.map(s => `
+                        <button class="card-produto" data-sabor-id="${s.id}" data-categoria="${cat}">
+                            <div class="card-imagem">${ICONES_CATEGORIA[cat]}</div>
+                            <div class="card-nome">${s.nome}</div>
+                            ${desde !== null ? `<div class="card-preco">a partir de R$ ${desde.toFixed(2)}</div>` : ''}
+                        </button>
+                    `).join('')}
+                </div>
+            </section>
+        `;
+    });
+
+    if (PRODUTOS.bebidas.length > 0) {
+        html += `
+            <section class="secao-categoria" id="secao-bebidas">
+                <h2>🥤 Bebidas</h2>
+                <div class="trilho-cards">
+                    ${PRODUTOS.bebidas.map(b => `
+                        <div class="card-produto card-bebida">
+                            <div class="card-imagem">🥤</div>
+                            <div class="card-nome">${b.nome}</div>
+                            <div class="card-preco">R$ ${Number(b.preco_base).toFixed(2)}</div>
+                            <button class="btn-add-rapido" data-bebida-id="${b.id}">+ Adicionar</button>
+                        </div>
+                    `).join('')}
+                </div>
+            </section>
+        `;
     }
 
-    const saboresFiltrados = PRODUTOS.sabores.filter(s => s.categoria === categoria);
-    if (saboresFiltrados.length === 0) {
-        container.innerHTML = '<p class="erro">Nenhum sabor cadastrado nessa categoria ainda.</p>';
-        return;
-    }
+    main.innerHTML = html || '<p class="erro">Nenhum item disponível no cardápio ainda.</p>';
 
-    container.innerHTML = saboresFiltrados.map(s => `
-        <label>
-            <input type="checkbox" name="sabores" value="${s.id}" data-nome="${s.nome}">
-            ${s.nome}
-        </label><br>
-    `).join('');
+    main.querySelectorAll('.card-produto[data-sabor-id]').forEach(card => {
+        card.addEventListener('click', () => abrirFichaProduto(Number(card.dataset.saborId), card.dataset.categoria));
+    });
+    main.querySelectorAll('.btn-add-rapido').forEach(btn => {
+        btn.addEventListener('click', () => adicionarBebidaRapida(Number(btn.dataset.bebidaId)));
+    });
+}
 
+// ---------- Ficha do produto (sheet) ----------
+function abrirFichaProduto(saborId, categoria) {
+    SABOR_ATUAL = { saborId, categoria };
+    const sabor = PRODUTOS.sabores.find(s => s.id === saborId);
+
+    document.getElementById('sheet-imagem').textContent = ICONES_CATEGORIA[categoria];
+    document.getElementById('sheet-titulo').textContent = sabor.nome;
+    document.getElementById('qtd-valor').textContent = '1';
+
+    const selectFatias = document.getElementById('sheet-fatias');
+    selectFatias.value = '8';
+    atualizarPrecoSheet();
+
+    const outrosSabores = PRODUTOS.sabores.filter(s => s.categoria === categoria && s.id !== saborId);
+    const container = document.getElementById('sheet-sabores-extra');
+    container.innerHTML = outrosSabores.length === 0
+        ? '<p class="carregando">Sem outros sabores nessa categoria.</p>'
+        : outrosSabores.map(s => `
+            <label><input type="checkbox" name="sheet-sabor-extra" value="${s.id}"> ${s.nome}</label>
+        `).join('');
     container.onchange = () => {
-        const marcados = container.querySelectorAll('input[name="sabores"]:checked');
-        if (marcados.length > 3) {
+        const marcados = container.querySelectorAll('input:checked');
+        if (marcados.length > 2) { // +1 do sabor principal = máximo 3
             event.target.checked = false;
             alert('Máximo de 3 sabores por pizza.');
         }
     };
 
-    atualizarPrecoTamanho();
+    const selectBorda = document.getElementById('sheet-borda');
+    selectBorda.innerHTML = '<option value="">Sem borda</option>' + PRODUTOS.bordas.map(b =>
+        `<option value="${b.id}" data-preco="${b.preco_base}">${b.nome} (+R$ ${Number(b.preco_base).toFixed(2)})</option>`
+    ).join('');
+
+    document.getElementById('sheet-fundo-produto').classList.remove('oculto');
 }
 
-function atualizarPrecoTamanho() {
-    const categoria = document.getElementById('categoria').value;
-    const fatias = document.getElementById('fatias').value;
-    const info = document.getElementById('preco-tamanho');
-
-    if (!categoria || !fatias) {
-        info.textContent = '';
-        return;
-    }
-
+function atualizarPrecoSheet() {
+    const categoria = SABOR_ATUAL.categoria;
+    const fatias = document.getElementById('sheet-fatias').value;
     const preco = obterPreco(categoria, fatias);
-    info.innerHTML = preco !== null
+    document.getElementById('sheet-preco').innerHTML = preco !== null
         ? `<span class="etiqueta-preco">R$ ${preco.toFixed(2)}</span>`
-        : '<span class="erro">Preço não configurado para essa combinação. Fale com a pizzaria.</span>';
+        : '<span class="erro">Preço não configurado.</span>';
 }
 
-function renderizarBordas() {
-    const select = document.getElementById('borda');
-    PRODUTOS.bordas.forEach(b => {
-        const opt = document.createElement('option');
-        opt.value = b.id;
-        opt.dataset.nome = b.nome;
-        opt.dataset.preco = b.preco_base;
-        opt.textContent = `Sim - ${b.nome} (+R$ ${Number(b.preco_base).toFixed(2)})`;
-        select.appendChild(opt);
+function fecharFichaProduto() {
+    document.getElementById('sheet-fundo-produto').classList.add('oculto');
+    SABOR_ATUAL = null;
+}
+
+function adicionarAoCarrinho() {
+    const categoria = SABOR_ATUAL.categoria;
+    const fatias = Number(document.getElementById('sheet-fatias').value);
+    const precoPizza = obterPreco(categoria, fatias);
+    if (precoPizza === null) return alert('Preço não configurado para essa combinação.');
+
+    const extras = [...document.querySelectorAll('input[name="sheet-sabor-extra"]:checked')].map(i => Number(i.value));
+    const saborIds = [SABOR_ATUAL.saborId, ...extras];
+    const nomesSabores = saborIds.map(id => PRODUTOS.sabores.find(s => s.id === id)?.nome).join(', ');
+
+    const bordaSelect = document.getElementById('sheet-borda');
+    const bordaId = bordaSelect.value ? Number(bordaSelect.value) : null;
+    const precoBorda = bordaId ? Number(bordaSelect.selectedOptions[0].dataset.preco) : 0;
+    const nomeBorda = bordaId ? bordaSelect.selectedOptions[0].textContent : null;
+
+    const quantidade = Number(document.getElementById('qtd-valor').textContent);
+
+    CARRINHO.push({
+        tipo_item: 'pizza',
+        pizza_categoria: categoria,
+        fatias,
+        sabor_ids: saborIds,
+        borda_id: bordaId,
+        quantidade,
+        _nome: `Pizza ${NOMES_CATEGORIA[categoria]} (${fatias} fatias) - ${nomesSabores}${nomeBorda ? ' + ' + nomeBorda : ''}`,
+        _preco: precoPizza + precoBorda
     });
+
+    fecharFichaProduto();
+    atualizarBarraCarrinho();
 }
 
-function renderizarBebidas() {
-    const container = document.getElementById('container-bebidas');
-    if (PRODUTOS.bebidas.length === 0) {
-        container.innerHTML = '<p>Nenhuma bebida disponível no momento.</p>';
+function adicionarBebidaRapida(produtoId) {
+    const bebida = PRODUTOS.bebidas.find(b => b.id === produtoId);
+    const existente = CARRINHO.find(i => i.tipo_item === 'bebida' && i.produto_id === produtoId);
+    if (existente) {
+        existente.quantidade += 1;
+    } else {
+        CARRINHO.push({
+            tipo_item: 'bebida',
+            produto_id: produtoId,
+            quantidade: 1,
+            _nome: bebida.nome,
+            _preco: Number(bebida.preco_base)
+        });
+    }
+    atualizarBarraCarrinho();
+}
+
+function removerDoCarrinho(index) {
+    CARRINHO.splice(index, 1);
+    atualizarBarraCarrinho();
+    renderizarCarrinho();
+}
+
+function calcularTotalCarrinho() {
+    return CARRINHO.reduce((soma, item) => soma + item._preco * item.quantidade, 0);
+}
+
+function atualizarBarraCarrinho() {
+    const barra = document.getElementById('barra-carrinho');
+    const totalItens = CARRINHO.reduce((s, i) => s + i.quantidade, 0);
+
+    if (totalItens === 0) {
+        barra.classList.add('oculto');
         return;
     }
-    container.innerHTML = PRODUTOS.bebidas.map(b => `
-        <label>
-            <input type="checkbox" name="bebidas" value="${b.id}" data-nome="${b.nome}" data-preco="${b.preco_base}">
-            ${b.nome} (R$ ${Number(b.preco_base).toFixed(2)})
-        </label><br>
-    `).join('');
+    barra.classList.remove('oculto');
+    document.getElementById('carrinho-resumo').textContent =
+        `${totalItens} ${totalItens === 1 ? 'item' : 'itens'} · R$ ${calcularTotalCarrinho().toFixed(2)}`;
+}
+
+// ---------- Carrinho / checkout ----------
+function abrirCarrinho() {
+    renderizarCarrinho();
+    document.getElementById('sheet-fundo-carrinho').classList.remove('oculto');
+}
+
+function fecharCarrinho() {
+    document.getElementById('sheet-fundo-carrinho').classList.add('oculto');
+}
+
+function renderizarCarrinho() {
+    const container = document.getElementById('itens-carrinho');
+    if (CARRINHO.length === 0) {
+        container.innerHTML = '<p class="carregando">Carrinho vazio.</p>';
+    } else {
+        container.innerHTML = CARRINHO.map((item, i) => `
+            <div class="linha-item-carrinho">
+                <div>
+                    <strong>${item.quantidade}x</strong> ${item._nome}
+                    <div class="preco-item">R$ ${(item._preco * item.quantidade).toFixed(2)}</div>
+                </div>
+                <button class="btn-remover" onclick="removerDoCarrinho(${i})">Remover</button>
+            </div>
+        `).join('');
+    }
+    document.getElementById('carrinho-total').textContent = `R$ ${calcularTotalCarrinho().toFixed(2)}`;
 }
 
 function controlarCamposEntrega(valor) {
-    const campos = document.getElementById('campos-entrega');
-    const inputTelefone = document.getElementById('telefone');
-    const inputEndereco = document.getElementById('endereco');
-
-    const ehEntrega = valor === 'entrega';
-    campos.style.display = ehEntrega ? 'block' : 'none';
-    inputTelefone.required = ehEntrega;
-    inputEndereco.required = ehEntrega;
+    document.getElementById('campos-entrega').classList.toggle('oculto', valor !== 'entrega');
 }
 
 function controlarTroco(valor) {
-    document.getElementById('campo-troco').style.display = valor === 'dinheiro' ? 'block' : 'none';
+    document.getElementById('campo-troco').classList.toggle('oculto', valor !== 'dinheiro');
 }
 
-function revisarPedido() {
+async function confirmarPedido() {
+    const aviso = document.getElementById('aviso-carrinho');
+    aviso.classList.add('oculto');
+
     const nome = document.getElementById('nome').value.trim();
-    const categoria = document.getElementById('categoria').value;
-    const fatias = document.getElementById('fatias').value;
-    const saboresMarcados = [...document.querySelectorAll('input[name="sabores"]:checked')];
-    const bordaSelect = document.getElementById('borda');
-    const bebidasMarcadas = [...document.querySelectorAll('input[name="bebidas"]:checked')];
     const tipoEntrega = document.getElementById('tipo-entrega').value;
     const telefone = document.getElementById('telefone').value.trim();
     const endereco = document.getElementById('endereco').value.trim();
     const formaPagamento = document.getElementById('forma-pagamento').value;
     const troco = document.getElementById('troco').value;
 
-    if (!nome) return alert('Digite seu nome.');
-    if (!categoria) return alert('Escolha a categoria da pizza.');
-    if (!fatias) return alert('Escolha o tamanho da pizza.');
-    if (saboresMarcados.length === 0) return alert('Escolha ao menos um sabor.');
-    if (saboresMarcados.length > 3) return alert('Máximo de 3 sabores.');
+    if (CARRINHO.length === 0) return mostrarAvisoCarrinho('Seu carrinho está vazio.');
+    if (!nome) return mostrarAvisoCarrinho('Digite seu nome.');
     if (tipoEntrega === 'entrega' && (!telefone || !endereco)) {
-        return alert('Telefone e endereço são obrigatórios para entrega.');
+        return mostrarAvisoCarrinho('Telefone e endereço são obrigatórios para entrega.');
     }
 
-    const precoPizza = obterPreco(categoria, fatias);
-    if (precoPizza === null) return alert('Preço não configurado para essa combinação. Fale com a pizzaria.');
-
-    const bordaId = bordaSelect.value || null;
-    const precoBorda = bordaId ? Number(bordaSelect.selectedOptions[0].dataset.preco) : 0;
-
-    const itemPizza = {
-        tipo_item: 'pizza',
-        pizza_categoria: categoria,
-        fatias: Number(fatias),
-        sabor_ids: saboresMarcados.map(s => Number(s.value)),
-        borda_id: bordaId ? Number(bordaId) : null,
-        quantidade: 1
-    };
-
-    const itensBebida = bebidasMarcadas.map(b => ({
-        tipo_item: 'bebida',
-        produto_id: Number(b.value),
-        quantidade: 1
-    }));
-
-    const totalEstimado = precoPizza + precoBorda +
-        bebidasMarcadas.reduce((soma, b) => soma + Number(b.dataset.preco), 0);
-
-    carrinho = {
+    const payload = {
         cliente_nome: nome,
-        telefone: tipoEntrega === 'entrega' ? telefone : (telefone || null),
+        telefone: telefone || null,
         tipo_entrega: tipoEntrega,
-        endereco: tipoEntrega === 'entrega' ? endereco : null,
+        endereco: endereco || null,
         forma_pagamento: formaPagamento,
         troco_para: formaPagamento === 'dinheiro' ? Number(troco || 0) : 0,
-        itens: [itemPizza, ...itensBebida]
+        itens: CARRINHO.map(item => {
+            if (item.tipo_item === 'pizza') {
+                return {
+                    tipo_item: 'pizza',
+                    pizza_categoria: item.pizza_categoria,
+                    fatias: item.fatias,
+                    sabor_ids: item.sabor_ids,
+                    borda_id: item.borda_id,
+                    quantidade: item.quantidade
+                };
+            }
+            return { tipo_item: 'bebida', produto_id: item.produto_id, quantidade: item.quantidade };
+        })
     };
 
-    mostrarResumo(totalEstimado, categoria, fatias, saboresMarcados, bordaSelect, bebidasMarcadas);
-}
-
-function mostrarResumo(total, categoria, fatias, sabores, bordaSelect, bebidas) {
-    const nomesCategoria = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
-    const resumo = document.getElementById('resumo-conteudo');
-    resumo.innerHTML = `
-        <p><strong>Cliente:</strong> ${carrinho.cliente_nome}</p>
-        <p><strong>Pizza:</strong> ${nomesCategoria[categoria]} - ${fatias} fatias</p>
-        <p><strong>Sabores:</strong> ${sabores.map(s => s.dataset.nome).join(', ')}</p>
-        <p><strong>Borda:</strong> ${bordaSelect.value ? bordaSelect.selectedOptions[0].dataset.nome : 'Sem borda'}</p>
-        <p><strong>Bebidas:</strong> ${bebidas.length ? bebidas.map(b => b.dataset.nome).join(', ') : 'Nenhuma'}</p>
-        <p><strong>Entrega:</strong> ${carrinho.tipo_entrega}</p>
-        <p><strong>Pagamento:</strong> ${carrinho.forma_pagamento}${carrinho.troco_para > 0 ? ` (troco para R$ ${carrinho.troco_para.toFixed(2)})` : ''}</p>
-    `;
-    document.getElementById('resumo-total').textContent = `R$ ${total.toFixed(2)}`;
-
-    document.getElementById('form-pedido').style.display = 'none';
-    document.getElementById('resumo-pedido').style.display = 'block';
-}
-
-function voltarParaEdicao() {
-    document.getElementById('form-pedido').style.display = 'block';
-    document.getElementById('resumo-pedido').style.display = 'none';
-}
-
-async function confirmarPedido() {
-    if (!carrinho) return;
-
     try {
-        const resultado = await apiFetch('/pedidos', {
-            method: 'POST',
-            body: JSON.stringify(carrinho)
-        });
-
-        document.getElementById('som-confirmacao').play().catch(() => {
-            console.log('Navegador bloqueou o autoplay do som até haver interação do usuário.');
-        });
-
-        alert(`Pedido #${resultado.pedidoId} confirmado! Total: R$ ${Number(resultado.total).toFixed(2)}. Obrigado, ${carrinho.cliente_nome}.`);
+        const resultado = await apiFetch('/pedidos', { method: 'POST', body: JSON.stringify(payload) });
+        document.getElementById('som-confirmacao').play().catch(() => {});
+        alert(`Pedido #${resultado.pedidoId} confirmado! Total: R$ ${Number(resultado.total).toFixed(2)}. Obrigado, ${nome}!`);
         window.location.reload();
     } catch (err) {
-        const avisoFechado = document.getElementById('aviso-fechado');
-        avisoFechado.style.display = 'block';
-        avisoFechado.textContent = err.message.includes('Fechada')
-            ? err.message
-            : `Não foi possível enviar o pedido: ${err.message}`;
+        mostrarAvisoCarrinho(err.message);
     }
+}
+
+function mostrarAvisoCarrinho(msg) {
+    const aviso = document.getElementById('aviso-carrinho');
+    aviso.textContent = msg;
+    aviso.classList.remove('oculto');
+}
+
+// ---------- Eventos gerais ----------
+function configurarEventos() {
+    document.getElementById('sheet-fatias').addEventListener('change', atualizarPrecoSheet);
+    document.getElementById('fechar-sheet-produto').addEventListener('click', fecharFichaProduto);
+    document.getElementById('btn-add-carrinho').addEventListener('click', adicionarAoCarrinho);
+
+    document.getElementById('qtd-menos').addEventListener('click', () => {
+        const el = document.getElementById('qtd-valor');
+        el.textContent = Math.max(1, Number(el.textContent) - 1);
+    });
+    document.getElementById('qtd-mais').addEventListener('click', () => {
+        const el = document.getElementById('qtd-valor');
+        el.textContent = Number(el.textContent) + 1;
+    });
+
+    document.getElementById('nav-carrinho').addEventListener('click', abrirCarrinho);
+    document.getElementById('barra-carrinho').addEventListener('click', abrirCarrinho);
+    document.getElementById('fechar-sheet-carrinho').addEventListener('click', fecharCarrinho);
+    document.getElementById('btn-confirmar-pedido').addEventListener('click', confirmarPedido);
+
+    document.getElementById('nav-inicio').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+    document.getElementById('btn-busca').addEventListener('click', () => {
+        document.getElementById('barra-busca').classList.toggle('oculto');
+        document.getElementById('input-busca').focus();
+    });
+    document.getElementById('input-busca').addEventListener('input', filtrarBusca);
+
+    document.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('ativo'));
+            chip.classList.add('ativo');
+            const secao = document.getElementById(`secao-${chip.dataset.cat}`);
+            if (secao) secao.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+}
+
+function filtrarBusca() {
+    const termo = document.getElementById('input-busca').value.trim().toLowerCase();
+    document.querySelectorAll('.card-produto').forEach(card => {
+        const nome = card.querySelector('.card-nome').textContent.toLowerCase();
+        card.style.display = nome.includes(termo) ? '' : 'none';
+    });
 }
