@@ -12,7 +12,7 @@ const verificarHorarioFuncionamento = async (req, res, next) => {
         const horaAtual = agora.toLocaleTimeString('pt-BR', {
             timeZone: 'America/Sao_Paulo',
             hour12: false
-        }); // formato "HH:MM:SS"
+        });
 
         const [results] = await db.query(
             'SELECT horario_abertura, horario_fechamento FROM configuracoes LIMIT 1'
