@@ -1,7 +1,73 @@
-body { background: #1c2b22; color: #fff; padding: 0; margin: 0; }
-header.logo-topo { background: var(--cor-verde-escuro); padding: 15px 20px; }
-header.logo-topo h1 { color: #fff; font-size: 20px; }
-#lista-cozinha { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; padding: 20px; }
-.card-cozinha { background: #24382c; padding: 15px; border-radius: 8px; width: 250px; border: 1px solid var(--cor-terracota); }
-.card-cozinha button { display: block; width: 100%; margin-top: 8px; padding: 8px; border: none; border-radius: 5px; background: var(--cor-vermelho); color: #fff; }
-.erro { color: #ff8080; text-align: center; }
+header.logo-topo {
+    background: var(--cor-verde-escuro);
+    padding: 15px 20px;
+    justify-content: space-between;
+}
+
+header.logo-topo h1 {
+    color: #fff;
+    font-size: 20px;
+}
+
+#btn-ativar-som {
+    background: var(--cor-vermelho);
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+#btn-ativar-som:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+body {
+    background: #1c2b22;
+    color: #fff;
+    padding: 0;
+    margin: 0;
+}
+
+header.logo-topo {
+    background: var(--cor-verde-escuro);
+    padding: 15px 20px;
+}
+
+header.logo-topo h1 {
+    color: #fff;
+    font-size: 20px;
+}
+
+#lista-cozinha {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    padding: 20px;
+}
+
+.card-cozinha {
+    background: #24382c;
+    padding: 15px;
+    border-radius: 8px;
+    width: 250px;
+    border: 1px solid var(--cor-terracota);
+}
+
+.card-cozinha button {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+    background: var(--cor-vermelho);
+    color: #fff;
+}
+
+.erro {
+    color: #ff8080;
+    text-align: center;
+}

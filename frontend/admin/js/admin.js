@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-salvar-horario').addEventListener('click', salvarHorario);
     document.getElementById('btn-salvar-precos').addEventListener('click', salvarPrecos);
     document.getElementById('btn-lancar-pedido').addEventListener('click', lancarPedidoAdmin);
+    document.getElementById('btn-ativar-som').addEventListener('click', ativarSom);
 
     document.querySelectorAll('.aba-btn').forEach(btn => {
         btn.addEventListener('click', () => trocarAba(btn.dataset.aba));
@@ -15,6 +16,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (getToken()) iniciarPainel();
 });
+
+function ativarSom() {
+    const audio = document.getElementById('som-sino');
+    audio.play().then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        const btn = document.getElementById('btn-ativar-som');
+        btn.textContent = '🔔 Som Ativado ✓';
+        btn.disabled = true;
+    }).catch(err => {
+        alert('Não foi possível ativar o som: ' + err.message);
+    });
+}
 
 function trocarAba(aba) {
     document.querySelectorAll('.aba-conteudo').forEach(el => el.style.display = 'none');
