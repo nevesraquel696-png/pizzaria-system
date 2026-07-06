@@ -17,16 +17,43 @@ document.addEventListener('DOMContentLoaded', () => {
     if (getToken()) iniciarPainel();
 });
 
+// O navegador bloqueia som tocado automaticamente (ex: quando chega um pedido
+// novo via socket, sem nenhum clique). Esse botão "destrava" o áudio: ao ser
+// clicado (uma ação real do usuário), tocamos e pausamos imediatamente, o que
+// libera esse elemento de áudio pra tocar sozinho pelo resto da sessão.
 function ativarSom() {
     const audio = document.getElementById('som-sino');
     audio.play().then(() => {
         audio.pause();
         audio.currentTime = 0;
-        const btn = document.getElementById('btn-ativar-som');
-        btn.textContent = '🔔 Som Ativado ✓';
-        btn.disabled = true;
+        localStorage.setItem('pizzaria_som_ativado', 'true'); // lembra pra próxima vez
+        marcarBotaoSomAtivado();
     }).catch(err => {
         alert('Não foi possível ativar o som: ' + err.message);
+    });
+}
+
+function marcarBotaoSomAtivado() {
+    const btn = document.getElementById('btn-ativar-som');
+    btn.textContent = '🔔 Som Ativado ✓';
+    btn.disabled = true;
+}
+
+// Ao recarregar a página, se você já ativou o som antes nesse navegador,
+// tentamos religar sozinho. Isso funciona na maioria das vezes depois de
+// algumas visitas (o navegador aprende a confiar no site), mas não é 100%
+// garantido - é uma proteção de segurança do próprio navegador, não do
+// nosso site. Se falhar, o botão continua disponível pra clicar de novo.
+function tentarAutoativarSom() {
+    if (localStorage.getItem('pizzaria_som_ativado') !== 'true') return;
+
+    const audio = document.getElementById('som-sino');
+    audio.play().then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        marcarBotaoSomAtivado();
+    }).catch(() => {
+        // Navegador ainda bloqueou dessa vez - botão continua ativo pra clicar manualmente.
     });
 }
 
@@ -66,11 +93,22 @@ async function iniciarPainel() {
     document.getElementById('painel').style.display = 'block';
 
     conectarSocket();
-    await carregarProdutosAdmin();
-    await carregarPrecosAdmin();
-    await carregarHorario();
-    await carregarPedidos();
-    renderizarCardapio(await apiFetch('/produtos'));
+    tentarAutoativarSom();
+
+    // Antes cada informação era buscada em sequência (uma esperando a outra
+    // terminar). Como são chamadas independentes, agora buscamos tudo ao
+    // mesmo tempo - o painel carrega no tempo da requisição mais lenta,
+    // não na soma de todas.
+    await Promise.all([
+        tentarCarregar(carregarProdutosAdmin, 'produtos'),
+        tentarCarregar(carregarPrecosAdmin, 'preços'),
+        tentarCarregar(carregarHorario, 'horário'),
+        tentarCarregar(carregarPedidos, 'pedidos'),
+        tentarCarregar(async () => {
+            renderizarCardapio(await apiFetch('/produtos'));
+        }, 'cardápio')
+    ]);
+
     renderizarTabelaPrecos();
     renderizarBebidasAdmin();
     document.getElementById('adm-borda').innerHTML =
@@ -78,8 +116,16 @@ async function iniciarPainel() {
         PRODUTOS_ADMIN.bordas.map(b => `<option value="${b.id}" data-preco="${b.preco_base}">${b.nome} (+R$ ${Number(b.preco_base).toFixed(2)})</option>`).join('');
 }
 
+async function tentarCarregar(fn, nomeParaErro) {
+    try {
+        await fn();
+    } catch (err) {
+        console.error(`Erro ao carregar ${nomeParaErro}:`, err.message);
+    }
+}
+
 function conectarSocket() {
-    socket = io('http://localhost:3000');
+    socket = io(SOCKET_URL);
 
     socket.on('novoPedido', (dadosDoPedido) => {
         document.getElementById('som-sino').play().catch(() => {});
