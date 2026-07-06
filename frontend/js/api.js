@@ -1,5 +1,6 @@
 // URL base do backend. Ajuste se for publicar em outro endereço.
-const API_URL = 'http://localhost:3000/api';
+const API_URL = 'https://pizzaria-system-9egf.onrender.com/api';
+const SOCKET_URL = 'https://pizzaria-system-1.onrender.com';
 
 function getToken() {
     return localStorage.getItem('pizzaria_token');
