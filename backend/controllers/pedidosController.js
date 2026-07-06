@@ -1,3 +1,4 @@
+const Pedido = require('../models/Pedido');
 const Produto = require('../models/Produto');
 const { PrecoPizza, CATEGORIAS_VALIDAS, FATIAS_VALIDAS } = require('../models/PrecoPizza');
 
@@ -19,77 +20,55 @@ function validarEstrutura(body) {
 
 // Calcula o preço de cada item NO SERVIDOR - nunca confiamos em preço/total
 // enviado pelo cliente, senão qualquer pessoa poderia forjar um pedido de R$0,01.
-//
-// OTIMIZAÇÃO: em vez de consultar o banco várias vezes por item (uma consulta
-// esperando a outra terminar), buscamos TODOS os produtos e TODOS os preços
-// de uma vez só, no início, e depois só usamos esses dados já carregados em
-// memória. Isso é importante porque o banco (TiDB Cloud) e o servidor (Render)
-// ficam em datacenters diferentes - cada consulta extra soma um tempo de
-// ida-e-volta pela rede, e isso deixava pedidos com vários itens bem lentos.
 async function processarItens(itensRecebidos) {
     const erros = [];
     const itensProcessados = [];
 
-    // 1) Descobre todos os IDs de produto envolvidos no pedido inteiro
-    const todosOsIds = new Set();
-    itensRecebidos.forEach(item => {
-        if (item.tipo_item === 'pizza') {
-            (item.sabor_ids || []).forEach(id => todosOsIds.add(id));
-            if (item.borda_id) todosOsIds.add(item.borda_id);
-        } else if (item.produto_id) {
-            todosOsIds.add(item.produto_id);
-        }
-    });
-
-    // 2) Busca tudo de uma vez: produtos por ID + tabela de preços inteira
-    const [produtosEncontrados, precosPizza] = await Promise.all([
-        Produto.buscarPorIds([...todosOsIds]),
-        PrecoPizza.listarTodos()
-    ]);
-    const produtosPorId = new Map(produtosEncontrados.map(p => [p.id, p]));
-    const buscarPreco = (categoria, fatias) => {
-        const encontrado = precosPizza.find(p => p.categoria === categoria && Number(p.fatias) === Number(fatias));
-        return encontrado ? Number(encontrado.preco) : null;
-    };
-
-    // 3) A partir daqui, tudo é processado em memória, sem novas consultas
-    itensRecebidos.forEach((item, i) => {
+    for (let i = 0; i < itensRecebidos.length; i++) {
+        const item = itensRecebidos[i];
         const prefixo = `Item ${i + 1}:`;
 
         if (item.tipo_item === 'pizza') {
             const { pizza_categoria, fatias, sabor_ids, borda_id } = item;
 
             if (!CATEGORIAS_VALIDAS.includes(pizza_categoria)) {
-                return erros.push(`${prefixo} categoria de pizza inválida.`);
+                erros.push(`${prefixo} categoria de pizza inválida.`);
+                continue;
             }
             if (!FATIAS_VALIDAS.includes(Number(fatias))) {
-                return erros.push(`${prefixo} número de fatias inválido.`);
+                erros.push(`${prefixo} número de fatias inválido.`);
+                continue;
             }
             if (!Array.isArray(sabor_ids) || sabor_ids.length === 0 || sabor_ids.length > 3) {
-                return erros.push(`${prefixo} escolha de 1 a 3 sabores.`);
+                erros.push(`${prefixo} escolha de 1 a 3 sabores.`);
+                continue;
             }
 
-            const saboresValidos = sabor_ids
-                .map(id => produtosPorId.get(id))
-                .filter(s => s && s.tipo === 'sabor_pizza' && s.categoria === pizza_categoria && s.disponivel);
+            const sabores = await Produto.buscarPorIds(sabor_ids);
+            const saboresValidos = sabores.filter(
+                s => s.tipo === 'sabor_pizza' && s.categoria === pizza_categoria && s.disponivel
+            );
             if (saboresValidos.length !== sabor_ids.length) {
-                return erros.push(`${prefixo} um ou mais sabores são inválidos ou não estão disponíveis nessa categoria.`);
+                erros.push(`${prefixo} um ou mais sabores são inválidos ou não estão disponíveis nessa categoria.`);
+                continue;
             }
 
             let precoBorda = 0;
             let nomeBorda = null;
             if (borda_id) {
-                const borda = produtosPorId.get(borda_id);
+                const [borda] = await Produto.buscarPorIds([borda_id]);
                 if (!borda || borda.tipo !== 'borda' || !borda.disponivel) {
-                    return erros.push(`${prefixo} borda inválida ou indisponível.`);
+                    erros.push(`${prefixo} borda inválida ou indisponível.`);
+                    continue;
                 }
                 precoBorda = Number(borda.preco_base);
                 nomeBorda = borda.nome;
             }
 
-            const precoPizza = buscarPreco(pizza_categoria, Number(fatias));
+            const precoPizza = await PrecoPizza.obterPreco(pizza_categoria, Number(fatias));
             if (precoPizza === null) {
-                return erros.push(`${prefixo} preço não configurado para essa categoria/tamanho.`);
+                erros.push(`${prefixo} preço não configurado para essa categoria/tamanho.`);
+                continue;
             }
 
             itensProcessados.push({
@@ -103,9 +82,10 @@ async function processarItens(itensRecebidos) {
             });
 
         } else if (item.tipo_item === 'bebida' || item.tipo_item === 'outros') {
-            const produto = produtosPorId.get(item.produto_id);
+            const [produto] = await Produto.buscarPorIds([item.produto_id]);
             if (!produto || !produto.disponivel || !['bebida', 'outros'].includes(produto.tipo)) {
-                return erros.push(`${prefixo} produto inválido ou indisponível.`);
+                erros.push(`${prefixo} produto inválido ou indisponível.`);
+                continue;
             }
 
             itensProcessados.push({
@@ -117,7 +97,7 @@ async function processarItens(itensRecebidos) {
         } else {
             erros.push(`${prefixo} tipo de item inválido.`);
         }
-    });
+    }
 
     return { erros, itensProcessados };
 }
