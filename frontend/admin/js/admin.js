@@ -129,19 +129,23 @@ function conectarSocket() {
 
     socket.on('novoPedido', (dadosDoPedido) => {
         document.getElementById('som-sino').play().catch(() => {});
-        alert(`Novo Pedido de ${dadosDoPedido.cliente_nome}! Tipo: ${dadosDoPedido.tipo_entrega}`);
-        executarImpressao(dadosDoPedido);
+        mostrarToast(`🍕 Novo pedido de ${dadosDoPedido.cliente_nome} (${dadosDoPedido.tipo_entrega})`);
         carregarPedidos();
     });
 
     socket.on('statusAtualizado', () => carregarPedidos());
 }
 
-function executarImpressao(pedido) {
-    const numeroCopias = pedido.tipo_entrega === 'entrega' ? 2 : 1;
-    for (let i = 0; i < numeroCopias; i++) {
-        console.log(`Imprimindo via ${i + 1} do pedido: ${pedido.pedidoId}`);
-    }
+// Aviso visual que desaparece sozinho, sem travar a tela como o alert() fazia
+// (o alert() trava a aba inteira até alguém clicar OK - se chegassem vários
+// pedidos seguidos, dava a impressão de o computador ter travado).
+function mostrarToast(mensagem) {
+    const toast = document.createElement('div');
+    toast.className = 'toast-notificacao';
+    toast.textContent = mensagem;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('toast-saindo'), 4000);
+    setTimeout(() => toast.remove(), 4500);
 }
 
 // ---------- Horário ----------
@@ -156,7 +160,7 @@ async function salvarHorario() {
     const horario_fechamento = document.getElementById('fechamento').value + ':00';
     try {
         await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ horario_abertura, horario_fechamento }) });
-        alert('Horário atualizado com sucesso!');
+        mostrarToast('Horário atualizado com sucesso!');
     } catch (err) {
         alert('Erro ao salvar horário: ' + err.message);
     }
@@ -172,6 +176,17 @@ async function carregarPedidos() {
     }
 }
 
+// Monta a descrição legível de cada item, no lugar do que sairia impresso na
+// comanda (enquanto não tem impressora, o atendente lê direto daqui).
+function descreverItem(item) {
+    if (item.tipo_item === 'pizza') {
+        const nomesCategoria = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
+        const sabores = Array.isArray(item.sabores) ? item.sabores : (item.sabores ? JSON.parse(item.sabores) : []);
+        return `${item.quantidade}x Pizza ${nomesCategoria[item.pizza_categoria] || ''} (${item.fatias} fatias) - ${sabores.join(', ')}${item.borda ? ' + borda ' + item.borda : ''}`;
+    }
+    return `${item.quantidade}x ${item.tipo_item === 'bebida' ? 'Bebida' : 'Item'} (R$ ${Number(item.preco_unitario).toFixed(2)} cada)`;
+}
+
 function renderizarPedidos(pedidos) {
     const container = document.getElementById('lista-pedidos');
     if (pedidos.length === 0) {
@@ -184,6 +199,12 @@ function renderizarPedidos(pedidos) {
             <h4>Pedido #${String(p.id).padStart(4, '0')} - Cliente: ${p.cliente_nome}</h4>
             <p><strong>Tipo:</strong> ${p.tipo_entrega} | <strong>Pagamento:</strong> ${p.forma_pagamento}
                ${p.troco_para > 0 ? ` (Troco para R$${Number(p.troco_para).toFixed(2)})` : ''}</p>
+            ${p.tipo_entrega === 'entrega' ? `<p><strong>Endereço:</strong> ${p.endereco || '-'} | <strong>Tel:</strong> ${p.telefone || '-'}</p>` : ''}
+
+            <div class="itens-pedido-detalhe">
+                ${(p.itens || []).map(item => `<p class="linha-item-pedido">${descreverItem(item)}</p>`).join('')}
+            </div>
+
             <p><strong>Total:</strong> R$ ${Number(p.total).toFixed(2)}</p>
 
             <div class="acoes-pedido">
@@ -195,7 +216,6 @@ function renderizarPedidos(pedidos) {
                         <option value="entregue" ${p.status === 'entregue' ? 'selected' : ''}>Já foi Entregue</option>
                     </select>
                 </label>
-                <button onclick="reimprimirComanda(${p.id})">🖨️ Reimprimir Comanda</button>
             </div>
         </div>
     `).join('');
@@ -206,16 +226,6 @@ async function mudarStatus(id, status) {
         await apiFetch(`/pedidos/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
     } catch (err) {
         alert('Erro ao atualizar status: ' + err.message);
-    }
-}
-
-async function reimprimirComanda(id) {
-    try {
-        const resultado = await apiFetch(`/pedidos/${id}/reimprimir`, { method: 'POST' });
-        executarImpressao({ ...resultado.pedido, pedidoId: id });
-        alert('Comanda enviada para reimpressão.');
-    } catch (err) {
-        alert('Erro ao reimprimir: ' + err.message);
     }
 }
 
