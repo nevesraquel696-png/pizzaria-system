@@ -1,6 +1,7 @@
 .tela-login { display: flex; align-items: center; justify-content: center; height: 100vh; }
 .card-login { background: #fff; padding: 30px; border-radius: var(--raio-borda); box-shadow: var(--sombra-card); width: 320px; text-align: center; }
 .logo-login { width: 90px; height: 90px; object-fit: contain; margin-bottom: 10px; }
+.btn-excluir-pedido { background: var(--cor-vermelho); color: #fff; }
 .card-login h2 { color: var(--cor-verde-escuro); margin-top: 0; }
 .card-login input { width: 100%; padding: 8px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; }
 .card-login button { width: 100%; padding: 10px; }

@@ -64,6 +64,18 @@ function trocarAba(aba) {
     document.querySelector(`.aba-btn[data-aba="${aba}"]`).classList.add('ativa');
 }
 
+async function excluirPedido(id) {
+    const confirmou = confirm(`Tem certeza que quer excluir o pedido #${id}? Essa ação não pode ser desfeita.`);
+    if (!confirmou) return;
+
+    try {
+        await apiFetch(`/pedidos/${id}`, { method: 'DELETE' });
+        carregarPedidos(); // recarrega a lista sem esse pedido
+    } catch (err) {
+        alert('Erro ao excluir: ' + err.message);
+    }
+}
+
 // ---------- Login ----------
 async function login() {
     const email = document.getElementById('login-email').value.trim();
@@ -214,6 +226,7 @@ function renderizarPedidos(pedidos) {
                         <option value="preparo" ${p.status === 'preparo' ? 'selected' : ''}>Em Preparo</option>
                         <option value="saiu_entrega" ${p.status === 'saiu_entrega' ? 'selected' : ''}>Saiu para Entrega</option>
                         <option value="entregue" ${p.status === 'entregue' ? 'selected' : ''}>Já foi Entregue</option>
+                        <button onclick="excluirPedido(${p.id})" class="btn-excluir-pedido">🗑️ Excluir</button>
                     </select>
                 </label>
             </div>
