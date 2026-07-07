@@ -1,8 +1,13 @@
 const { PrecoPizza, CATEGORIAS_VALIDAS, FATIAS_VALIDAS } = require('../models/PrecoPizza');
+const cache = require('../utils/cache');
 
 exports.listar = async (req, res) => {
+    const emCache = cache.obter('precos-pizza');
+    if (emCache) return res.json(emCache);
+
     try {
         const precos = await PrecoPizza.listarTodos();
+        cache.definir('precos-pizza', precos, 30000);
         res.json(precos);
     } catch (err) {
         res.status(500).json({ erro: 'Erro ao buscar preços.' });
@@ -18,9 +23,9 @@ exports.atualizarEmLote = async (req, res) => {
     }
 
     try {
-        for (const item of precos) {
-            await PrecoPizza.atualizarPreco(item.categoria, item.fatias, item.preco);
-        }
+        // Todas as atualizações em paralelo, em vez de uma esperando a outra
+        await Promise.all(precos.map(item => PrecoPizza.atualizarPreco(item.categoria, item.fatias, item.preco)));
+        cache.invalidar('precos-pizza');
         res.json({ mensagem: 'Preços atualizados com sucesso.' });
     } catch (err) {
         res.status(400).json({ erro: err.message });
