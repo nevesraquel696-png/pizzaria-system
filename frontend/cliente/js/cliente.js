@@ -128,7 +128,13 @@ function abrirFichaProduto(categoria, fatias) {
     const sabores = PRODUTOS.sabores.filter(s => s.categoria === categoria);
     const container = document.getElementById('sheet-sabores-extra');
     container.innerHTML = sabores.map((s, i) => `
-        <label><input type="checkbox" name="sheet-sabor" value="${s.id}" ${i === 0 ? 'checked' : ''}> ${s.nome}</label>
+        <label class="opcao-sabor">
+            <input type="checkbox" name="sheet-sabor" value="${s.id}" ${i === 0 ? 'checked' : ''}>
+            <span>
+                <strong>${s.nome}</strong>
+                ${s.descricao ? `<br><small>${s.descricao}</small>` : ''}
+            </span>
+        </label>
     `).join('');
     container.onchange = () => {
         const marcados = container.querySelectorAll('input:checked');

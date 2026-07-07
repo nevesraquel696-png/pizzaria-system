@@ -45,6 +45,7 @@ fieldset button { margin-top: 10px; padding: 8px 14px; border: none; border-radi
 
 #lista-produtos-cardapio { list-style: none; padding: 0; }
 .item-cardapio { display: flex; justify-content: space-between; align-items: center; background: var(--cor-creme); padding: 8px; margin-bottom: 8px; border-radius: 6px; }
+.descricao-produto { font-size: 12px; color: #6b6459; font-style: italic; margin-top: 2px; }
 .btn-excluir { color: #fff; background: var(--cor-vermelho); border: none; border-radius: 4px; padding: 4px 8px; margin-left: 10px; }
 
 #form-pedido-admin label { display: block; margin: 10px 0 4px; font-weight: bold; }

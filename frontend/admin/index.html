@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +7,6 @@
     <link rel="stylesheet" href="../css/theme.css">
     <link rel="stylesheet" href="css/admin.css">
 </head>
-
 <body>
 
     <!-- Tela de login -->
@@ -49,16 +47,13 @@
         <!-- ABA: Pedidos recebidos -->
         <section id="aba-pedidos" class="aba-conteudo">
             <h3>Pedidos Recebidos</h3>
-            <div id="lista-pedidos">
-                <p>Carregando pedidos...</p>
-            </div>
+            <div id="lista-pedidos"><p>Carregando pedidos...</p></div>
         </section>
 
         <!-- ABA: Criar pedido manualmente -->
         <section id="aba-novo-pedido" class="aba-conteudo" style="display:none;">
             <h3>Criar Pedido Manualmente</h3>
-            <p class="dica">Use esta tela para lançar pedidos feitos por telefone ou balcão. Não é bloqueado pelo
-                horário de funcionamento.</p>
+            <p class="dica">Use esta tela para lançar pedidos feitos por telefone ou balcão. Não é bloqueado pelo horário de funcionamento.</p>
 
             <form id="form-pedido-admin">
                 <label>Nome do Cliente: <input type="text" id="adm-nome" required></label>
@@ -85,14 +80,10 @@
                 </label>
                 <p id="adm-preco-tamanho" class="preco-info"></p>
 
-                <div id="adm-container-sabores">
-                    <p class="carregando">Selecione a categoria primeiro.</p>
-                </div>
+                <div id="adm-container-sabores"><p class="carregando">Selecione a categoria primeiro.</p></div>
 
                 <label>Borda:
-                    <select id="adm-borda">
-                        <option value="">Sem borda</option>
-                    </select>
+                    <select id="adm-borda"><option value="">Sem borda</option></select>
                 </label>
 
                 <div id="adm-container-bebidas"></div>
@@ -149,6 +140,9 @@
                                 <option value="promocao">Promoção</option>
                             </select>
                         </label>
+                        <label id="campo-descricao-produto">Descrição (ingredientes, só para sabor de pizza):
+                            <textarea id="prod-descricao" rows="2" placeholder="Ex: Mussarela, calabresa fatiada e cebola"></textarea>
+                        </label>
                         <label id="campo-preco-produto">Preço (bebida/borda/outros):
                             <input type="number" id="prod-preco" step="0.01" placeholder="0.00">
                         </label>
@@ -157,9 +151,7 @@
                 </div>
                 <div>
                     <h3>Itens Cadastrados</h3>
-                    <ul id="lista-produtos-cardapio">
-                        <li>Carregando...</li>
-                    </ul>
+                    <ul id="lista-produtos-cardapio"><li>Carregando...</li></ul>
                 </div>
             </div>
         </section>
@@ -170,14 +162,7 @@
             <p class="dica">Esses valores valem para todos os sabores da categoria, igual ao cardápio físico.</p>
             <table id="tabela-precos">
                 <thead>
-                    <tr>
-                        <th>Categoria</th>
-                        <th>4 fatias</th>
-                        <th>6 fatias</th>
-                        <th>8 fatias</th>
-                        <th>12 fatias</th>
-                        <th>14 fatias</th>
-                    </tr>
+                    <tr><th>Categoria</th><th>4 fatias</th><th>6 fatias</th><th>8 fatias</th><th>12 fatias</th><th>14 fatias</th></tr>
                 </thead>
                 <tbody id="corpo-tabela-precos"></tbody>
             </table>
@@ -191,5 +176,4 @@
     <script src="../js/api.js"></script>
     <script src="js/admin.js"></script>
 </body>
-
 </html>

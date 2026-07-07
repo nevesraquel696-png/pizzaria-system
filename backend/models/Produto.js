@@ -11,18 +11,18 @@ const Produto = {
         return produtos;
     },
 
-    async criar({ nome, tipo, categoria, preco_base }) {
+    async criar({ nome, tipo, categoria, preco_base, descricao }) {
         const [result] = await db.query(
-            'INSERT INTO produtos (nome, tipo, categoria, preco_base) VALUES (?, ?, ?, ?)',
-            [nome, tipo, tipo === 'sabor_pizza' ? categoria : null, tipo === 'sabor_pizza' ? 0 : (preco_base || 0)]
+            'INSERT INTO produtos (nome, tipo, categoria, preco_base, descricao) VALUES (?, ?, ?, ?, ?)',
+            [nome, tipo, tipo === 'sabor_pizza' ? categoria : null, tipo === 'sabor_pizza' ? 0 : (preco_base || 0), descricao || null]
         );
         return result.insertId;
     },
 
-    async atualizar(id, { nome, tipo, categoria, preco_base }) {
+    async atualizar(id, { nome, tipo, categoria, preco_base, descricao }) {
         await db.query(
-            'UPDATE produtos SET nome = ?, tipo = ?, categoria = ?, preco_base = ? WHERE id = ?',
-            [nome, tipo, tipo === 'sabor_pizza' ? categoria : null, tipo === 'sabor_pizza' ? 0 : (preco_base || 0), id]
+            'UPDATE produtos SET nome = ?, tipo = ?, categoria = ?, preco_base = ?, descricao = ? WHERE id = ?',
+            [nome, tipo, tipo === 'sabor_pizza' ? categoria : null, tipo === 'sabor_pizza' ? 0 : (preco_base || 0), descricao || null, id]
         );
     },
 

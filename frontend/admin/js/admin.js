@@ -359,6 +359,7 @@ async function lancarPedidoAdmin() {
 function alternarCampoCategoria() {
     const tipo = document.getElementById('prod-tipo').value;
     document.getElementById('campo-categoria-produto').style.display = tipo === 'sabor_pizza' ? 'block' : 'none';
+    document.getElementById('campo-descricao-produto').style.display = tipo === 'sabor_pizza' ? 'block' : 'none';
     document.getElementById('campo-preco-produto').style.display = tipo === 'sabor_pizza' ? 'none' : 'block';
 }
 
@@ -371,7 +372,10 @@ function renderizarCardapio(produtos) {
 
     lista.innerHTML = produtos.map(p => `
         <li class="item-cardapio">
-            <span>${p.nome} (${p.tipo}${p.categoria ? ' - ' + p.categoria : ''})</span>
+            <div>
+                <span>${p.nome} (${p.tipo}${p.categoria ? ' - ' + p.categoria : ''})</span>
+                ${p.descricao ? `<div class="descricao-produto">${p.descricao}</div>` : ''}
+            </div>
             <div>
                 <label>
                     <input type="checkbox" ${p.disponivel ? 'checked' : ''} onchange="alternarDisponibilidade(${p.id})">
@@ -387,6 +391,7 @@ async function adicionarProduto() {
     const nome = document.getElementById('prod-nome').value.trim();
     const tipo = document.getElementById('prod-tipo').value;
     const categoria = document.getElementById('prod-categoria').value;
+    const descricao = document.getElementById('prod-descricao').value.trim();
     const preco_base = document.getElementById('prod-preco').value;
 
     if (!nome) return alert('Digite o nome do produto.');
@@ -394,9 +399,10 @@ async function adicionarProduto() {
     try {
         await apiFetch('/produtos', {
             method: 'POST',
-            body: JSON.stringify({ nome, tipo, categoria, preco_base: Number(preco_base || 0) })
+            body: JSON.stringify({ nome, tipo, categoria, descricao, preco_base: Number(preco_base || 0) })
         });
         document.getElementById('prod-nome').value = '';
+        document.getElementById('prod-descricao').value = '';
         document.getElementById('prod-preco').value = '';
         renderizarCardapio(await apiFetch('/produtos'));
         await carregarProdutosAdmin(); // atualiza cache usado no "criar pedido"

@@ -83,6 +83,15 @@ body { padding-bottom: 70px; } /* espaço pra barra inferior fixa */
 }
 .sheet .grade-opcoes input { width: auto; }
 
+/* Sabores com descrição (ingredientes) precisam de mais espaço - cartão
+   vertical em vez da pílula compacta usada em outras opções da ficha */
+#sheet-sabores-extra { flex-direction: column; gap: 8px; }
+#sheet-sabores-extra .opcao-sabor {
+    align-items: flex-start; border-radius: 10px; padding: 10px 12px; width: 100%;
+}
+#sheet-sabores-extra .opcao-sabor input { margin-top: 3px; }
+#sheet-sabores-extra .opcao-sabor small { color: #6b6459; font-weight: 400; }
+
 .linha-quantidade { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
 .stepper { display: flex; align-items: center; gap: 14px; }
 .stepper button { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--cor-verde-escuro); background: #fff; color: var(--cor-verde-escuro); font-size: 18px; font-weight: bold; }

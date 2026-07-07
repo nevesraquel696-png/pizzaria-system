@@ -1,100 +1,24 @@
 -- ============================================
--- BANCO DE DADOS - SISTEMA PIZZARIA (v2)
--- Execute este script completo no MySQL
---
--- MUDANÇA IMPORTANTE nesta versão:
--- O preço da pizza agora depende do TAMANHO (nº de fatias) e da
--- CATEGORIA (tradicional/especial/doce/promocao), igual ao cardápio
--- físico. Os sabores dentro de uma categoria compartilham o mesmo
--- preço por tamanho. A borda continua com preço próprio, somado.
+-- MIGRAÇÃO: adicionar campo de descrição + cardápio completo
+-- Rode este script no SEU BANCO JÁ EXISTENTE (TiDB Cloud).
+-- Ele NÃO apaga nada que você já tem (preços, admin, pedidos).
 -- ============================================
 
-CREATE DATABASE IF NOT EXISTS pizzaria_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE pizzaria_db;
 
-DROP TABLE IF EXISTS itens_pedido;
-DROP TABLE IF EXISTS pedidos;
-DROP TABLE IF EXISTS produtos;
-DROP TABLE IF EXISTS precos_pizza;
-DROP TABLE IF EXISTS usuarios;
-DROP TABLE IF EXISTS configuracoes;
+-- 1) Adiciona a coluna de descrição (se der erro "Duplicate column name",
+--    significa que você já rodou isso antes - pode ignorar e seguir pro passo 2)
+ALTER TABLE produtos ADD COLUMN descricao TEXT DEFAULT NULL AFTER preco_base;
 
-CREATE TABLE configuracoes (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    horario_abertura TIME NOT NULL DEFAULT '17:30:00',
-    horario_fechamento TIME NOT NULL DEFAULT '23:30:00'
-);
-INSERT INTO configuracoes (horario_abertura, horario_fechamento) VALUES ('17:30:00', '23:30:00');
+-- 2) Remove os sabores/bordas de EXEMPLO que vieram no script inicial
+--    (Calabresa, Mussarela, Frango com Catupiry, Chocolate, e as 3 bordas),
+--    pra não duplicar quando inserirmos o cardápio completo abaixo.
+--    Isso NÃO afeta bebidas, preços, o usuário admin nem pedidos já feitos.
+DELETE FROM produtos WHERE tipo IN ('sabor_pizza', 'borda');
 
-CREATE TABLE usuarios (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
-    email VARCHAR(150) NOT NULL UNIQUE,
-    senha_hash VARCHAR(255) NOT NULL,
-    nivel ENUM('admin','cozinha') DEFAULT 'admin',
-    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Tabela de preços: uma linha por combinação categoria + tamanho.
--- Edite os valores pelo painel admin (ou direto aqui) com os preços reais.
-CREATE TABLE precos_pizza (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    categoria ENUM('tradicional','especial','doce','promocao') NOT NULL,
-    fatias INT NOT NULL,
-    preco DECIMAL(10,2) NOT NULL,
-    UNIQUE KEY categoria_fatias (categoria, fatias)
-);
-
--- Preencha com os preços reais da pizzaria (valores de exemplo abaixo, ajuste no admin)
-INSERT INTO precos_pizza (categoria, fatias, preco) VALUES
-('tradicional', 4, 0.00), ('tradicional', 6, 0.00), ('tradicional', 8, 0.00), ('tradicional', 12, 0.00), ('tradicional', 14, 0.00),
-('especial', 4, 0.00), ('especial', 6, 0.00), ('especial', 8, 0.00), ('especial', 12, 0.00), ('especial', 14, 0.00),
-('doce', 4, 0.00), ('doce', 6, 0.00), ('doce', 8, 0.00), ('doce', 12, 0.00), ('doce', 14, 0.00),
-('promocao', 4, 0.00), ('promocao', 6, 0.00), ('promocao', 8, 0.00), ('promocao', 12, 0.00), ('promocao', 14, 0.00);
-
--- produtos: sabores de pizza (com categoria), bordas, bebidas e outros itens
-CREATE TABLE produtos (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(100) NOT NULL,
-    tipo ENUM('sabor_pizza','borda','bebida','outros') NOT NULL,
-    categoria ENUM('tradicional','especial','doce','promocao') DEFAULT NULL,
-    preco_base DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-    descricao TEXT DEFAULT NULL,
-    disponivel BOOLEAN DEFAULT TRUE,
-    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE pedidos (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    cliente_nome VARCHAR(100) NOT NULL,
-    telefone VARCHAR(20),
-    tipo_entrega ENUM('local','retirada','entrega') NOT NULL,
-    endereco TEXT,
-    forma_pagamento ENUM('pix','cartao','dinheiro') NOT NULL,
-    troco_para DECIMAL(10,2) DEFAULT 0.00,
-    status ENUM('pendente','preparo','saiu_entrega','entregue') DEFAULT 'pendente',
-    total DECIMAL(10,2) NOT NULL,
-    vezes_impresso INT DEFAULT 1,
-    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE itens_pedido (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    pedido_id INT NOT NULL,
-    tipo_item ENUM('pizza','bebida','outros') NOT NULL,
-    pizza_categoria ENUM('tradicional','especial','doce','promocao') DEFAULT NULL,
-    fatias INT DEFAULT NULL,
-    sabores JSON DEFAULT NULL,
-    borda VARCHAR(50) DEFAULT NULL,
-    quantidade INT NOT NULL DEFAULT 1,
-    preco_unitario DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE
-);
-
--- ============================================
--- CARDÁPIO COMPLETO (edite/apague pelo painel admin)
--- Preços NÃO vêm aqui de propósito - configure na aba "Preços" do admin.
--- ============================================
+-- 3) Cardápio completo baseado no seu cardápio físico.
+--    Os PREÇOS não vêm aqui de propósito - configure os valores reais
+--    na aba "Preços" do painel admin, por categoria e tamanho.
 
 -- ---------- PIZZA DOCE ----------
 INSERT INTO produtos (nome, tipo, categoria, preco_base, descricao, disponivel) VALUES
@@ -154,9 +78,11 @@ INSERT INTO produtos (nome, tipo, categoria, preco_base, descricao, disponivel) 
 ('Estação Pcinhos', 'sabor_pizza', 'tradicional', 0, 'Palmito, milho, ervilha, bacon e peito de peru', TRUE),
 ('Estação Extrema', 'sabor_pizza', 'tradicional', 0, 'Mussarela, peito de peru, milho e bacon', TRUE);
 
+-- ---------- BORDAS (descrições opcionais, edite os preços no painel) ----------
 INSERT INTO produtos (nome, tipo, preco_base, disponivel) VALUES
 ('Catupiry', 'borda', 0, TRUE),
 ('Cheddar', 'borda', 0, TRUE),
-('Chocolate', 'borda', 0, TRUE),
-('Coca-Cola 2L', 'bebida', 0, TRUE),
-('Guaraná 2L', 'bebida', 0, TRUE);
+('Chocolate', 'borda', 0, TRUE);
+
+-- Confirma quantos sabores foram cadastrados
+SELECT categoria, COUNT(*) AS total_sabores FROM produtos WHERE tipo = 'sabor_pizza' GROUP BY categoria;
