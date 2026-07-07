@@ -66,7 +66,14 @@ const Pedido = {
 
     async incrementarImpressao(id) {
         await db.query('UPDATE pedidos SET vezes_impresso = vezes_impresso + 1 WHERE id = ?', [id]);
+    },
+
+    async excluir(id) {
+    await db.query('DELETE FROM pedidos WHERE id = ?', [id]);
     }
+    
+    
+
 };
 
 module.exports = Pedido;

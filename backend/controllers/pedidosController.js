@@ -214,3 +214,11 @@ exports.reimprimir = async (req, res) => {
         res.status(500).json({ erro: 'Erro ao reimprimir comanda.' });
     }
 };
+exports.excluirPedido = async (req, res) => {
+    try {
+        await Pedido.excluir(req.params.id);
+        res.json({ mensagem: 'Pedido excluído com sucesso.' });
+    } catch (err) {
+        res.status(500).json({ erro: 'Erro ao excluir pedido.' });
+    }
+};
