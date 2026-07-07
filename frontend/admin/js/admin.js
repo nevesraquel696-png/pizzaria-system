@@ -220,13 +220,14 @@ function renderizarPedidos(pedidos) {
             <p><strong>Total:</strong> R$ ${Number(p.total).toFixed(2)}</p>
 
             <div class="acoes-pedido">
+            <button onclick="excluirPedido(${p.id})" class="btn-excluir-pedido">🗑️ Excluir</button>
                 <label>Status:
                     <select onchange="mudarStatus(${p.id}, this.value)">
                         <option value="pendente" ${p.status === 'pendente' ? 'selected' : ''}>Pendente</option>
                         <option value="preparo" ${p.status === 'preparo' ? 'selected' : ''}>Em Preparo</option>
                         <option value="saiu_entrega" ${p.status === 'saiu_entrega' ? 'selected' : ''}>Saiu para Entrega</option>
                         <option value="entregue" ${p.status === 'entregue' ? 'selected' : ''}>Já foi Entregue</option>
-                        <button onclick="excluirPedido(${p.id})" class="btn-excluir-pedido">🗑️ Excluir</button>
+                        
                     </select>
                 </label>
             </div>
