@@ -4,7 +4,7 @@ let CARRINHO = []; // itens acumulados: { tipo_item, pizza_categoria, fatias, sa
 let SABOR_ATUAL = null; // sabor que abriu a ficha de produto no momento
 
 const NOMES_CATEGORIA = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
-const ICONES_CATEGORIA = { tradicional: '🍕', especial: '✨', doce: '🍫', promocao: '🔥' };
+const ICONES_CATEGORIA = { tradicional: 'pizza', especial: 'estrela', doce: 'gota', promocao: 'fogo' };
 
 document.addEventListener('DOMContentLoaded', async () => {
     await Promise.all([carregarProdutos(), carregarPrecos(), carregarStatusLoja()]);
@@ -71,13 +71,13 @@ function renderizarCardapio() {
 
         html += `
             <section class="secao-categoria" id="secao-${cat}">
-                <h2>${ICONES_CATEGORIA[cat]} ${NOMES_CATEGORIA[cat]}</h2>
+                <h2><span class="icone icone-titulo-secao">${ICONES[ICONES_CATEGORIA[cat]]}</span> ${NOMES_CATEGORIA[cat]}</h2>
                 <div class="trilho-cards">
                     ${FATIAS_OPCOES.map(fatias => {
                         const preco = obterPreco(cat, fatias);
                         return `
                             <button class="card-produto" data-categoria="${cat}" data-fatias="${fatias}">
-                                <div class="card-imagem">${ICONES_CATEGORIA[cat]}</div>
+                                <div class="card-imagem"><span class="icone">${ICONES[ICONES_CATEGORIA[cat]]}</span></div>
                                 <div class="card-nome">${fatias} fatias</div>
                                 ${preco !== null ? `<div class="card-preco">R$ ${preco.toFixed(2)}</div>` : ''}
                             </button>
@@ -91,14 +91,14 @@ function renderizarCardapio() {
     if (PRODUTOS.bebidas.length > 0) {
         html += `
             <section class="secao-categoria" id="secao-bebidas">
-                <h2>🥤 Bebidas</h2>
+                <h2><span class="icone icone-titulo-secao">${ICONES.bebida}</span> Bebidas</h2>
                 <div class="trilho-cards">
                     ${PRODUTOS.bebidas.map(b => `
                         <div class="card-produto card-bebida">
-                            <div class="card-imagem">🥤</div>
+                            <div class="card-imagem"><span class="icone">${ICONES.bebida}</span></div>
                             <div class="card-nome">${b.nome}</div>
                             <div class="card-preco">R$ ${Number(b.preco_base).toFixed(2)}</div>
-                            <button class="btn-add-rapido" data-bebida-id="${b.id}">+ Adicionar</button>
+                            <button class="btn-add-rapido" data-bebida-id="${b.id}"><span class="icone">${ICONES.mais}</span> Adicionar</button>
                         </div>
                     `).join('')}
                 </div>
@@ -120,7 +120,7 @@ function renderizarCardapio() {
 function abrirFichaProduto(categoria, fatias) {
     SABOR_ATUAL = { categoria, fatias };
 
-    document.getElementById('sheet-imagem').textContent = ICONES_CATEGORIA[categoria];
+    document.getElementById('sheet-imagem').innerHTML = ICONES[ICONES_CATEGORIA[categoria]];
     document.getElementById('sheet-titulo').textContent = `Pizza ${NOMES_CATEGORIA[categoria]} - ${fatias} fatias`;
     document.getElementById('qtd-valor').textContent = '1';
     atualizarPrecoSheet();

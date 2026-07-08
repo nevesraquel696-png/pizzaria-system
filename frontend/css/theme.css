@@ -17,7 +17,7 @@
     --cor-papel: #EFE3C3;
     --cor-texto: #2E2A26;
     --cor-branco: #FFFFFF;
-    --cor-marcador: #68afc4; /* azul de marca-texto, igual à etiqueta de preço do cardápio físico */
+    --cor-marcador: #BFE3EF; /* azul de marca-texto, igual à etiqueta de preço do cardápio físico */
 
     --fonte-display: 'Ultra', 'Georgia', serif;
     --fonte-corpo: 'Inter', 'Segoe UI', Arial, sans-serif;
@@ -38,6 +38,10 @@ body {
     color: var(--cor-texto);
     margin: 0;
 }
+
+/* Ícones SVG customizados (ver js/icones.js) - herda a cor do texto ao redor */
+.icone { display: inline-flex; width: 1em; height: 1em; vertical-align: -0.15em; }
+.icone svg { width: 100%; height: 100%; }
 
 .logo-topo {
     display: flex;

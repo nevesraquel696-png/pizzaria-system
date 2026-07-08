@@ -28,8 +28,12 @@
                 <img src="../imagens/logo.png" alt="Estação da Pizza">
                 <h2>Painel Administrativo</h2>
             </div>
-            <div>
-                <button id="btn-ativar-som" type="button">🔔 Ativar Som</button>
+            <div class="acoes-cabecalho">
+                <button id="btn-ativar-som" type="button"><span class="icone" data-icone="sino"></span> Ativar Som</button>
+                <label class="opcao-impressao-auto">
+                    <input type="checkbox" id="chk-impressao-automatica">
+                    <span class="icone" data-icone="impressora"></span> Impressão automática
+                </label>
                 <label>Abre: <input type="time" id="abertura" value="17:30"></label>
                 <label style="margin-left: 10px;">Fecha: <input type="time" id="fechamento" value="23:30"></label>
                 <button id="btn-salvar-horario">Salvar Horário</button>
@@ -38,10 +42,10 @@
         </header>
 
         <nav class="abas">
-            <button class="aba-btn ativa" data-aba="pedidos">📥 Pedidos</button>
-            <button class="aba-btn" data-aba="novo-pedido">➕ Criar Pedido</button>
-            <button class="aba-btn" data-aba="cardapio">🛠️ Cardápio</button>
-            <button class="aba-btn" data-aba="precos">💲 Preços</button>
+            <button class="aba-btn ativa" data-aba="pedidos"><span class="icone" data-icone="caixa"></span> Pedidos</button>
+            <button class="aba-btn" data-aba="novo-pedido"><span class="icone" data-icone="mais"></span> Criar Pedido</button>
+            <button class="aba-btn" data-aba="cardapio"><span class="icone" data-icone="ferramentas"></span> Cardápio</button>
+            <button class="aba-btn" data-aba="precos"><span class="icone" data-icone="cifrao"></span> Preços</button>
         </nav>
 
         <!-- ABA: Pedidos recebidos -->
@@ -184,6 +188,8 @@
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="../js/api.js"></script>
+    <script src="../js/icones.js"></script>
+    <script src="js/imprimir.js"></script>
     <script src="js/admin.js"></script>
 </body>
 </html>

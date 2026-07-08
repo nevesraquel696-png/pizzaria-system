@@ -2,19 +2,24 @@ body { padding-bottom: 70px; } /* espaço pra barra inferior fixa */
 
 /* ---------- Topo ---------- */
 .topo-loja {
-    background: var(--cor-verde-escuro);
-    padding: 14px 16px;
+    background: linear-gradient(135deg, var(--cor-verde-escuro), var(--cor-verde));
+    padding: 16px;
     display: flex; align-items: center; gap: 12px;
     position: sticky; top: 0; z-index: 30;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
 }
-.topo-loja img { width: 46px; height: 46px; object-fit: contain; }
-.topo-info h1 { color: #fff; font-size: 19px; margin: 0; font-family: var(--fonte-display); font-weight: 400; }
-.topo-info p { color: var(--cor-creme); font-size: 11px; margin: 2px 0 0; }
-.icone-busca { margin-left: auto; background: rgba(255,255,255,0.15); border: none; border-radius: 50%; width: 38px; height: 38px; font-size: 16px; }
+.topo-loja img { width: 46px; height: 46px; object-fit: contain; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); }
+.topo-info h1 { color: #fff; font-size: 20px; margin: 0; font-family: var(--fonte-display); font-weight: 400; letter-spacing: 0.3px; }
+.topo-info p { color: rgba(255,255,255,0.75); font-size: 11px; margin: 2px 0 0; }
+.icone-busca {
+    margin-left: auto; background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 50%; width: 38px; height: 38px; color: #fff; display: flex; align-items: center; justify-content: center;
+}
+.icone-busca .icone { width: 17px; height: 17px; }
 
 .faixa-status {
     background: var(--cor-texto); color: #fff; text-align: center;
-    padding: 8px; font-size: 13px; font-weight: 600;
+    padding: 9px; font-size: 13px; font-weight: 600; letter-spacing: 0.2px;
 }
 .faixa-status.aberta { background: var(--cor-verde); }
 
@@ -24,34 +29,46 @@ body { padding-bottom: 70px; } /* espaço pra barra inferior fixa */
 /* ---------- Chips de categoria ---------- */
 .chips-categoria {
     display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto;
-    background: #fff; border-bottom: 1px solid #eee; position: sticky; top: 74px; z-index: 20;
+    background: #fff; border-bottom: 1px solid #eee; position: sticky; top: 78px; z-index: 20;
 }
 .chip {
     background: var(--cor-creme); border: 1px solid #e2d4ae; border-radius: 20px;
     padding: 7px 16px; font-size: 13px; font-weight: 600; white-space: nowrap; flex-shrink: 0;
+    transition: background 0.15s ease, color 0.15s ease;
 }
 .chip.ativo { background: var(--cor-vermelho); border-color: var(--cor-vermelho); color: #fff; }
 
 /* ---------- Seções e cards ---------- */
-.secao-categoria { padding: 18px 16px 4px; }
-.secao-categoria h2 { font-family: var(--fonte-display); font-weight: 400; font-size: 19px; margin: 0 0 10px; color: var(--cor-texto); }
+.secao-categoria { padding: 20px 16px 4px; }
+.secao-categoria h2 {
+    font-family: var(--fonte-display); font-weight: 400; font-size: 19px; margin: 0 0 12px; color: var(--cor-texto);
+    display: flex; align-items: center; gap: 8px;
+}
+.icone-titulo-secao { width: 20px; height: 20px; color: var(--cor-vermelho); }
 
-.trilho-cards { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.trilho-cards { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; }
 .card-produto {
-    background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 10px;
-    width: 140px; flex-shrink: 0; text-align: left; box-shadow: var(--sombra-card);
+    background: #fff; border: 1px solid #f0ece0; border-radius: 14px; padding: 12px;
+    width: 140px; flex-shrink: 0; text-align: left;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
+.card-produto:active { transform: scale(0.97); }
 .card-imagem {
-    width: 100%; height: 80px; background: var(--cor-creme); border-radius: 8px;
-    display: flex; align-items: center; justify-content: center; font-size: 34px; margin-bottom: 8px;
+    width: 100%; height: 76px; background: linear-gradient(160deg, var(--cor-creme), #fff);
+    border-radius: 10px; border: 1px solid #f0ece0;
+    display: flex; align-items: center; justify-content: center; margin-bottom: 8px;
 }
+.card-imagem .icone { width: 32px; height: 32px; color: var(--cor-vermelho); }
 .card-nome { font-weight: 600; font-size: 13px; margin-bottom: 4px; line-height: 1.25; }
 .card-preco { font-size: 12px; color: var(--cor-verde-escuro); font-weight: 600; }
 .card-bebida { display: flex; flex-direction: column; }
 .btn-add-rapido {
     margin-top: 8px; background: var(--cor-vermelho); color: #fff; border: none;
-    border-radius: 6px; padding: 6px; font-size: 12px; font-weight: 600;
+    border-radius: 6px; padding: 7px; font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
 }
+.btn-add-rapido .icone { width: 12px; height: 12px; }
 
 .carregando, .erro { padding: 0 16px; color: #8a8272; font-style: italic; }
 .erro { color: var(--cor-vermelho); }
@@ -70,7 +87,8 @@ body { padding-bottom: 70px; } /* espaço pra barra inferior fixa */
     position: absolute; top: 14px; right: 16px; background: var(--cor-creme); border: none;
     width: 32px; height: 32px; border-radius: 50%; font-size: 18px; line-height: 1;
 }
-.sheet-imagem { font-size: 48px; text-align: center; margin-bottom: 6px; }
+.sheet-imagem { display: flex; justify-content: center; margin-bottom: 6px; }
+.sheet-imagem .icone { width: 44px; height: 44px; color: var(--cor-vermelho); }
 .sheet h2 { text-align: center; font-family: var(--fonte-display); font-weight: 400; margin: 0 0 16px; }
 .sheet label { display: block; font-weight: 600; font-size: 13px; margin: 14px 0 5px; }
 .sheet select, .sheet input, .sheet textarea {
@@ -124,7 +142,8 @@ body { padding-bottom: 70px; } /* espaço pra barra inferior fixa */
 }
 .nav-item {
     flex: 1; background: none; border: none; padding: 8px 0 6px; display: flex; flex-direction: column;
-    align-items: center; gap: 2px; font-size: 20px; color: #999;
+    align-items: center; gap: 3px; color: #999;
 }
-.nav-item span { font-size: 11px; font-weight: 600; }
+.nav-item .icone { width: 21px; height: 21px; }
+.nav-item span:last-child { font-size: 11px; font-weight: 600; }
 .nav-item.ativo { color: var(--cor-vermelho); }

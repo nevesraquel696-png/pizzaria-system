@@ -15,7 +15,7 @@
             <h1>Estação da Pizza</h1>
             <p>Desde 2008</p>
         </div>
-        <button class="icone-busca" id="btn-busca" aria-label="Buscar">🔍</button>
+        <button class="icone-busca" id="btn-busca" aria-label="Buscar"><span class="icone" data-icone="busca"></span></button>
     </header>
 
     <div class="faixa-status" id="faixa-status">Carregando horário...</div>
@@ -40,7 +40,7 @@
     <div class="sheet-fundo oculto" id="sheet-fundo-produto">
         <div class="sheet" id="sheet-produto">
             <button class="fechar-sheet" id="fechar-sheet-produto">×</button>
-            <div class="sheet-imagem" id="sheet-imagem">🍕</div>
+            <div class="sheet-imagem" id="sheet-imagem"></div>
             <h2 id="sheet-titulo">Pizza Tradicional - 8 fatias</h2>
             <p id="sheet-preco"></p>
 
@@ -78,9 +78,6 @@
 
             <label for="nome">Seu Nome:</label>
             <input type="text" id="nome" placeholder="Digite seu nome">
-
-            <label for="observacoes">Observações:</label>
-            <input type="text" id="observacoes" placeholder=" observações">
 
             <label for="tipo-entrega">Como deseja receber?</label>
             <select id="tipo-entrega" onchange="controlarCamposEntrega(this.value)">
@@ -121,13 +118,14 @@
 
     <!-- Navegação inferior -->
     <nav class="nav-inferior">
-        <button class="nav-item ativo" id="nav-inicio">🏠<span>Início</span></button>
-        <button class="nav-item" id="nav-carrinho">🧺<span>Carrinho</span></button>
+        <button class="nav-item ativo" id="nav-inicio"><span class="icone" data-icone="casa"></span><span>Início</span></button>
+        <button class="nav-item" id="nav-carrinho"><span class="icone" data-icone="carrinho"></span><span>Carrinho</span></button>
     </nav>
 
     <audio id="som-confirmacao" src="../sounds/sino.mp3" preload="auto"></audio>
 
     <script src="../js/api.js"></script>
+    <script src="../js/icones.js"></script>
     <script src="js/cliente.js"></script>
 </body>
 </html>

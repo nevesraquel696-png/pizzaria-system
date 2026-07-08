@@ -2,7 +2,18 @@ let socket = null;
 let PRODUTOS_ADMIN = { sabores: [], bordas: [], bebidas: [] };
 let PRECOS_ADMIN = [];
 
+// Preenche todo elemento <span class="icone" data-icone="NOME"> com o SVG
+// correspondente definido em icones.js. Usado pra ícones fixos no HTML;
+// conteúdo gerado dinamicamente (cards de pedido, etc) injeta o SVG direto.
+function aplicarIcones() {
+    document.querySelectorAll('[data-icone]').forEach(el => {
+        el.innerHTML = ICONES[el.dataset.icone] || '';
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    aplicarIcones();
+
     document.getElementById('btn-login').addEventListener('click', login);
     document.getElementById('btn-logout').addEventListener('click', logout);
     document.getElementById('btn-salvar-horario').addEventListener('click', salvarHorario);
@@ -45,7 +56,7 @@ function ativarSom() {
 
 function marcarBotaoSomAtivado() {
     const btn = document.getElementById('btn-ativar-som');
-    btn.textContent = '🔔 Som Ativado ✓';
+    btn.innerHTML = `<span class="icone">${ICONES.sino}</span> Som Ativado ✓`;
     btn.disabled = true;
 }
 
@@ -104,6 +115,7 @@ async function iniciarPainel() {
 
     conectarSocket();
     tentarAutoativarSom();
+    configurarImpressaoAutomatica();
 
     // Antes cada informação era buscada em sequência (uma esperando a outra
     // terminar). Como são chamadas independentes, agora buscamos tudo ao
@@ -139,11 +151,28 @@ function conectarSocket() {
 
     socket.on('novoPedido', (dadosDoPedido) => {
         document.getElementById('som-sino').play().catch(() => {});
-        mostrarToast(`🍕 Novo pedido de ${dadosDoPedido.cliente_nome} (${dadosDoPedido.tipo_entrega})`);
+        mostrarToast(`Novo pedido de ${dadosDoPedido.cliente_nome} (${dadosDoPedido.tipo_entrega})`);
         carregarPedidos();
+
+        // Impressão automática: busca o pedido completo (com itens) e manda pra
+        // impressora padrão do computador. Só acontece se a opção estiver ligada.
+        if (document.getElementById('chk-impressao-automatica').checked) {
+            apiFetch(`/pedidos/${dadosDoPedido.pedidoId}`)
+                .then(pedidoCompleto => imprimirComanda(pedidoCompleto))
+                .catch(err => console.error('Erro ao buscar pedido para impressão automática:', err.message));
+        }
     });
 
     socket.on('statusAtualizado', () => carregarPedidos());
+}
+
+// Lembra a preferência de impressão automática entre sessões
+function configurarImpressaoAutomatica() {
+    const chk = document.getElementById('chk-impressao-automatica');
+    chk.checked = localStorage.getItem('pizzaria_impressao_automatica') === 'true';
+    chk.addEventListener('change', () => {
+        localStorage.setItem('pizzaria_impressao_automatica', chk.checked);
+    });
 }
 
 // Aviso visual que desaparece sozinho, sem travar a tela como o alert() fazia
@@ -197,7 +226,10 @@ function descreverItem(item) {
     return `${item.quantidade}x ${item.tipo_item === 'bebida' ? 'Bebida' : 'Item'} (R$ ${Number(item.preco_unitario).toFixed(2)} cada)`;
 }
 
+let PEDIDOS_ATUAIS = [];
+
 function renderizarPedidos(pedidos) {
+    PEDIDOS_ATUAIS = pedidos;
     const container = document.getElementById('lista-pedidos');
     if (pedidos.length === 0) {
         container.innerHTML = '<p>Nenhum pedido ainda.</p>';
@@ -227,7 +259,8 @@ function renderizarPedidos(pedidos) {
                         <option value="entregue" ${p.status === 'entregue' ? 'selected' : ''}>Já foi Entregue</option>
                     </select>
                 </label>
-                <button onclick="excluirPedido(${p.id})" class="btn-excluir-pedido">🗑️ Excluir</button>
+                <button onclick="imprimirComandaPorId(${p.id})" class="btn-imprimir-pedido"><span class="icone">${ICONES.impressora}</span> Imprimir</button>
+                <button onclick="excluirPedido(${p.id})" class="btn-excluir-pedido"><span class="icone">${ICONES.lixeira}</span> Excluir</button>
             </div>
         </div>
     `).join('');
