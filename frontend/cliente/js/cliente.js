@@ -281,6 +281,7 @@ async function confirmarPedido() {
     const tipoEntrega = document.getElementById('tipo-entrega').value;
     const telefone = document.getElementById('telefone').value.trim();
     const endereco = document.getElementById('endereco').value.trim();
+    const observacoes = document.getElementById('observacoes').value.trim();
     const formaPagamento = document.getElementById('forma-pagamento').value;
     const troco = document.getElementById('troco').value;
 
@@ -295,6 +296,7 @@ async function confirmarPedido() {
         telefone: telefone || null,
         tipo_entrega: tipoEntrega,
         endereco: endereco || null,
+        observacoes: observacoes || null,
         forma_pagamento: formaPagamento,
         troco_para: formaPagamento === 'dinheiro' ? Number(troco || 0) : 0,
         itens: CARRINHO.map(item => {

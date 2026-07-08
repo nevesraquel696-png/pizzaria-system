@@ -3,15 +3,15 @@ const db = require('../config/db');
 const Pedido = {
     // Cria o pedido + seus itens dentro de uma transação
     // (se algum item falhar, o pedido inteiro é desfeito)
-    async criar({ cliente_nome, telefone, tipo_entrega, endereco, forma_pagamento, troco_para, total, itens }) {
+    async criar({ cliente_nome, telefone, tipo_entrega, endereco, observacoes, forma_pagamento, troco_para, total, itens }) {
         const connection = await db.getConnection();
         try {
             await connection.beginTransaction();
 
             const [resultPedido] = await connection.query(
-                `INSERT INTO pedidos (cliente_nome, telefone, tipo_entrega, endereco, forma_pagamento, troco_para, total)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [cliente_nome, telefone || null, tipo_entrega, endereco || null, forma_pagamento, troco_para || 0, total]
+                `INSERT INTO pedidos (cliente_nome, telefone, tipo_entrega, endereco, observacoes, forma_pagamento, troco_para, total)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [cliente_nome, telefone || null, tipo_entrega, endereco || null, observacoes || null, forma_pagamento, troco_para || 0, total]
             );
 
             const pedidoId = resultPedido.insertId;

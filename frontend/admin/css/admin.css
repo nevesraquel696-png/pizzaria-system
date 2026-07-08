@@ -29,6 +29,7 @@ header button { margin-left: 10px; padding: 6px 12px; border: none; border-radiu
 
 .itens-pedido-detalhe { background: var(--cor-creme); border-radius: 6px; padding: 10px 12px; margin: 10px 0; }
 .linha-item-pedido { margin: 4px 0; font-size: 14px; }
+.observacoes-pedido { background: #fff3cd; border-left: 4px solid #f0ad4e; padding: 8px 10px; border-radius: 4px; margin: 8px 0; }
 
 .toast-notificacao {
     position: fixed; top: 16px; right: 16px; z-index: 999;

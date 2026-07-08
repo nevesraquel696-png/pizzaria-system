@@ -210,6 +210,7 @@ function renderizarPedidos(pedidos) {
             <p><strong>Tipo:</strong> ${p.tipo_entrega} | <strong>Pagamento:</strong> ${p.forma_pagamento}
                ${p.troco_para > 0 ? ` (Troco para R$${Number(p.troco_para).toFixed(2)})` : ''}</p>
             ${p.tipo_entrega === 'entrega' ? `<p><strong>Endereço:</strong> ${p.endereco || '-'} | <strong>Tel:</strong> ${p.telefone || '-'}</p>` : ''}
+            ${p.observacoes ? `<p class="observacoes-pedido"><strong>Observações:</strong> ${p.observacoes}</p>` : ''}
 
             <div class="itens-pedido-detalhe">
                 ${(p.itens || []).map(item => `<p class="linha-item-pedido">${descreverItem(item)}</p>`).join('')}
