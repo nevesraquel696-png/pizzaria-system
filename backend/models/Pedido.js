@@ -45,7 +45,21 @@ const Pedido = {
 
     async listarTodos() {
         const [pedidos] = await db.query('SELECT * FROM pedidos ORDER BY criado_em DESC');
-        return pedidos;
+        if (pedidos.length === 0) return [];
+
+        // Busca os itens de TODOS os pedidos de uma vez (1 consulta extra no total,
+        // em vez de 1 consulta por pedido) e agrupa por pedido_id em memória.
+        // Importante pra não ficar lento quando a lista de pedidos crescer.
+        const ids = pedidos.map(p => p.id);
+        const [todosOsItens] = await db.query('SELECT * FROM itens_pedido WHERE pedido_id IN (?)', [ids]);
+
+        const itensPorPedido = new Map();
+        todosOsItens.forEach(item => {
+            if (!itensPorPedido.has(item.pedido_id)) itensPorPedido.set(item.pedido_id, []);
+            itensPorPedido.get(item.pedido_id).push(item);
+        });
+
+        return pedidos.map(p => ({ ...p, itens: itensPorPedido.get(p.id) || [] }));
     },
 
     async buscarPorId(id) {
@@ -69,11 +83,10 @@ const Pedido = {
     },
 
     async excluir(id) {
-    await db.query('DELETE FROM pedidos WHERE id = ?', [id]);
+        // O ON DELETE CASCADE na tabela itens_pedido já apaga os itens junto,
+        // não precisa de um DELETE separado pra eles.
+        await db.query('DELETE FROM pedidos WHERE id = ?', [id]);
     }
-    
-    
-
 };
 
 module.exports = Pedido;

@@ -14,6 +14,16 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => trocarAba(btn.dataset.aba));
     });
 
+    document.querySelectorAll('.chip-admin').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.chip-admin').forEach(c => c.classList.remove('ativo'));
+            chip.classList.add('ativo');
+            FILTRO_CARDAPIO_ATUAL = chip.dataset.filtro;
+            aplicarFiltroCardapio();
+        });
+    });
+    document.getElementById('busca-cardapio-admin').addEventListener('input', aplicarFiltroCardapio);
+
     if (getToken()) iniciarPainel();
 });
 
@@ -62,18 +72,6 @@ function trocarAba(aba) {
     document.querySelectorAll('.aba-btn').forEach(el => el.classList.remove('ativa'));
     document.getElementById(`aba-${aba}`).style.display = 'block';
     document.querySelector(`.aba-btn[data-aba="${aba}"]`).classList.add('ativa');
-}
-
-async function excluirPedido(id) {
-    const confirmou = confirm(`Tem certeza que quer excluir o pedido #${id}? Essa ação não pode ser desfeita.`);
-    if (!confirmou) return;
-
-    try {
-        await apiFetch(`/pedidos/${id}`, { method: 'DELETE' });
-        carregarPedidos(); // recarrega a lista sem esse pedido
-    } catch (err) {
-        alert('Erro ao excluir: ' + err.message);
-    }
 }
 
 // ---------- Login ----------
@@ -220,19 +218,30 @@ function renderizarPedidos(pedidos) {
             <p><strong>Total:</strong> R$ ${Number(p.total).toFixed(2)}</p>
 
             <div class="acoes-pedido">
-            <button onclick="excluirPedido(${p.id})" class="btn-excluir-pedido">🗑️ Excluir</button>
                 <label>Status:
                     <select onchange="mudarStatus(${p.id}, this.value)">
                         <option value="pendente" ${p.status === 'pendente' ? 'selected' : ''}>Pendente</option>
                         <option value="preparo" ${p.status === 'preparo' ? 'selected' : ''}>Em Preparo</option>
                         <option value="saiu_entrega" ${p.status === 'saiu_entrega' ? 'selected' : ''}>Saiu para Entrega</option>
                         <option value="entregue" ${p.status === 'entregue' ? 'selected' : ''}>Já foi Entregue</option>
-                        
                     </select>
                 </label>
+                <button onclick="excluirPedido(${p.id})" class="btn-excluir-pedido">🗑️ Excluir</button>
             </div>
         </div>
     `).join('');
+}
+
+async function excluirPedido(id) {
+    const confirmou = confirm(`Tem certeza que quer excluir o pedido #${id}? Essa ação não pode ser desfeita.`);
+    if (!confirmou) return;
+
+    try {
+        await apiFetch(`/pedidos/${id}`, { method: 'DELETE' });
+        carregarPedidos();
+    } catch (err) {
+        alert('Erro ao excluir: ' + err.message);
+    }
 }
 
 async function mudarStatus(id, status) {
@@ -377,17 +386,35 @@ function alternarCampoCategoria() {
     document.getElementById('campo-preco-produto').style.display = tipo === 'sabor_pizza' ? 'none' : 'block';
 }
 
+let CARDAPIO_ADMIN_TODOS = [];
+let FILTRO_CARDAPIO_ATUAL = 'tradicional';
+
 function renderizarCardapio(produtos) {
+    CARDAPIO_ADMIN_TODOS = produtos;
+    aplicarFiltroCardapio();
+}
+
+function aplicarFiltroCardapio() {
+    const termo = document.getElementById('busca-cardapio-admin').value.trim().toLowerCase();
+
+    const filtrados = CARDAPIO_ADMIN_TODOS.filter(p => {
+        const bateCategoria = ['tradicional', 'especial', 'doce', 'promocao'].includes(FILTRO_CARDAPIO_ATUAL)
+            ? p.tipo === 'sabor_pizza' && p.categoria === FILTRO_CARDAPIO_ATUAL
+            : p.tipo === FILTRO_CARDAPIO_ATUAL;
+        const bateBusca = !termo || p.nome.toLowerCase().includes(termo);
+        return bateCategoria && bateBusca;
+    });
+
     const lista = document.getElementById('lista-produtos-cardapio');
-    if (produtos.length === 0) {
-        lista.innerHTML = '<li>Nenhum produto cadastrado.</li>';
+    if (filtrados.length === 0) {
+        lista.innerHTML = '<li>Nenhum item nessa categoria ainda.</li>';
         return;
     }
 
-    lista.innerHTML = produtos.map(p => `
+    lista.innerHTML = filtrados.map(p => `
         <li class="item-cardapio">
             <div>
-                <span>${p.nome} (${p.tipo}${p.categoria ? ' - ' + p.categoria : ''})</span>
+                <span>${p.nome}</span>
                 ${p.descricao ? `<div class="descricao-produto">${p.descricao}</div>` : ''}
             </div>
             <div>

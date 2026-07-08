@@ -3,7 +3,6 @@ const router = express.Router();
 const pedidosController = require('../controllers/pedidosController');
 const autenticar = require('../middleware/autenticacao');
 
-
 // Público: cliente cria o pedido (sem bloqueio de horário)
 router.post('/', pedidosController.criarPedido);
 

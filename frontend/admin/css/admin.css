@@ -1,7 +1,6 @@
 .tela-login { display: flex; align-items: center; justify-content: center; height: 100vh; }
 .card-login { background: #fff; padding: 30px; border-radius: var(--raio-borda); box-shadow: var(--sombra-card); width: 320px; text-align: center; }
 .logo-login { width: 90px; height: 90px; object-fit: contain; margin-bottom: 10px; }
-.btn-excluir-pedido { background: var(--cor-vermelho); color: #fff; }
 .card-login h2 { color: var(--cor-verde-escuro); margin-top: 0; }
 .card-login input { width: 100%; padding: 8px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; }
 .card-login button { width: 100%; padding: 10px; }
@@ -26,6 +25,7 @@ header button { margin-left: 10px; padding: 6px 12px; border: none; border-radiu
 .card-pedido { border: 1px solid #ddd; background: #fff; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: var(--sombra-card); }
 .acoes-pedido { margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .acoes-pedido button { padding: 6px 10px; border: none; border-radius: 4px; background: var(--cor-verde-escuro); color: #fff; }
+.btn-excluir-pedido { background: var(--cor-vermelho) !important; }
 
 .itens-pedido-detalhe { background: var(--cor-creme); border-radius: 6px; padding: 10px 12px; margin: 10px 0; }
 .linha-item-pedido { margin: 4px 0; font-size: 14px; }
@@ -47,6 +47,14 @@ fieldset button { margin-top: 10px; padding: 8px 14px; border: none; border-radi
 #lista-produtos-cardapio { list-style: none; padding: 0; }
 .item-cardapio { display: flex; justify-content: space-between; align-items: center; background: var(--cor-creme); padding: 8px; margin-bottom: 8px; border-radius: 6px; }
 .descricao-produto { font-size: 12px; color: #6b6459; font-style: italic; margin-top: 2px; }
+
+.chips-categoria-admin { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+.chip-admin {
+    background: var(--cor-creme); border: 1px solid #e2d4ae; border-radius: 16px;
+    padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--cor-texto);
+}
+.chip-admin.ativo { background: var(--cor-verde-escuro); border-color: var(--cor-verde-escuro); color: #fff; }
+#busca-cardapio-admin { width: 100%; padding: 8px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 6px; }
 .btn-excluir { color: #fff; background: var(--cor-vermelho); border: none; border-radius: 4px; padding: 4px 8px; margin-left: 10px; }
 
 #form-pedido-admin label { display: block; margin: 10px 0 4px; font-weight: bold; }
