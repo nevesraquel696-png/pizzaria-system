@@ -26,10 +26,10 @@
         <header>
             <div class="logo-topo">
                 <img src="../imagens/logo.png" alt="Estação da Pizza">
-                <h2>Painel Administrativo</h2>
+                <h2>Estação da pizza</h2>
             </div>
             <div class="acoes-cabecalho">
-                <button id="btn-ativar-som" type="button"><span class="icone" data-icone="sino"></span> Ativar Som</button>
+                <button id="btn-ativar-som" type="button"><span class="icone" data-icone="sino"></span> Ativar Sino</button>
                 <label class="opcao-impressao-auto">
                     <input type="checkbox" id="chk-impressao-automatica">
                     <span class="icone" data-icone="impressora"></span> Impressão automática
@@ -50,14 +50,14 @@
 
         <!-- ABA: Pedidos recebidos -->
         <section id="aba-pedidos" class="aba-conteudo">
-            <h3>Pedidos Recebidos</h3>
+            <h3>Comandas</h3>
             <div id="lista-pedidos"><p>Carregando pedidos...</p></div>
         </section>
 
         <!-- ABA: Criar pedido manualmente -->
         <section id="aba-novo-pedido" class="aba-conteudo" style="display:none;">
-            <h3>Criar Pedido Manualmente</h3>
-            <p class="dica">Use esta tela para lançar pedidos feitos por telefone ou balcão. Não é bloqueado pelo horário de funcionamento.</p>
+            <h3>Criar Novo Pedido </h3>
+            <p class="dica">Use esta tela para lançar pedidos feitos por telefone ou balcão.</p>
 
             <form id="form-pedido-admin">
                 <label>Nome do Cliente: <input type="text" id="adm-nome" required></label>
@@ -126,7 +126,7 @@
             <div class="grid-2">
                 <div>
                     <fieldset>
-                        <legend><strong>Adicionar Novo Produto</strong></legend>
+                        <legend><strong> Novo Produto</strong></legend>
                         <label>Nome do Item: <input type="text" id="prod-nome" placeholder="Ex: Moda da Casa"></label>
                         <label>Tipo:
                             <select id="prod-tipo" onchange="alternarCampoCategoria()">
@@ -173,7 +173,7 @@
         <!-- ABA: Grade de preços por categoria/tamanho -->
         <section id="aba-precos" class="aba-conteudo" style="display:none;">
             <h3>Preços por Categoria e Tamanho</h3>
-            <p class="dica">Esses valores valem para todos os sabores da categoria, igual ao cardápio físico.</p>
+            <p class="dica">Esses valores valem para todos os sabores da categoria.</p>
             <table id="tabela-precos">
                 <thead>
                     <tr><th>Categoria</th><th>4 fatias</th><th>6 fatias</th><th>8 fatias</th><th>12 fatias</th><th>14 fatias</th></tr>
