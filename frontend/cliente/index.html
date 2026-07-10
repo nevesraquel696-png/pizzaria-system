@@ -72,6 +72,7 @@
             <h2>Seu Carrinho</h2>
 
             <div id="itens-carrinho"><p class="carregando">Carrinho vazio.</p></div>
+            <p class="linha-taxa-entrega oculto" id="linha-taxa-entrega">Taxa de entrega <span id="valor-taxa-entrega">R$ 0,00</span></p>
             <p class="linha-total">Total <span class="etiqueta-preco" id="carrinho-total">R$ 0,00</span></p>
 
             <hr>
@@ -93,11 +94,11 @@
                 <textarea id="endereco" placeholder="Rua, Número, Bairro e Ponto de Referência"></textarea>
             </div>
 
-            <label for="observacoes">Observações (opcional):</label>
-            <textarea id="observacoes" placeholder="Ex: Tirar cebola, capricha no queijo..."></textarea>
+            <label for="observacoes">Observações:</label>
+            <input type="text" id="observacoes" placeholder="Ex: sem cebola, campainha quebrada...">
 
             <label for="forma-pagamento">Forma de Pagamento</label>
-            <select id="forma-pagamento" onchange="controlarTroco(this.value)">
+            <select id="forma-pagamento" onchange="controlarTroco(this.value); controlarInfoPix(this.value)">
                 <option value="pix">Pix</option>
                 <option value="cartao">Cartão</option>
                 <option value="dinheiro">Dinheiro</option>
@@ -108,8 +109,30 @@
                 <input type="number" id="troco" step="0.01" placeholder="Ex: 50.00">
             </div>
 
+            <div id="info-pix" class="caixa-pix oculto">
+                <p><strong>Chave Pix:</strong> <span id="texto-chave-pix">-</span></p>
+                <button type="button" id="btn-copiar-pix" class="botao-secundario-pix"><span class="icone" data-icone="copiar"></span> Copiar Chave Pix</button>
+                <p class="aviso-pix">⚠️ Sua pizza só vai para produção depois de enviarmos o comprovante do Pix pelo WhatsApp da pizzaria.</p>
+            </div>
+
             <p id="aviso-carrinho" class="erro oculto"></p>
             <button id="btn-confirmar-pedido" class="botao-principal">Confirmar Pedido</button>
+        </div>
+    </div>
+
+    <!-- Confirmação pós-pedido (com botão de WhatsApp quando é Pix) -->
+    <div class="sheet-fundo oculto" id="sheet-fundo-sucesso">
+        <div class="sheet" id="sheet-sucesso">
+            <h2>Pedido Confirmado!</h2>
+            <p>Pedido <strong>#<span id="numero-pedido-sucesso"></span></strong></p>
+            <p id="texto-sucesso"></p>
+            <div id="bloco-whatsapp-pix" class="oculto">
+                <p class="aviso-pix">Envie o comprovante do Pix agora pra sua pizza entrar em produção:</p>
+                <a href="#" id="btn-enviar-whatsapp" target="_blank" class="botao-principal botao-whatsapp">
+                    <span class="icone" data-icone="whatsapp"></span> Enviar Comprovante no WhatsApp
+                </a>
+            </div>
+            <button id="btn-fechar-sucesso" class="botao-principal btn-secundario">Fechar</button>
         </div>
     </div>
 

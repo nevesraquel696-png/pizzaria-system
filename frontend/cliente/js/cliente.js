@@ -1,5 +1,7 @@
 let PRODUTOS = { sabores: [], bordas: [], bebidas: [] };
 let PRECOS_PIZZA = [];
+let CONFIG_LOJA = {};
+let IMAGENS_CATEGORIA = {}; // { tradicional: '/uploads/xxx.jpg', ... }
 let CARRINHO = []; // itens acumulados: { tipo_item, pizza_categoria, fatias, sabor_ids, borda_id, quantidade, _nome, _preco }
 let SABOR_ATUAL = null; // sabor que abriu a ficha de produto no momento
 
@@ -7,10 +9,39 @@ const NOMES_CATEGORIA = { tradicional: 'Tradicional', especial: 'Especial', doce
 const ICONES_CATEGORIA = { tradicional: 'pizza', especial: 'estrela', doce: 'gota', promocao: 'fogo' };
 
 document.addEventListener('DOMContentLoaded', async () => {
-    await Promise.all([carregarProdutos(), carregarPrecos(), carregarStatusLoja()]);
+    aplicarIcones();
+    await Promise.all([carregarProdutos(), carregarPrecos(), carregarStatusLoja(), carregarImagensCategoria()]);
     renderizarCardapio();
     configurarEventos();
 });
+
+// Preenche todo <span class="icone" data-icone="NOME"> com o SVG de icones.js
+function aplicarIcones() {
+    document.querySelectorAll('[data-icone]').forEach(el => {
+        el.innerHTML = ICONES[el.dataset.icone] || '';
+    });
+}
+
+async function carregarImagensCategoria() {
+    try {
+        const imagens = await apiFetch('/imagens-categoria');
+        imagens.forEach(img => {
+            if (img.imagem_url) IMAGENS_CATEGORIA[img.categoria] = img.imagem_url;
+        });
+    } catch (err) {
+        console.error('Erro ao carregar imagens de categoria:', err.message);
+    }
+}
+
+// Retorna o HTML pra mostrar no "quadrado" do card: a foto customizada do
+// admin, se existir, senão o ícone SVG padrão
+function iconeOuImagemCategoria(categoria) {
+    if (IMAGENS_CATEGORIA[categoria]) {
+        const urlCompleta = API_URL.replace('/api', '') + IMAGENS_CATEGORIA[categoria];
+        return `<img src="${urlCompleta}" alt="${NOMES_CATEGORIA[categoria]}" class="imagem-categoria-card">`;
+    }
+    return `<span class="icone">${ICONES[ICONES_CATEGORIA[categoria]]}</span>`;
+}
 
 async function carregarProdutos() {
     try {
@@ -36,6 +67,7 @@ async function carregarStatusLoja() {
     const faixa = document.getElementById('faixa-status');
     try {
         const config = await apiFetch('/config');
+        CONFIG_LOJA = config;
         const agora = new Date();
         const horaAtual = agora.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour12: false });
         const aberto = horaAtual >= config.horario_abertura && horaAtual <= config.horario_fechamento;
@@ -77,7 +109,7 @@ function renderizarCardapio() {
                         const preco = obterPreco(cat, fatias);
                         return `
                             <button class="card-produto" data-categoria="${cat}" data-fatias="${fatias}">
-                                <div class="card-imagem"><span class="icone">${ICONES[ICONES_CATEGORIA[cat]]}</span></div>
+                                <div class="card-imagem">${iconeOuImagemCategoria(cat)}</div>
                                 <div class="card-nome">${fatias} fatias</div>
                                 ${preco !== null ? `<div class="card-preco">R$ ${preco.toFixed(2)}</div>` : ''}
                             </button>
@@ -120,7 +152,7 @@ function renderizarCardapio() {
 function abrirFichaProduto(categoria, fatias) {
     SABOR_ATUAL = { categoria, fatias };
 
-    document.getElementById('sheet-imagem').innerHTML = ICONES[ICONES_CATEGORIA[categoria]];
+    document.getElementById('sheet-imagem').innerHTML = iconeOuImagemCategoria(categoria);
     document.getElementById('sheet-titulo').textContent = `Pizza ${NOMES_CATEGORIA[categoria]} - ${fatias} fatias`;
     document.getElementById('qtd-valor').textContent = '1';
     atualizarPrecoSheet();
@@ -220,8 +252,14 @@ function removerDoCarrinho(index) {
     renderizarCarrinho();
 }
 
+function calcularTaxaEntrega() {
+    const tipoEntrega = document.getElementById('tipo-entrega').value;
+    return tipoEntrega === 'entrega' ? Number(CONFIG_LOJA.taxa_entrega || 0) : 0;
+}
+
 function calcularTotalCarrinho() {
-    return CARRINHO.reduce((soma, item) => soma + item._preco * item.quantidade, 0);
+    const subtotal = CARRINHO.reduce((soma, item) => soma + item._preco * item.quantidade, 0);
+    return subtotal + calcularTaxaEntrega();
 }
 
 function atualizarBarraCarrinho() {
@@ -262,15 +300,37 @@ function renderizarCarrinho() {
             </div>
         `).join('');
     }
+
+    const taxa = calcularTaxaEntrega();
+    const linhaTaxa = document.getElementById('linha-taxa-entrega');
+    if (taxa > 0) {
+        linhaTaxa.classList.remove('oculto');
+        document.getElementById('valor-taxa-entrega').textContent = `R$ ${taxa.toFixed(2)}`;
+    } else {
+        linhaTaxa.classList.add('oculto');
+    }
+
     document.getElementById('carrinho-total').textContent = `R$ ${calcularTotalCarrinho().toFixed(2)}`;
 }
 
 function controlarCamposEntrega(valor) {
     document.getElementById('campos-entrega').classList.toggle('oculto', valor !== 'entrega');
+    renderizarCarrinho(); // a taxa de entrega muda o total, precisa recalcular na hora
 }
 
 function controlarTroco(valor) {
     document.getElementById('campo-troco').classList.toggle('oculto', valor !== 'dinheiro');
+}
+
+// Mostra a chave Pix + aviso quando o cliente escolhe pagar por Pix
+function controlarInfoPix(valor) {
+    const caixa = document.getElementById('info-pix');
+    if (valor === 'pix') {
+        document.getElementById('texto-chave-pix').textContent = CONFIG_LOJA.chave_pix || 'Chave não configurada - fale com a pizzaria';
+        caixa.classList.remove('oculto');
+    } else {
+        caixa.classList.add('oculto');
+    }
 }
 
 async function confirmarPedido() {
@@ -317,11 +377,46 @@ async function confirmarPedido() {
     try {
         const resultado = await apiFetch('/pedidos', { method: 'POST', body: JSON.stringify(payload) });
         document.getElementById('som-confirmacao').play().catch(() => {});
-        alert(`Pedido #${resultado.pedidoId} confirmado! Total: R$ ${Number(resultado.total).toFixed(2)}. Obrigado, ${nome}!`);
-        window.location.reload();
+        mostrarTelaSucesso(resultado, formaPagamento, nome);
     } catch (err) {
         mostrarAvisoCarrinho(err.message);
     }
+}
+
+function mostrarTelaSucesso(resultado, formaPagamento, nome) {
+    fecharCarrinho();
+
+    document.getElementById('numero-pedido-sucesso').textContent = String(resultado.pedidoId).padStart(4, '0');
+    document.getElementById('texto-sucesso').textContent =
+        `Obrigado, ${nome}! Total: R$ ${Number(resultado.total).toFixed(2)}.`;
+
+    const blocoWhatsapp = document.getElementById('bloco-whatsapp-pix');
+    if (formaPagamento === 'pix' && CONFIG_LOJA.whatsapp_numero) {
+        const mensagem = encodeURIComponent(
+            `Olá! Segue o comprovante do Pix do meu pedido #${String(resultado.pedidoId).padStart(4, '0')} na Estação da Pizza.`
+        );
+        document.getElementById('btn-enviar-whatsapp').href =
+            `https://wa.me/55${CONFIG_LOJA.whatsapp_numero.replace(/\D/g, '')}?text=${mensagem}`;
+        blocoWhatsapp.classList.remove('oculto');
+    } else {
+        blocoWhatsapp.classList.add('oculto');
+    }
+
+    document.getElementById('sheet-fundo-sucesso').classList.remove('oculto');
+}
+
+function copiarChavePix() {
+    const chave = CONFIG_LOJA.chave_pix;
+    if (!chave) return alert('Chave Pix não configurada ainda. Fale com a pizzaria.');
+
+    navigator.clipboard.writeText(chave).then(() => {
+        const btn = document.getElementById('btn-copiar-pix');
+        const textoOriginal = btn.innerHTML;
+        btn.textContent = 'Chave copiada!';
+        setTimeout(() => { btn.innerHTML = textoOriginal; }, 2000);
+    }).catch(() => {
+        alert(`Não foi possível copiar automaticamente. Chave Pix: ${chave}`);
+    });
 }
 
 function mostrarAvisoCarrinho(msg) {
@@ -348,6 +443,9 @@ function configurarEventos() {
     document.getElementById('barra-carrinho').addEventListener('click', abrirCarrinho);
     document.getElementById('fechar-sheet-carrinho').addEventListener('click', fecharCarrinho);
     document.getElementById('btn-confirmar-pedido').addEventListener('click', confirmarPedido);
+
+    document.getElementById('btn-copiar-pix').addEventListener('click', copiarChavePix);
+    document.getElementById('btn-fechar-sucesso').addEventListener('click', () => window.location.reload());
 
     document.getElementById('nav-inicio').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 

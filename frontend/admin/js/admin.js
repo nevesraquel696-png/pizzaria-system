@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-login').addEventListener('click', login);
     document.getElementById('btn-logout').addEventListener('click', logout);
-    document.getElementById('btn-salvar-horario').addEventListener('click', salvarHorario);
+    document.getElementById('btn-salvar-config').addEventListener('click', salvarConfiguracoes);
     document.getElementById('btn-salvar-precos').addEventListener('click', salvarPrecos);
     document.getElementById('btn-lancar-pedido').addEventListener('click', lancarPedidoAdmin);
     document.getElementById('btn-ativar-som').addEventListener('click', ativarSom);
@@ -124,7 +124,8 @@ async function iniciarPainel() {
     await Promise.all([
         tentarCarregar(carregarProdutosAdmin, 'produtos'),
         tentarCarregar(carregarPrecosAdmin, 'preços'),
-        tentarCarregar(carregarHorario, 'horário'),
+        tentarCarregar(carregarConfiguracoes, 'configurações'),
+        tentarCarregar(carregarImagensCategoria, 'imagens'),
         tentarCarregar(carregarPedidos, 'pedidos'),
         tentarCarregar(async () => {
             renderizarCardapio(await apiFetch('/produtos'));
@@ -188,20 +189,88 @@ function mostrarToast(mensagem) {
 }
 
 // ---------- Horário ----------
-async function carregarHorario() {
+async function carregarConfiguracoes() {
     const config = await apiFetch('/config');
     document.getElementById('abertura').value = config.horario_abertura?.slice(0, 5);
     document.getElementById('fechamento').value = config.horario_fechamento?.slice(0, 5);
+    document.getElementById('config-taxa-entrega').value = Number(config.taxa_entrega || 0).toFixed(2);
+    document.getElementById('config-chave-pix').value = config.chave_pix || '';
+    document.getElementById('config-whatsapp').value = config.whatsapp_numero || '';
 }
 
-async function salvarHorario() {
+async function salvarConfiguracoes() {
     const horario_abertura = document.getElementById('abertura').value + ':00';
     const horario_fechamento = document.getElementById('fechamento').value + ':00';
+    const taxa_entrega = Number(document.getElementById('config-taxa-entrega').value || 0);
+    const chave_pix = document.getElementById('config-chave-pix').value.trim();
+    const whatsapp_numero = document.getElementById('config-whatsapp').value.trim();
+
     try {
-        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ horario_abertura, horario_fechamento }) });
-        mostrarToast('Horário atualizado com sucesso!');
+        await apiFetch('/config', {
+            method: 'PUT',
+            body: JSON.stringify({ horario_abertura, horario_fechamento, taxa_entrega, chave_pix, whatsapp_numero })
+        });
+        mostrarToast('Configurações atualizadas com sucesso!');
     } catch (err) {
-        alert('Erro ao salvar horário: ' + err.message);
+        alert('Erro ao salvar configurações: ' + err.message);
+    }
+}
+
+// ---------- Imagens por categoria (substituem o ícone padrão no cliente) ----------
+const NOMES_CATEGORIA_ADMIN = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
+
+async function carregarImagensCategoria() {
+    const imagens = await apiFetch('/imagens-categoria');
+    renderizarImagensCategoria(imagens);
+}
+
+function renderizarImagensCategoria(imagens) {
+    const container = document.getElementById('lista-imagens-categoria');
+    container.innerHTML = imagens.map(img => `
+        <div class="card-imagem-categoria">
+            <strong>${NOMES_CATEGORIA_ADMIN[img.categoria]}</strong>
+            <div class="preview-imagem-categoria">
+                ${img.imagem_url
+                    ? `<img src="${API_URL.replace('/api', '')}${img.imagem_url}" alt="${img.categoria}">`
+                    : `<span class="icone">${ICONES.pizza}</span>`}
+            </div>
+            <input type="file" accept="image/*" id="arquivo-${img.categoria}">
+            <div class="acoes-imagem-categoria">
+                <button onclick="enviarImagemCategoria('${img.categoria}')">Enviar</button>
+                ${img.imagem_url ? `<button onclick="removerImagemCategoria('${img.categoria}')" class="btn-secundario-admin">Remover</button>` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+async function enviarImagemCategoria(categoria) {
+    const input = document.getElementById(`arquivo-${categoria}`);
+    if (!input.files[0]) return alert('Escolha um arquivo primeiro.');
+
+    const formData = new FormData();
+    formData.append('imagem', input.files[0]);
+
+    try {
+        const resp = await fetch(`${API_URL}/imagens-categoria/${categoria}`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${getToken()}` },
+            body: formData
+        });
+        if (!resp.ok) throw new Error((await resp.json()).erro || 'Erro ao enviar imagem.');
+        mostrarToast('Imagem atualizada!');
+        carregarImagensCategoria();
+    } catch (err) {
+        alert('Erro ao enviar imagem: ' + err.message);
+    }
+}
+
+async function removerImagemCategoria(categoria) {
+    if (!confirm('Remover essa imagem e voltar ao ícone padrão?')) return;
+    try {
+        await apiFetch(`/imagens-categoria/${categoria}`, { method: 'DELETE' });
+        carregarImagensCategoria();
+    } catch (err) {
+        alert('Erro ao remover imagem: ' + err.message);
     }
 }
 
@@ -248,7 +317,7 @@ function renderizarPedidos(pedidos) {
                 ${(p.itens || []).map(item => `<p class="linha-item-pedido">${descreverItem(item)}</p>`).join('')}
             </div>
 
-            <p><strong>Total:</strong> R$ ${Number(p.total).toFixed(2)}</p>
+            <p><strong>Total:</strong> R$ ${Number(p.total).toFixed(2)}${p.taxa_entrega > 0 ? ` <small>(inclui taxa de entrega R$ ${Number(p.taxa_entrega).toFixed(2)})</small>` : ''}</p>
 
             <div class="acoes-pedido">
                 <label>Status:

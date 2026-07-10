@@ -22,7 +22,10 @@ DROP TABLE IF EXISTS configuracoes;
 CREATE TABLE configuracoes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     horario_abertura TIME NOT NULL DEFAULT '17:30:00',
-    horario_fechamento TIME NOT NULL DEFAULT '23:30:00'
+    horario_fechamento TIME NOT NULL DEFAULT '23:30:00',
+    taxa_entrega DECIMAL(10,2) DEFAULT 0.00,
+    chave_pix VARCHAR(255) DEFAULT NULL,
+    whatsapp_numero VARCHAR(20) DEFAULT NULL
 );
 INSERT INTO configuracoes (horario_abertura, horario_fechamento) VALUES ('17:30:00', '23:30:00');
 
@@ -34,6 +37,15 @@ CREATE TABLE usuarios (
     nivel ENUM('admin','cozinha') DEFAULT 'admin',
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Imagem customizada por categoria (aparece no lugar do ícone genérico
+-- nos cards de tamanho do cliente, se o admin fizer upload de uma)
+CREATE TABLE imagens_categoria (
+    categoria ENUM('tradicional','especial','doce','promocao') PRIMARY KEY,
+    imagem_url VARCHAR(255) DEFAULT NULL
+);
+INSERT INTO imagens_categoria (categoria, imagem_url) VALUES
+('tradicional', NULL), ('especial', NULL), ('doce', NULL), ('promocao', NULL);
 
 -- Tabela de preços: uma linha por combinação categoria + tamanho.
 -- Edite os valores pelo painel admin (ou direto aqui) com os preços reais.
@@ -70,8 +82,10 @@ CREATE TABLE pedidos (
     telefone VARCHAR(20),
     tipo_entrega ENUM('local','retirada','entrega') NOT NULL,
     endereco TEXT,
+    observacoes TEXT DEFAULT NULL,
     forma_pagamento ENUM('pix','cartao','dinheiro') NOT NULL,
     troco_para DECIMAL(10,2) DEFAULT 0.00,
+    taxa_entrega DECIMAL(10,2) DEFAULT 0.00,
     status ENUM('pendente','preparo','saiu_entrega','entregue') DEFAULT 'pendente',
     total DECIMAL(10,2) NOT NULL,
     vezes_impresso INT DEFAULT 1,

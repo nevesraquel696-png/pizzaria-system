@@ -1,5 +1,6 @@
 const Pedido = require('../models/Pedido');
 const Produto = require('../models/Produto');
+const Configuracao = require('../models/Configuracao');
 const { PrecoPizza, CATEGORIAS_VALIDAS, FATIAS_VALIDAS } = require('../models/PrecoPizza');
 
 // Validação estrutural básica do corpo do pedido (antes de calcular preços)
@@ -123,6 +124,38 @@ async function processarItens(itensRecebidos) {
     return { erros, itensProcessados };
 }
 
+// Lógica compartilhada entre o pedido do cliente e o pedido criado pelo admin
+async function processarECriarPedido(req, mensagemSucesso) {
+    const { erros, itensProcessados } = await processarItens(req.body.itens);
+    if (erros.length > 0) {
+        return { status: 400, corpo: { erro: 'Itens do pedido inválidos', detalhes: erros } };
+    }
+
+    const subtotal = itensProcessados.reduce((soma, item) => soma + item.preco_unitario * item.quantidade, 0);
+
+    // Taxa de entrega: só se aplica quando o pedido é do tipo "entrega",
+    // e o valor vem do que o admin configurou (nunca confiar em valor do cliente)
+    let taxaEntrega = 0;
+    if (req.body.tipo_entrega === 'entrega') {
+        const config = await Configuracao.obter();
+        taxaEntrega = Number(config.taxa_entrega || 0);
+    }
+
+    const total = subtotal + taxaEntrega;
+
+    const pedidoId = await Pedido.criar({ ...req.body, total, taxa_entrega: taxaEntrega, itens: itensProcessados });
+
+    const io = req.app.get('io');
+    io.emit('novoPedido', {
+        pedidoId,
+        cliente_nome: req.body.cliente_nome,
+        tipo_entrega: req.body.tipo_entrega,
+        total
+    });
+
+    return { status: 201, corpo: { mensagem: mensagemSucesso, pedidoId, total, taxa_entrega: taxaEntrega } };
+}
+
 exports.criarPedido = async (req, res) => {
     const errosEstrutura = validarEstrutura(req.body);
     if (errosEstrutura.length > 0) {
@@ -130,25 +163,8 @@ exports.criarPedido = async (req, res) => {
     }
 
     try {
-        const { erros, itensProcessados } = await processarItens(req.body.itens);
-        if (erros.length > 0) {
-            return res.status(400).json({ erro: 'Itens do pedido inválidos', detalhes: erros });
-        }
-
-        const total = itensProcessados.reduce((soma, item) => soma + item.preco_unitario * item.quantidade, 0);
-
-        const pedidoId = await Pedido.criar({ ...req.body, total, itens: itensProcessados });
-
-        // Avisa em tempo real o painel do admin e da cozinha
-        const io = req.app.get('io');
-        io.emit('novoPedido', {
-            pedidoId,
-            cliente_nome: req.body.cliente_nome,
-            tipo_entrega: req.body.tipo_entrega,
-            total
-        });
-
-        res.status(201).json({ mensagem: 'Pedido realizado com sucesso!', pedidoId, total });
+        const { status, corpo } = await processarECriarPedido(req, 'Pedido realizado com sucesso!');
+        res.status(status).json(corpo);
     } catch (err) {
         console.error('Erro ao criar pedido:', err.message);
         res.status(500).json({ erro: 'Erro ao salvar o pedido.' });
@@ -166,24 +182,8 @@ exports.criarPedidoAdmin = async (req, res) => {
     }
 
     try {
-        const { erros, itensProcessados } = await processarItens(req.body.itens);
-        if (erros.length > 0) {
-            return res.status(400).json({ erro: 'Itens do pedido inválidos', detalhes: erros });
-        }
-
-        const total = itensProcessados.reduce((soma, item) => soma + item.preco_unitario * item.quantidade, 0);
-
-        const pedidoId = await Pedido.criar({ ...req.body, total, itens: itensProcessados });
-
-        const io = req.app.get('io');
-        io.emit('novoPedido', {
-            pedidoId,
-            cliente_nome: req.body.cliente_nome,
-            tipo_entrega: req.body.tipo_entrega,
-            total
-        });
-
-        res.status(201).json({ mensagem: 'Pedido criado com sucesso pelo painel!', pedidoId, total });
+        const { status, corpo } = await processarECriarPedido(req, 'Pedido criado com sucesso pelo painel!');
+        res.status(status).json(corpo);
     } catch (err) {
         console.error('Erro ao criar pedido (admin):', err.message);
         res.status(500).json({ erro: 'Erro ao salvar o pedido.' });

@@ -44,7 +44,10 @@ function construirViaComanda(pedido) {
             <hr>
             ${pedido.observacoes ? `<div><strong>Observações:</strong> ${pedido.observacoes}</div><hr>` : ''}
             <div><strong>Pagamento:</strong> ${pedido.forma_pagamento}${pedido.troco_para > 0 ? ` (troco p/ R$ ${Number(pedido.troco_para).toFixed(2)})` : ''}</div>
+            ${pedido.taxa_entrega > 0 ? `<div><strong>Taxa de entrega:</strong> R$ ${Number(pedido.taxa_entrega).toFixed(2)}</div>` : ''}
             <div class="comanda-total"><strong>TOTAL: R$ ${Number(pedido.total).toFixed(2)}</strong></div>
+            <hr>
+            <div style="text-align:center;">Obrigado pela preferência!</div>
         </div>
     `;
 }

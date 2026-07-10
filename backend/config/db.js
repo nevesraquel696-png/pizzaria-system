@@ -11,7 +11,9 @@ const configuracaoPool = {
     port: process.env.DB_PORT || 3306,
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    enableKeepAlive: true,       // evita reconectar do zero a cada requisição
+    keepAliveInitialDelay: 10000 // manda um "sinal de vida" a cada 10s na conexão
 };
 
 // Bancos gratuitos hospedados (ex: TiDB Cloud) normalmente exigem SSL.

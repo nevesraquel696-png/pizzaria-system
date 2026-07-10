@@ -60,6 +60,7 @@ body { padding-bottom: 70px; } /* espaço pra barra inferior fixa */
     display: flex; align-items: center; justify-content: center; margin-bottom: 8px;
 }
 .card-imagem .icone { width: 32px; height: 32px; color: var(--cor-vermelho); }
+.imagem-categoria-card { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
 .card-nome { font-weight: 600; font-size: 13px; margin-bottom: 4px; line-height: 1.25; }
 .card-preco { font-size: 12px; color: var(--cor-verde-escuro); font-weight: 600; }
 .card-bebida { display: flex; flex-direction: column; }
@@ -89,6 +90,7 @@ body { padding-bottom: 70px; } /* espaço pra barra inferior fixa */
 }
 .sheet-imagem { display: flex; justify-content: center; margin-bottom: 6px; }
 .sheet-imagem .icone { width: 44px; height: 44px; color: var(--cor-vermelho); }
+.sheet-imagem .imagem-categoria-card { width: 100%; max-width: 260px; height: 120px; border-radius: 12px; }
 .sheet h2 { text-align: center; font-family: var(--fonte-display); font-weight: 400; margin: 0 0 16px; }
 .sheet label { display: block; font-weight: 600; font-size: 13px; margin: 14px 0 5px; }
 .sheet select, .sheet input, .sheet textarea {
@@ -125,6 +127,24 @@ body { padding-bottom: 70px; } /* espaço pra barra inferior fixa */
 .preco-item { font-size: 13px; color: var(--cor-verde-escuro); font-weight: 600; margin-top: 2px; }
 .btn-remover { background: none; border: none; color: var(--cor-vermelho); font-size: 12px; font-weight: 600; text-decoration: underline; flex-shrink: 0; }
 .linha-total { display: flex; align-items: center; gap: 10px; font-weight: 700; margin-top: 10px; }
+.linha-taxa-entrega { display: flex; justify-content: space-between; font-size: 13px; color: #6b6459; margin: 6px 0; }
+
+.caixa-pix { background: #eaf5ee; border: 1px solid var(--cor-verde); border-radius: 10px; padding: 12px; margin-top: 10px; }
+.botao-secundario-pix {
+    display: inline-flex; align-items: center; gap: 6px; background: var(--cor-verde); color: #fff; border: none;
+    padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 13px; margin: 6px 0;
+}
+.botao-secundario-pix .icone { width: 14px; height: 14px; }
+.aviso-pix { font-size: 12.5px; color: #7a5b00; background: #fff3cd; border-radius: 6px; padding: 8px 10px; margin: 6px 0 0; }
+
+#sheet-sucesso { text-align: center; }
+#sheet-sucesso h2 { font-family: var(--fonte-display); font-weight: 400; color: var(--cor-verde-escuro); }
+.botao-whatsapp {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: #25D366; text-decoration: none;
+}
+.botao-whatsapp:hover { background: #1eb958; }
+.botao-whatsapp .icone { width: 18px; height: 18px; }
 .oculto { display: none !important; }
 
 /* ---------- Barra flutuante do carrinho ---------- */

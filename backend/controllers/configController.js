@@ -10,15 +10,10 @@ exports.obter = async (req, res) => {
 };
 
 exports.atualizar = async (req, res) => {
-    const { horario_abertura, horario_fechamento } = req.body;
-    if (!horario_abertura || !horario_fechamento) {
-        return res.status(400).json({ erro: 'Informe abertura e fechamento.' });
-    }
-
     try {
-        await Configuracao.atualizar({ horario_abertura, horario_fechamento });
-        res.json({ mensagem: 'Horário atualizado com sucesso.' });
+        await Configuracao.atualizar(req.body);
+        res.json({ mensagem: 'Configurações atualizadas com sucesso.' });
     } catch (err) {
-        res.status(500).json({ erro: 'Erro ao atualizar horário.' });
+        res.status(500).json({ erro: 'Erro ao atualizar configurações.' });
     }
 };

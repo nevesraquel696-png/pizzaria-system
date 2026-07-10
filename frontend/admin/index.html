@@ -26,17 +26,14 @@
         <header>
             <div class="logo-topo">
                 <img src="../imagens/logo.png" alt="Estação da Pizza">
-                <h2>Estação da pizza</h2>
+                <h2>Painel Administrativo</h2>
             </div>
             <div class="acoes-cabecalho">
-                <button id="btn-ativar-som" type="button"><span class="icone" data-icone="sino"></span> Ativar Sino</button>
+                <button id="btn-ativar-som" type="button"><span class="icone" data-icone="sino"></span> Ativar Som</button>
                 <label class="opcao-impressao-auto">
                     <input type="checkbox" id="chk-impressao-automatica">
                     <span class="icone" data-icone="impressora"></span> Impressão automática
                 </label>
-                <label>Abre: <input type="time" id="abertura" value="17:30"></label>
-                <label style="margin-left: 10px;">Fecha: <input type="time" id="fechamento" value="23:30"></label>
-                <button id="btn-salvar-horario">Salvar Horário</button>
                 <button id="btn-logout">Sair</button>
             </div>
         </header>
@@ -46,18 +43,19 @@
             <button class="aba-btn" data-aba="novo-pedido"><span class="icone" data-icone="mais"></span> Criar Pedido</button>
             <button class="aba-btn" data-aba="cardapio"><span class="icone" data-icone="ferramentas"></span> Cardápio</button>
             <button class="aba-btn" data-aba="precos"><span class="icone" data-icone="cifrao"></span> Preços</button>
+            <button class="aba-btn" data-aba="config"><span class="icone" data-icone="engrenagem"></span> Configurações</button>
         </nav>
 
         <!-- ABA: Pedidos recebidos -->
         <section id="aba-pedidos" class="aba-conteudo">
-            <h3>Comandas</h3>
+            <h3>Pedidos Recebidos</h3>
             <div id="lista-pedidos"><p>Carregando pedidos...</p></div>
         </section>
 
         <!-- ABA: Criar pedido manualmente -->
         <section id="aba-novo-pedido" class="aba-conteudo" style="display:none;">
-            <h3>Criar Novo Pedido </h3>
-            <p class="dica">Use esta tela para lançar pedidos feitos por telefone ou balcão.</p>
+            <h3>Criar Pedido Manualmente</h3>
+            <p class="dica">Use esta tela para lançar pedidos feitos por telefone ou balcão. Não é bloqueado pelo horário de funcionamento.</p>
 
             <form id="form-pedido-admin">
                 <label>Nome do Cliente: <input type="text" id="adm-nome" required></label>
@@ -126,7 +124,7 @@
             <div class="grid-2">
                 <div>
                     <fieldset>
-                        <legend><strong> Novo Produto</strong></legend>
+                        <legend><strong>Adicionar Novo Produto</strong></legend>
                         <label>Nome do Item: <input type="text" id="prod-nome" placeholder="Ex: Moda da Casa"></label>
                         <label>Tipo:
                             <select id="prod-tipo" onchange="alternarCampoCategoria()">
@@ -173,7 +171,7 @@
         <!-- ABA: Grade de preços por categoria/tamanho -->
         <section id="aba-precos" class="aba-conteudo" style="display:none;">
             <h3>Preços por Categoria e Tamanho</h3>
-            <p class="dica">Esses valores valem para todos os sabores da categoria.</p>
+            <p class="dica">Esses valores valem para todos os sabores da categoria, igual ao cardápio físico.</p>
             <table id="tabela-precos">
                 <thead>
                     <tr><th>Categoria</th><th>4 fatias</th><th>6 fatias</th><th>8 fatias</th><th>12 fatias</th><th>14 fatias</th></tr>
@@ -181,6 +179,35 @@
                 <tbody id="corpo-tabela-precos"></tbody>
             </table>
             <button id="btn-salvar-precos">Salvar Preços</button>
+        </section>
+
+        <!-- ABA: Configurações gerais -->
+        <section id="aba-config" class="aba-conteudo" style="display:none;">
+            <h3>Horário de Funcionamento</h3>
+            <div class="linha-config">
+                <label>Abre: <input type="time" id="abertura" value="17:30"></label>
+                <label>Fecha: <input type="time" id="fechamento" value="23:30"></label>
+            </div>
+
+            <h3>Taxa de Entrega</h3>
+            <p class="dica">Somada automaticamente ao total quando o cliente escolhe "Entrega".</p>
+            <label>Valor (R$): <input type="number" id="config-taxa-entrega" step="0.01" placeholder="0.00"></label>
+
+            <h3>Pix</h3>
+            <p class="dica">Aparece pro cliente quando ele escolhe pagar por Pix.</p>
+            <label>Chave Pix: <input type="text" id="config-chave-pix" placeholder="Ex: 83999999999 ou email@pizzaria.com"></label>
+
+            <h3>WhatsApp da Pizzaria</h3>
+            <p class="dica">Usado no botão de enviar comprovante de pagamento.</p>
+            <label>Número (com DDD, só números): <input type="text" id="config-whatsapp" placeholder="Ex: 83999999999"></label>
+
+            <button id="btn-salvar-config">Salvar Configurações</button>
+
+            <hr class="separador-config">
+
+            <h3>Imagens dos Tamanhos de Pizza</h3>
+            <p class="dica">Substitui o ícone padrão pelos cards de tamanho no site do cliente, por categoria. Deixe em branco pra usar o ícone padrão.</p>
+            <div id="lista-imagens-categoria" class="grid-2"></div>
         </section>
     </div>
 
