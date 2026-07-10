@@ -278,6 +278,7 @@ function atualizarBarraCarrinho() {
 // ---------- Carrinho / checkout ----------
 function abrirCarrinho() {
     renderizarCarrinho();
+    controlarInfoPix(document.getElementById('forma-pagamento').value);
     document.getElementById('sheet-fundo-carrinho').classList.remove('oculto');
 }
 
