@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const pedidosController = require('../controllers/pedidosController');
 const autenticar = require('../middleware/autenticacao');
+const verificarHorarioFuncionamento = require('../middleware/horarioFuncionamento');
 
-// Público: cliente cria o pedido (sem bloqueio de horário)
-router.post('/', pedidosController.criarPedido);
+// Público: cliente cria o pedido (bloqueado fora do horário de funcionamento)
+router.post('/', verificarHorarioFuncionamento, pedidosController.criarPedido);
 
 // Admin: cria pedido manualmente pelo painel
 router.post('/admin', autenticar, pedidosController.criarPedidoAdmin);
