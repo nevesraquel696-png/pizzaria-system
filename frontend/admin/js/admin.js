@@ -295,19 +295,32 @@ function descreverItem(item) {
     return `${item.quantidade}x ${item.tipo_item === 'bebida' ? 'Bebida' : 'Item'} (R$ ${Number(item.preco_unitario).toFixed(2)} cada)`;
 }
 
+// Textos e classes usados no "carimbo" de status de cada pedido
+const STATUS_PEDIDO = {
+    pendente: { texto: 'Pendente', classe: 'status-pendente' },
+    preparo: { texto: 'Em Preparo', classe: 'status-preparo' },
+    saiu_entrega: { texto: 'Saiu p/ Entrega', classe: 'status-saiu' },
+    entregue: { texto: 'Entregue', classe: 'status-entregue' },
+};
+
 let PEDIDOS_ATUAIS = [];
 
 function renderizarPedidos(pedidos) {
     PEDIDOS_ATUAIS = pedidos;
     const container = document.getElementById('lista-pedidos');
     if (pedidos.length === 0) {
-        container.innerHTML = '<p>Nenhum pedido ainda.</p>';
+        container.innerHTML = '<p class="vazio-lista">Nenhum pedido ainda. Assim que um cliente finalizar a compra (ou você lançar um manualmente), ele aparece aqui.</p>';
         return;
     }
 
-    container.innerHTML = pedidos.map(p => `
+    container.innerHTML = pedidos.map(p => {
+        const status = STATUS_PEDIDO[p.status] || { texto: p.status, classe: '' };
+        return `
         <div class="card-pedido">
-            <h4>Pedido #${String(p.id).padStart(4, '0')} - Cliente: ${escapeHtml(p.cliente_nome)}</h4>
+            <div class="cabecalho-card-pedido">
+                <h4>Pedido #${String(p.id).padStart(4, '0')} - ${escapeHtml(p.cliente_nome)}</h4>
+                <span class="carimbo-status ${status.classe}">${status.texto}</span>
+            </div>
             <p><strong>Tipo:</strong> ${escapeHtml(p.tipo_entrega)} | <strong>Pagamento:</strong> ${escapeHtml(p.forma_pagamento)}
                ${p.troco_para > 0 ? ` (Troco para R$${Number(p.troco_para).toFixed(2)})` : ''}</p>
             ${p.tipo_entrega === 'entrega' ? `<p><strong>Endereço:</strong> ${escapeHtml(p.endereco) || '-'} | <strong>Tel:</strong> ${escapeHtml(p.telefone) || '-'}</p>` : ''}
@@ -332,7 +345,8 @@ function renderizarPedidos(pedidos) {
                 <button onclick="excluirPedido(${p.id})" class="btn-excluir-pedido"><span class="icone">${ICONES.lixeira}</span> Excluir</button>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 async function excluirPedido(id) {

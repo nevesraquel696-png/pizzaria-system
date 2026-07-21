@@ -13,6 +13,7 @@
     <div id="tela-login" class="tela-login">
         <div class="card-login">
             <img src="../imagens/logo.png" alt="Estação da Pizza" class="logo-login">
+            <span class="rotulo-estacao">Acesso da equipe</span>
             <h2>Login Administrativo</h2>
             <input type="email" id="login-email" placeholder="Email">
             <input type="password" id="login-senha" placeholder="Senha">
@@ -22,29 +23,32 @@
     </div>
 
     <!-- Painel (só aparece depois do login) -->
-    <div id="painel" style="display:none;">
-        <header>
+    <div id="painel" class="painel-shell" style="display:none;">
+        <header class="topbar">
             <div class="logo-topo">
                 <img src="../imagens/logo.png" alt="Estação da Pizza">
                 <h2>Painel Administrativo</h2>
             </div>
             <div class="acoes-cabecalho">
-                <button id="btn-ativar-som" type="button"><span class="icone" data-icone="sino"></span> Ativar Som</button>
-                <label class="opcao-impressao-auto">
+                <button id="btn-ativar-som" type="button" title="Ativar som de notificação"><span class="icone" data-icone="sino"></span><span class="texto-acao">Ativar Som</span></button>
+                <label class="opcao-impressao-auto" title="Impressão automática">
                     <input type="checkbox" id="chk-impressao-automatica">
-                    <span class="icone" data-icone="impressora"></span> Impressão automática
+                    <span class="icone" data-icone="impressora"></span><span class="texto-acao">Impressão automática</span>
                 </label>
-                <button id="btn-logout">Sair</button>
+                <button id="btn-logout" title="Sair"><span class="texto-acao">Sair</span></button>
             </div>
         </header>
 
-        <nav class="abas">
-            <button class="aba-btn ativa" data-aba="pedidos"><span class="icone" data-icone="caixa"></span> Pedidos</button>
-            <button class="aba-btn" data-aba="novo-pedido"><span class="icone" data-icone="mais"></span> Criar Pedido</button>
-            <button class="aba-btn" data-aba="cardapio"><span class="icone" data-icone="ferramentas"></span> Cardápio</button>
-            <button class="aba-btn" data-aba="precos"><span class="icone" data-icone="cifrao"></span> Preços</button>
-            <button class="aba-btn" data-aba="config"><span class="icone" data-icone="engrenagem"></span> Configurações</button>
-        </nav>
+        <div class="painel-corpo">
+            <nav class="abas">
+                <button class="aba-btn ativa" data-aba="pedidos"><span class="icone" data-icone="caixa"></span><span class="rotulo-aba">Pedidos</span></button>
+                <button class="aba-btn" data-aba="novo-pedido"><span class="icone" data-icone="mais"></span><span class="rotulo-aba">Criar Pedido</span></button>
+                <button class="aba-btn" data-aba="cardapio"><span class="icone" data-icone="ferramentas"></span><span class="rotulo-aba">Cardápio</span></button>
+                <button class="aba-btn" data-aba="precos"><span class="icone" data-icone="cifrao"></span><span class="rotulo-aba">Preços</span></button>
+                <button class="aba-btn" data-aba="config"><span class="icone" data-icone="engrenagem"></span><span class="rotulo-aba">Config.</span></button>
+            </nav>
+
+            <main class="painel-conteudo">
 
         <!-- ABA: Pedidos recebidos -->
         <section id="aba-pedidos" class="aba-conteudo">
@@ -172,12 +176,14 @@
         <section id="aba-precos" class="aba-conteudo" style="display:none;">
             <h3>Preços por Categoria e Tamanho</h3>
             <p class="dica">Esses valores valem para todos os sabores da categoria, igual ao cardápio físico.</p>
-            <table id="tabela-precos">
-                <thead>
-                    <tr><th>Categoria</th><th>4 fatias</th><th>6 fatias</th><th>8 fatias</th><th>12 fatias</th><th>14 fatias</th></tr>
-                </thead>
-                <tbody id="corpo-tabela-precos"></tbody>
-            </table>
+            <div class="tabela-precos-scroll">
+                <table id="tabela-precos">
+                    <thead>
+                        <tr><th>Categoria</th><th>4 fatias</th><th>6 fatias</th><th>8 fatias</th><th>12 fatias</th><th>14 fatias</th></tr>
+                    </thead>
+                    <tbody id="corpo-tabela-precos"></tbody>
+                </table>
+            </div>
             <button id="btn-salvar-precos">Salvar Preços</button>
         </section>
 
@@ -209,6 +215,9 @@
             <p class="dica">Substitui o ícone padrão pelos cards de tamanho no site do cliente, por categoria. Deixe em branco pra usar o ícone padrão.</p>
             <div id="lista-imagens-categoria" class="grid-2"></div>
         </section>
+
+            </main>
+        </div>
     </div>
 
     <audio id="som-sino" src="../sounds/sino.mp3" preload="auto"></audio>
