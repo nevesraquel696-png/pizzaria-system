@@ -7,6 +7,19 @@ function getToken() {
     return localStorage.getItem('pizzaria_token');
 }
 
+// Escapa texto antes de inserir em innerHTML. Sem isso, um cliente poderia
+// digitar algo como <script> no nome ou nas observações do pedido, e esse
+// código rodaria na tela de quem está no admin/cozinha ao ver o pedido.
+function escapeHtml(texto) {
+    if (texto === null || texto === undefined) return '';
+    return String(texto)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 async function apiFetch(endpoint, options = {}) {
     const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
     const token = getToken();

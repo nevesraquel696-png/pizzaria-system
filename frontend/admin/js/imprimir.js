@@ -14,7 +14,7 @@ const NOMES_CATEGORIA_COMANDA = { tradicional: 'Tradicional', especial: 'Especia
 function descreverItemComanda(item) {
     if (item.tipo_item === 'pizza') {
         const sabores = Array.isArray(item.sabores) ? item.sabores : (item.sabores ? JSON.parse(item.sabores) : []);
-        return `${item.quantidade}x Pizza ${NOMES_CATEGORIA_COMANDA[item.pizza_categoria] || ''} (${item.fatias} fatias)<br>&nbsp;&nbsp;${sabores.join(', ')}${item.borda ? '<br>&nbsp;&nbsp;+ borda ' + item.borda : ''}`;
+        return `${item.quantidade}x Pizza ${NOMES_CATEGORIA_COMANDA[item.pizza_categoria] || ''} (${item.fatias} fatias)<br>&nbsp;&nbsp;${escapeHtml(sabores.join(', '))}${item.borda ? '<br>&nbsp;&nbsp;+ borda ' + escapeHtml(item.borda) : ''}`;
     }
     return `${item.quantidade}x ${item.tipo_item === 'bebida' ? 'Bebida' : 'Item'} - R$ ${Number(item.preco_unitario).toFixed(2)} cada`;
 }
@@ -31,19 +31,19 @@ function construirViaComanda(pedido) {
                 <div>${data}</div>
             </div>
             <hr>
-            <div><strong>Cliente:</strong> ${pedido.cliente_nome}</div>
-            <div><strong>Tipo:</strong> ${pedido.tipo_entrega}</div>
+            <div><strong>Cliente:</strong> ${escapeHtml(pedido.cliente_nome)}</div>
+            <div><strong>Tipo:</strong> ${escapeHtml(pedido.tipo_entrega)}</div>
             ${pedido.tipo_entrega === 'entrega' ? `
-                <div><strong>Endereço:</strong> ${pedido.endereco || '-'}</div>
-                <div><strong>Telefone:</strong> ${pedido.telefone || '-'}</div>
+                <div><strong>Endereço:</strong> ${escapeHtml(pedido.endereco) || '-'}</div>
+                <div><strong>Telefone:</strong> ${escapeHtml(pedido.telefone) || '-'}</div>
             ` : ''}
             <hr>
             <div class="comanda-itens">
                 ${(pedido.itens || []).map(item => `<div class="comanda-item">${descreverItemComanda(item)}</div>`).join('')}
             </div>
             <hr>
-            ${pedido.observacoes ? `<div><strong>Observações:</strong> ${pedido.observacoes}</div><hr>` : ''}
-            <div><strong>Pagamento:</strong> ${pedido.forma_pagamento}${pedido.troco_para > 0 ? ` (troco p/ R$ ${Number(pedido.troco_para).toFixed(2)})` : ''}</div>
+            ${pedido.observacoes ? `<div><strong>Observações:</strong> ${escapeHtml(pedido.observacoes)}</div><hr>` : ''}
+            <div><strong>Pagamento:</strong> ${escapeHtml(pedido.forma_pagamento)}${pedido.troco_para > 0 ? ` (troco p/ R$ ${Number(pedido.troco_para).toFixed(2)})` : ''}</div>
             ${pedido.taxa_entrega > 0 ? `<div><strong>Taxa de entrega:</strong> R$ ${Number(pedido.taxa_entrega).toFixed(2)}</div>` : ''}
             <div class="comanda-total"><strong>TOTAL: R$ ${Number(pedido.total).toFixed(2)}</strong></div>
             <hr>

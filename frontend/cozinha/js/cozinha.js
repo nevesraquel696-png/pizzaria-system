@@ -78,7 +78,7 @@ function descreverItem(item) {
     if (item.tipo_item === 'pizza') {
         const nomesCategoria = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
         const sabores = Array.isArray(item.sabores) ? item.sabores : (item.sabores ? JSON.parse(item.sabores) : []);
-        return `${item.quantidade}x Pizza ${nomesCategoria[item.pizza_categoria] || ''} (${item.fatias} fatias) - ${sabores.join(', ')}${item.borda ? ' + borda ' + item.borda : ''}`;
+        return `${item.quantidade}x Pizza ${nomesCategoria[item.pizza_categoria] || ''} (${item.fatias} fatias) - ${escapeHtml(sabores.join(', '))}${item.borda ? ' + borda ' + escapeHtml(item.borda) : ''}`;
     }
     return `${item.quantidade}x ${item.tipo_item === 'bebida' ? 'Bebida' : 'Item'}`;
 }
@@ -93,9 +93,9 @@ function renderizar(pedidos) {
     container.innerHTML = pedidos.map(p => `
         <div class="card-cozinha">
             <h3>Pedido #${String(p.id).padStart(4, '0')}</h3>
-            <p><strong>Cliente:</strong> ${p.cliente_nome}</p>
-            <p><strong>Tipo:</strong> ${p.tipo_entrega}</p>
-            ${p.observacoes ? `<p class="observacoes-pedido"><strong>Obs:</strong> ${p.observacoes}</p>` : ''}
+            <p><strong>Cliente:</strong> ${escapeHtml(p.cliente_nome)}</p>
+            <p><strong>Tipo:</strong> ${escapeHtml(p.tipo_entrega)}</p>
+            ${p.observacoes ? `<p class="observacoes-pedido"><strong>Obs:</strong> ${escapeHtml(p.observacoes)}</p>` : ''}
             <div class="itens-pedido-detalhe">
                 ${(p.itens || []).map(item => `<p class="linha-item-pedido">${descreverItem(item)}</p>`).join('')}
             </div>

@@ -290,7 +290,7 @@ function descreverItem(item) {
     if (item.tipo_item === 'pizza') {
         const nomesCategoria = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
         const sabores = Array.isArray(item.sabores) ? item.sabores : (item.sabores ? JSON.parse(item.sabores) : []);
-        return `${item.quantidade}x Pizza ${nomesCategoria[item.pizza_categoria] || ''} (${item.fatias} fatias) - ${sabores.join(', ')}${item.borda ? ' + borda ' + item.borda : ''}`;
+        return `${item.quantidade}x Pizza ${nomesCategoria[item.pizza_categoria] || ''} (${item.fatias} fatias) - ${escapeHtml(sabores.join(', '))}${item.borda ? ' + borda ' + escapeHtml(item.borda) : ''}`;
     }
     return `${item.quantidade}x ${item.tipo_item === 'bebida' ? 'Bebida' : 'Item'} (R$ ${Number(item.preco_unitario).toFixed(2)} cada)`;
 }
@@ -307,11 +307,11 @@ function renderizarPedidos(pedidos) {
 
     container.innerHTML = pedidos.map(p => `
         <div class="card-pedido">
-            <h4>Pedido #${String(p.id).padStart(4, '0')} - Cliente: ${p.cliente_nome}</h4>
-            <p><strong>Tipo:</strong> ${p.tipo_entrega} | <strong>Pagamento:</strong> ${p.forma_pagamento}
+            <h4>Pedido #${String(p.id).padStart(4, '0')} - Cliente: ${escapeHtml(p.cliente_nome)}</h4>
+            <p><strong>Tipo:</strong> ${escapeHtml(p.tipo_entrega)} | <strong>Pagamento:</strong> ${escapeHtml(p.forma_pagamento)}
                ${p.troco_para > 0 ? ` (Troco para R$${Number(p.troco_para).toFixed(2)})` : ''}</p>
-            ${p.tipo_entrega === 'entrega' ? `<p><strong>Endereço:</strong> ${p.endereco || '-'} | <strong>Tel:</strong> ${p.telefone || '-'}</p>` : ''}
-            ${p.observacoes ? `<p class="observacoes-pedido"><strong>Observações:</strong> ${p.observacoes}</p>` : ''}
+            ${p.tipo_entrega === 'entrega' ? `<p><strong>Endereço:</strong> ${escapeHtml(p.endereco) || '-'} | <strong>Tel:</strong> ${escapeHtml(p.telefone) || '-'}</p>` : ''}
+            ${p.observacoes ? `<p class="observacoes-pedido"><strong>Observações:</strong> ${escapeHtml(p.observacoes)}</p>` : ''}
 
             <div class="itens-pedido-detalhe">
                 ${(p.itens || []).map(item => `<p class="linha-item-pedido">${descreverItem(item)}</p>`).join('')}
