@@ -73,7 +73,7 @@ html, body { height: 100%; margin: 0; }
 .aba-btn.ativa { opacity: 1; background: rgba(0,0,0,0.16); border-left: 3px solid var(--cor-dourado); }
 .aba-btn:hover { opacity: 1; }
 
-.painel-conteudo { flex: 1; min-width: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.painel-conteudo { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .aba-conteudo { padding: 22px 26px; max-width: 1100px; margin: 0 auto; }
 .aba-conteudo h3 { font-family: var(--fonte-display); font-weight: 400; color: var(--cor-verde-escuro); letter-spacing: 0.3px; }
 .dica { color: #6b6459; font-style: italic; margin-top: -6px; }
