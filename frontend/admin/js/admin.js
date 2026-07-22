@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-salvar-precos').addEventListener('click', salvarPrecos);
     document.getElementById('btn-lancar-pedido').addEventListener('click', lancarPedidoAdmin);
     document.getElementById('btn-ativar-som').addEventListener('click', ativarSom);
-    document.getElementById('btn-criar-cupom').addEventListener('click', criarCupom);
 
     document.querySelectorAll('.aba-btn').forEach(btn => {
         btn.addEventListener('click', () => trocarAba(btn.dataset.aba));
@@ -126,8 +125,7 @@ async function iniciarPainel() {
         tentarCarregar(carregarProdutosAdmin, 'produtos'),
         tentarCarregar(carregarPrecosAdmin, 'preços'),
         tentarCarregar(carregarConfiguracoes, 'configurações'),
-        tentarCarregar(carregarImagensTamanho, 'imagens'),
-        tentarCarregar(carregarCupons, 'cupons'),
+        tentarCarregar(carregarImagensCategoria, 'imagens'),
         tentarCarregar(carregarPedidos, 'pedidos'),
         tentarCarregar(async () => {
             renderizarCardapio(await apiFetch('/produtos'));
@@ -198,8 +196,6 @@ async function carregarConfiguracoes() {
     document.getElementById('config-taxa-entrega').value = Number(config.taxa_entrega || 0).toFixed(2);
     document.getElementById('config-chave-pix').value = config.chave_pix || '';
     document.getElementById('config-whatsapp').value = config.whatsapp_numero || '';
-    document.getElementById('config-promocao-ativa').checked = !!config.promocao_ativa;
-    document.getElementById('config-promocao-texto').value = config.promocao_texto || '';
 }
 
 async function salvarConfiguracoes() {
@@ -208,13 +204,11 @@ async function salvarConfiguracoes() {
     const taxa_entrega = Number(document.getElementById('config-taxa-entrega').value || 0);
     const chave_pix = document.getElementById('config-chave-pix').value.trim();
     const whatsapp_numero = document.getElementById('config-whatsapp').value.trim();
-    const promocao_ativa = document.getElementById('config-promocao-ativa').checked;
-    const promocao_texto = document.getElementById('config-promocao-texto').value.trim();
 
     try {
         await apiFetch('/config', {
             method: 'PUT',
-            body: JSON.stringify({ horario_abertura, horario_fechamento, taxa_entrega, chave_pix, whatsapp_numero, promocao_ativa, promocao_texto })
+            body: JSON.stringify({ horario_abertura, horario_fechamento, taxa_entrega, chave_pix, whatsapp_numero })
         });
         mostrarToast('Configurações atualizadas com sucesso!');
     } catch (err) {
@@ -222,160 +216,61 @@ async function salvarConfiguracoes() {
     }
 }
 
-// ---------- Fotos por tamanho (substituem o ícone padrão no cliente) ----------
-// Guardadas em base64 direto no banco de dados - não em arquivo no servidor,
-// que se perde toda vez que o serviço reinicia em plataformas como o Render.
-const FATIAS_COM_FOTO = [4, 6, 8, 12, 14];
+// ---------- Imagens por categoria (substituem o ícone padrão no cliente) ----------
+const NOMES_CATEGORIA_ADMIN = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
 
-async function carregarImagensTamanho() {
-    const imagens = await apiFetch('/imagens-tamanho');
-    renderizarImagensTamanho(imagens);
+async function carregarImagensCategoria() {
+    const imagens = await apiFetch('/imagens-categoria');
+    renderizarImagensCategoria(imagens);
 }
 
-function renderizarImagensTamanho(imagens) {
-    const container = document.getElementById('lista-imagens-tamanho');
+function renderizarImagensCategoria(imagens) {
+    const container = document.getElementById('lista-imagens-categoria');
     container.innerHTML = imagens.map(img => `
         <div class="card-imagem-categoria">
-            <strong>${img.fatias} fatias</strong>
+            <strong>${NOMES_CATEGORIA_ADMIN[img.categoria]}</strong>
             <div class="preview-imagem-categoria">
-                ${img.imagem_base64
-                    ? `<img src="${img.imagem_base64}" alt="${img.fatias} fatias">`
+                ${img.imagem_url
+                    ? `<img src="${API_URL.replace('/api', '')}${img.imagem_url}" alt="${img.categoria}">`
                     : `<span class="icone">${ICONES.pizza}</span>`}
             </div>
-            <input type="file" accept="image/*" id="arquivo-tamanho-${img.fatias}">
+            <input type="file" accept="image/*" id="arquivo-${img.categoria}">
             <div class="acoes-imagem-categoria">
-                <button onclick="enviarImagemTamanho(${img.fatias})">Enviar</button>
-                ${img.imagem_base64 ? `<button onclick="removerImagemTamanho(${img.fatias})" class="btn-secundario-admin">Remover</button>` : ''}
+                <button onclick="enviarImagemCategoria('${img.categoria}')">Enviar</button>
+                ${img.imagem_url ? `<button onclick="removerImagemCategoria('${img.categoria}')" class="btn-secundario-admin">Remover</button>` : ''}
             </div>
         </div>
     `).join('');
 }
 
-function lerArquivoComoBase64(arquivo) {
-    return new Promise((resolve, reject) => {
-        const leitor = new FileReader();
-        leitor.onload = () => resolve(leitor.result);
-        leitor.onerror = () => reject(new Error('Não foi possível ler o arquivo.'));
-        leitor.readAsDataURL(arquivo);
-    });
-}
+async function enviarImagemCategoria(categoria) {
+    const input = document.getElementById(`arquivo-${categoria}`);
+    if (!input.files[0]) return alert('Escolha um arquivo primeiro.');
 
-async function enviarImagemTamanho(fatias) {
-    const input = document.getElementById(`arquivo-tamanho-${fatias}`);
-    const arquivo = input.files[0];
-    if (!arquivo) return alert('Escolha um arquivo primeiro.');
-
-    if (arquivo.size > 5 * 1024 * 1024) {
-        return alert('Imagem muito grande. Escolha uma de até 5MB.');
-    }
+    const formData = new FormData();
+    formData.append('imagem', input.files[0]);
 
     try {
-        const imagem_base64 = await lerArquivoComoBase64(arquivo);
-        await apiFetch(`/imagens-tamanho/${fatias}`, {
-            method: 'PUT',
-            body: JSON.stringify({ imagem_base64 })
+        const resp = await fetch(`${API_URL}/imagens-categoria/${categoria}`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${getToken()}` },
+            body: formData
         });
-        mostrarToast('Foto atualizada!');
-        carregarImagensTamanho();
+        if (!resp.ok) throw new Error((await resp.json()).erro || 'Erro ao enviar imagem.');
+        mostrarToast('Imagem atualizada!');
+        carregarImagensCategoria();
     } catch (err) {
         alert('Erro ao enviar imagem: ' + err.message);
     }
 }
 
-async function removerImagemTamanho(fatias) {
-    if (!confirm('Remover essa foto e voltar ao ícone padrão?')) return;
+async function removerImagemCategoria(categoria) {
+    if (!confirm('Remover essa imagem e voltar ao ícone padrão?')) return;
     try {
-        await apiFetch(`/imagens-tamanho/${fatias}`, { method: 'DELETE' });
-        carregarImagensTamanho();
+        await apiFetch(`/imagens-categoria/${categoria}`, { method: 'DELETE' });
+        carregarImagensCategoria();
     } catch (err) {
         alert('Erro ao remover imagem: ' + err.message);
-    }
-}
-
-// ---------- Cupons de desconto ----------
-async function carregarCupons() {
-    const cupons = await apiFetch('/cupons');
-    renderizarCupons(cupons);
-}
-
-function formatarValorCupom(cupom) {
-    return cupom.tipo === 'percentual' ? `${Number(cupom.valor)}%` : `R$ ${Number(cupom.valor).toFixed(2)}`;
-}
-
-function renderizarCupons(cupons) {
-    const lista = document.getElementById('lista-cupons');
-    if (cupons.length === 0) {
-        lista.innerHTML = '<li class="carregando">Nenhum cupom cadastrado ainda.</li>';
-        return;
-    }
-
-    lista.innerHTML = cupons.map(c => {
-        const usos = c.limite_uso ? `${c.usos_atuais}/${c.limite_uso} usos` : `${c.usos_atuais} usos (sem limite)`;
-        const validade = c.validade ? `válido até ${new Date(c.validade).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}` : 'sem validade';
-        return `
-            <li class="item-cupom">
-                <div>
-                    <strong>${c.codigo}</strong> - ${formatarValorCupom(c)} de desconto
-                    <div class="descricao-produto">${validade} · ${usos}</div>
-                </div>
-                <div class="acoes-item-cupom">
-                    <label class="opcao-checkbox-inline">
-                        <input type="checkbox" ${c.ativo ? 'checked' : ''} onchange="alternarCupomAtivo(${c.id}, this.checked, '${c.tipo}', ${c.valor}, '${c.validade || ''}', ${c.limite_uso || 'null'})">
-                        Ativo
-                    </label>
-                    <button class="btn-excluir" onclick="excluirCupom(${c.id})">Excluir</button>
-                </div>
-            </li>
-        `;
-    }).join('');
-}
-
-async function criarCupom() {
-    const codigo = document.getElementById('cupom-codigo').value.trim();
-    const tipo = document.getElementById('cupom-tipo').value;
-    const valor = Number(document.getElementById('cupom-valor').value);
-    const validade = document.getElementById('cupom-validade').value || null;
-    const limite_uso = document.getElementById('cupom-limite').value || null;
-
-    if (!codigo) return alert('Informe o código do cupom.');
-    if (!(valor > 0)) return alert('Informe um valor de desconto maior que zero.');
-
-    try {
-        await apiFetch('/cupons', {
-            method: 'POST',
-            body: JSON.stringify({ codigo, tipo, valor, validade, limite_uso })
-        });
-        mostrarToast('Cupom criado com sucesso!');
-        document.getElementById('cupom-codigo').value = '';
-        document.getElementById('cupom-valor').value = '';
-        document.getElementById('cupom-validade').value = '';
-        document.getElementById('cupom-limite').value = '';
-        carregarCupons();
-    } catch (err) {
-        alert('Erro ao criar cupom: ' + err.message);
-    }
-}
-
-async function alternarCupomAtivo(id, ativo, tipo, valor, validade, limite_uso) {
-    try {
-        await apiFetch(`/cupons/${id}`, {
-            method: 'PUT',
-            body: JSON.stringify({ tipo, valor, validade: validade || null, limite_uso, ativo })
-        });
-        mostrarToast(ativo ? 'Cupom ativado.' : 'Cupom desativado.');
-        carregarCupons();
-    } catch (err) {
-        alert('Erro ao atualizar cupom: ' + err.message);
-    }
-}
-
-async function excluirCupom(id) {
-    if (!confirm('Excluir esse cupom? Não afeta pedidos já feitos com ele.')) return;
-    try {
-        await apiFetch(`/cupons/${id}`, { method: 'DELETE' });
-        carregarCupons();
-    } catch (err) {
-        alert('Erro ao excluir cupom: ' + err.message);
     }
 }
 
@@ -397,7 +292,8 @@ function descreverItem(item) {
         const sabores = Array.isArray(item.sabores) ? item.sabores : (item.sabores ? JSON.parse(item.sabores) : []);
         return `${item.quantidade}x Pizza ${nomesCategoria[item.pizza_categoria] || ''} (${item.fatias} fatias) - ${escapeHtml(sabores.join(', '))}${item.borda ? ' + borda ' + escapeHtml(item.borda) : ''}`;
     }
-    return `${item.quantidade}x ${item.tipo_item === 'bebida' ? 'Bebida' : 'Item'} (R$ ${Number(item.preco_unitario).toFixed(2)} cada)`;
+    const nome = item.nome_item ? escapeHtml(item.nome_item) : (item.tipo_item === 'bebida' ? 'Bebida (pedido antigo)' : 'Item (pedido antigo)');
+    return `${item.quantidade}x ${nome} (R$ ${Number(item.preco_unitario).toFixed(2)} cada)`;
 }
 
 // Textos e classes usados no "carimbo" de status de cada pedido
@@ -606,7 +502,6 @@ function alternarCampoCategoria() {
     document.getElementById('campo-categoria-produto').style.display = tipo === 'sabor_pizza' ? 'block' : 'none';
     document.getElementById('campo-descricao-produto').style.display = tipo === 'sabor_pizza' ? 'block' : 'none';
     document.getElementById('campo-preco-produto').style.display = tipo === 'sabor_pizza' ? 'none' : 'block';
-    document.getElementById('campo-imagem-produto').style.display = (tipo === 'bebida' || tipo === 'outros') ? 'block' : 'none';
 }
 
 let CARDAPIO_ADMIN_TODOS = [];
@@ -634,53 +529,21 @@ function aplicarFiltroCardapio() {
         return;
     }
 
-    lista.innerHTML = filtrados.map(p => {
-        const permiteFoto = p.tipo === 'bebida' || p.tipo === 'outros';
-        return `
+    lista.innerHTML = filtrados.map(p => `
         <li class="item-cardapio">
-            <div class="linha-item-com-foto">
-                ${permiteFoto ? `
-                    <div class="miniatura-produto">
-                        ${p.imagem_base64 ? `<img src="${p.imagem_base64}" alt="${escapeHtml(p.nome)}">` : `<span class="icone">${ICONES.imagem}</span>`}
-                    </div>
-                ` : ''}
-                <div>
-                    <span>${escapeHtml(p.nome)}</span>
-                    ${p.descricao ? `<div class="descricao-produto">${escapeHtml(p.descricao)}</div>` : ''}
-                </div>
+            <div>
+                <span>${escapeHtml(p.nome)}</span>
+                ${p.descricao ? `<div class="descricao-produto">${escapeHtml(p.descricao)}</div>` : ''}
             </div>
             <div>
                 <label>
                     <input type="checkbox" ${p.disponivel ? 'checked' : ''} onchange="alternarDisponibilidade(${p.id})">
                     Disponível
                 </label>
-                ${permiteFoto ? `
-                    <label class="btn-trocar-foto">
-                        Foto
-                        <input type="file" accept="image/*" style="display:none;" onchange="trocarFotoProduto(${p.id}, this)">
-                    </label>
-                ` : ''}
                 <button onclick="excluirProduto(${p.id})" class="btn-excluir">X</button>
             </div>
         </li>
-    `;
-    }).join('');
-}
-
-async function trocarFotoProduto(id, input) {
-    const arquivo = input.files[0];
-    if (!arquivo) return;
-    if (arquivo.size > 5 * 1024 * 1024) return alert('Imagem muito grande. Escolha uma de até 5MB.');
-
-    try {
-        const imagem_base64 = await lerArquivoComoBase64(arquivo);
-        await apiFetch(`/produtos/${id}/imagem`, { method: 'PUT', body: JSON.stringify({ imagem_base64 }) });
-        mostrarToast('Foto atualizada!');
-        renderizarCardapio(await apiFetch('/produtos'));
-        await carregarProdutosAdmin();
-    } catch (err) {
-        alert('Erro ao atualizar foto: ' + err.message);
-    }
+    `).join('');
 }
 
 async function adicionarProduto() {
@@ -689,23 +552,17 @@ async function adicionarProduto() {
     const categoria = document.getElementById('prod-categoria').value;
     const descricao = document.getElementById('prod-descricao').value.trim();
     const preco_base = document.getElementById('prod-preco').value;
-    const arquivoImagem = document.getElementById('prod-imagem').files[0];
 
     if (!nome) return alert('Digite o nome do produto.');
-    if (arquivoImagem && arquivoImagem.size > 5 * 1024 * 1024) {
-        return alert('Imagem muito grande. Escolha uma de até 5MB.');
-    }
 
     try {
-        const imagem_base64 = arquivoImagem ? await lerArquivoComoBase64(arquivoImagem) : null;
         await apiFetch('/produtos', {
             method: 'POST',
-            body: JSON.stringify({ nome, tipo, categoria, descricao, preco_base: Number(preco_base || 0), imagem_base64 })
+            body: JSON.stringify({ nome, tipo, categoria, descricao, preco_base: Number(preco_base || 0) })
         });
         document.getElementById('prod-nome').value = '';
         document.getElementById('prod-descricao').value = '';
         document.getElementById('prod-preco').value = '';
-        document.getElementById('prod-imagem').value = '';
         renderizarCardapio(await apiFetch('/produtos'));
         await carregarProdutosAdmin(); // atualiza cache usado no "criar pedido"
     } catch (err) {

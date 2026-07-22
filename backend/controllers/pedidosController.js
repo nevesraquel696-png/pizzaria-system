@@ -2,8 +2,6 @@ const Pedido = require('../models/Pedido');
 const Produto = require('../models/Produto');
 const Configuracao = require('../models/Configuracao');
 const { PrecoPizza, CATEGORIAS_VALIDAS, FATIAS_VALIDAS } = require('../models/PrecoPizza');
-const Cupom = require('../models/Cupom');
-const validarCupom = require('../utils/validarCupom');
 
 // Validação estrutural básica do corpo do pedido (antes de calcular preços)
 function validarEstrutura(body) {
@@ -114,6 +112,7 @@ async function processarItens(itensRecebidos) {
 
             itensProcessados.push({
                 tipo_item: produto.tipo,
+                nome_item: produto.nome,
                 quantidade: item.quantidade || 1,
                 preco_unitario: Number(produto.preco_base)
             });
@@ -143,35 +142,9 @@ async function processarECriarPedido(req, mensagemSucesso) {
         taxaEntrega = Number(config.taxa_entrega || 0);
     }
 
-    // Cupom: revalidado aqui do zero (nunca confiamos no desconto que
-    // vier do cliente) - se o código não existir mais ou tiver expirado
-    // entre o momento em que o cliente aplicou e o de confirmar, o pedido
-    // é recusado em vez de seguir sem desconto.
-    let cupomAplicado = null;
-    let desconto = 0;
-    if (req.body.cupom_codigo) {
-        const resultado = await validarCupom(req.body.cupom_codigo, subtotal);
-        if (resultado.erro) {
-            return { status: 400, corpo: { erro: `Cupom inválido: ${resultado.erro}` } };
-        }
-        cupomAplicado = resultado.cupom;
-        desconto = resultado.desconto;
-    }
+    const total = subtotal + taxaEntrega;
 
-    const total = subtotal + taxaEntrega - desconto;
-
-    const pedidoId = await Pedido.criar({
-        ...req.body,
-        total,
-        taxa_entrega: taxaEntrega,
-        cupom_codigo: cupomAplicado ? cupomAplicado.codigo : null,
-        desconto,
-        itens: itensProcessados
-    });
-
-    if (cupomAplicado) {
-        await Cupom.incrementarUso(cupomAplicado.id);
-    }
+    const pedidoId = await Pedido.criar({ ...req.body, total, taxa_entrega: taxaEntrega, itens: itensProcessados });
 
     const io = req.app.get('io');
     io.emit('novoPedido', {
@@ -181,7 +154,7 @@ async function processarECriarPedido(req, mensagemSucesso) {
         total
     });
 
-    return { status: 201, corpo: { mensagem: mensagemSucesso, pedidoId, total, taxa_entrega: taxaEntrega, desconto } };
+    return { status: 201, corpo: { mensagem: mensagemSucesso, pedidoId, total, taxa_entrega: taxaEntrega } };
 }
 
 exports.criarPedido = async (req, res) => {

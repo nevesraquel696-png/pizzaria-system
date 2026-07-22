@@ -3,23 +3,23 @@ const db = require('../config/db');
 const Pedido = {
     // Cria o pedido + seus itens dentro de uma transação
     // (se algum item falhar, o pedido inteiro é desfeito)
-    async criar({ cliente_nome, telefone, tipo_entrega, endereco, observacoes, forma_pagamento, troco_para, taxa_entrega, cupom_codigo, desconto, total, itens }) {
+    async criar({ cliente_nome, telefone, tipo_entrega, endereco, observacoes, forma_pagamento, troco_para, taxa_entrega, total, itens }) {
         const connection = await db.getConnection();
         try {
             await connection.beginTransaction();
 
             const [resultPedido] = await connection.query(
-                `INSERT INTO pedidos (cliente_nome, telefone, tipo_entrega, endereco, observacoes, forma_pagamento, troco_para, taxa_entrega, cupom_codigo, desconto, total)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [cliente_nome, telefone || null, tipo_entrega, endereco || null, observacoes || null, forma_pagamento, troco_para || 0, taxa_entrega || 0, cupom_codigo || null, desconto || 0, total]
+                `INSERT INTO pedidos (cliente_nome, telefone, tipo_entrega, endereco, observacoes, forma_pagamento, troco_para, taxa_entrega, total)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [cliente_nome, telefone || null, tipo_entrega, endereco || null, observacoes || null, forma_pagamento, troco_para || 0, taxa_entrega || 0, total]
             );
 
             const pedidoId = resultPedido.insertId;
 
             for (const item of itens) {
                 await connection.query(
-                    `INSERT INTO itens_pedido (pedido_id, tipo_item, pizza_categoria, fatias, sabores, borda, quantidade, preco_unitario)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    `INSERT INTO itens_pedido (pedido_id, tipo_item, pizza_categoria, fatias, sabores, borda, nome_item, quantidade, preco_unitario)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     [
                         pedidoId,
                         item.tipo_item,
@@ -27,6 +27,7 @@ const Pedido = {
                         item.fatias || null,
                         item.sabores ? JSON.stringify(item.sabores) : null,
                         item.borda || null,
+                        item.nome_item || null,
                         item.quantidade || 1,
                         item.preco_unitario
                     ]
