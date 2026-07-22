@@ -89,6 +89,7 @@ CREATE TABLE produtos (
     categoria ENUM('tradicional','especial','doce','promocao') DEFAULT NULL,
     preco_base DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     descricao TEXT DEFAULT NULL,
+    imagem_base64 LONGTEXT DEFAULT NULL,
     disponivel BOOLEAN DEFAULT TRUE,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

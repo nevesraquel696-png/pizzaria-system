@@ -18,20 +18,43 @@ exports.listar = async (req, res) => {
 };
 
 exports.criar = async (req, res) => {
-    const { nome, tipo, categoria, preco_base, descricao } = req.body;
+    const { nome, tipo, categoria, preco_base, descricao, imagem_base64 } = req.body;
     if (!nome || !tipo) return res.status(400).json({ erro: 'Nome e tipo são obrigatórios.' });
     if (tipo === 'sabor_pizza' && !categoria) {
         return res.status(400).json({ erro: 'Sabores de pizza precisam de uma categoria.' });
     }
+    if (imagem_base64 && !validarTamanhoImagem(imagem_base64)) {
+        return res.status(400).json({ erro: 'Imagem muito grande (máximo ~5MB).' });
+    }
 
     try {
-        const id = await Produto.criar({ nome, tipo, categoria, preco_base: preco_base || 0, descricao });
+        const id = await Produto.criar({ nome, tipo, categoria, preco_base: preco_base || 0, descricao, imagem_base64 });
         invalidarCacheProdutos();
         res.status(201).json({ mensagem: 'Produto cadastrado com sucesso.', id });
     } catch (err) {
         res.status(500).json({ erro: 'Erro ao cadastrar produto.' });
     }
 };
+
+exports.atualizarImagem = async (req, res) => {
+    const { imagem_base64 } = req.body;
+    if (imagem_base64 && !validarTamanhoImagem(imagem_base64)) {
+        return res.status(400).json({ erro: 'Imagem muito grande (máximo ~5MB).' });
+    }
+
+    try {
+        await Produto.atualizarImagem(req.params.id, imagem_base64 || null);
+        invalidarCacheProdutos();
+        res.json({ mensagem: 'Foto atualizada com sucesso.' });
+    } catch (err) {
+        res.status(500).json({ erro: 'Erro ao atualizar foto.' });
+    }
+};
+
+function validarTamanhoImagem(imagem_base64) {
+    const tamanhoAproximadoBytes = imagem_base64.length * 0.75;
+    return tamanhoAproximadoBytes <= 6 * 1024 * 1024;
+}
 
 exports.atualizar = async (req, res) => {
     try {

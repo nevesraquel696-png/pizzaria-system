@@ -46,6 +46,15 @@ function iconeOuImagemTamanho(fatias) {
     return `<span class="icone">${ICONES.pizza}</span>`;
 }
 
+// Mesma ideia, mas pra bebidas e outros - cada produto pode ter a própria
+// foto cadastrada no admin.
+function iconeOuImagemProduto(produto, iconeFallback) {
+    if (produto.imagem_base64) {
+        return `<img src="${produto.imagem_base64}" alt="${produto.nome}" class="imagem-categoria-card">`;
+    }
+    return `<span class="icone">${iconeFallback}</span>`;
+}
+
 async function carregarProdutos() {
     try {
         const produtos = await apiFetch('/produtos?disponiveis=true');
@@ -188,7 +197,7 @@ function renderizarBebidas() {
     const lista = document.getElementById('lista-bebidas');
     lista.innerHTML = PRODUTOS.bebidas.map(b => `
         <div class="linha-produto linha-produto-simples">
-            <div class="linha-produto-imagem"><span class="icone">${ICONES.bebida}</span></div>
+            <div class="linha-produto-imagem">${iconeOuImagemProduto(b, ICONES.bebida)}</div>
             <div class="linha-produto-info"><div class="linha-produto-nome">${b.nome}</div></div>
             <span class="card-preco">R$ ${Number(b.preco_base).toFixed(2)}</span>
             <button class="btn-add-rapido" data-bebida-id="${b.id}" aria-label="Adicionar ${escapeHtml(b.nome)}"><span class="icone">${ICONES.mais}</span></button>
@@ -209,7 +218,7 @@ function renderizarOutros() {
     const lista = document.getElementById('lista-outros');
     lista.innerHTML = PRODUTOS.outros.map(o => `
         <div class="linha-produto linha-produto-simples">
-            <div class="linha-produto-imagem"><span class="icone">${ICONES.ferramentas}</span></div>
+            <div class="linha-produto-imagem">${iconeOuImagemProduto(o, ICONES.ferramentas)}</div>
             <div class="linha-produto-info"><div class="linha-produto-nome">${o.nome}</div></div>
             <span class="card-preco">R$ ${Number(o.preco_base).toFixed(2)}</span>
             <button class="btn-add-rapido" data-outro-id="${o.id}" aria-label="Adicionar ${escapeHtml(o.nome)}"><span class="icone">${ICONES.mais}</span></button>

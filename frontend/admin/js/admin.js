@@ -606,6 +606,7 @@ function alternarCampoCategoria() {
     document.getElementById('campo-categoria-produto').style.display = tipo === 'sabor_pizza' ? 'block' : 'none';
     document.getElementById('campo-descricao-produto').style.display = tipo === 'sabor_pizza' ? 'block' : 'none';
     document.getElementById('campo-preco-produto').style.display = tipo === 'sabor_pizza' ? 'none' : 'block';
+    document.getElementById('campo-imagem-produto').style.display = (tipo === 'bebida' || tipo === 'outros') ? 'block' : 'none';
 }
 
 let CARDAPIO_ADMIN_TODOS = [];
@@ -633,21 +634,53 @@ function aplicarFiltroCardapio() {
         return;
     }
 
-    lista.innerHTML = filtrados.map(p => `
+    lista.innerHTML = filtrados.map(p => {
+        const permiteFoto = p.tipo === 'bebida' || p.tipo === 'outros';
+        return `
         <li class="item-cardapio">
-            <div>
-                <span>${escapeHtml(p.nome)}</span>
-                ${p.descricao ? `<div class="descricao-produto">${escapeHtml(p.descricao)}</div>` : ''}
+            <div class="linha-item-com-foto">
+                ${permiteFoto ? `
+                    <div class="miniatura-produto">
+                        ${p.imagem_base64 ? `<img src="${p.imagem_base64}" alt="${escapeHtml(p.nome)}">` : `<span class="icone">${ICONES.imagem}</span>`}
+                    </div>
+                ` : ''}
+                <div>
+                    <span>${escapeHtml(p.nome)}</span>
+                    ${p.descricao ? `<div class="descricao-produto">${escapeHtml(p.descricao)}</div>` : ''}
+                </div>
             </div>
             <div>
                 <label>
                     <input type="checkbox" ${p.disponivel ? 'checked' : ''} onchange="alternarDisponibilidade(${p.id})">
                     Disponível
                 </label>
+                ${permiteFoto ? `
+                    <label class="btn-trocar-foto">
+                        Foto
+                        <input type="file" accept="image/*" style="display:none;" onchange="trocarFotoProduto(${p.id}, this)">
+                    </label>
+                ` : ''}
                 <button onclick="excluirProduto(${p.id})" class="btn-excluir">X</button>
             </div>
         </li>
-    `).join('');
+    `;
+    }).join('');
+}
+
+async function trocarFotoProduto(id, input) {
+    const arquivo = input.files[0];
+    if (!arquivo) return;
+    if (arquivo.size > 5 * 1024 * 1024) return alert('Imagem muito grande. Escolha uma de até 5MB.');
+
+    try {
+        const imagem_base64 = await lerArquivoComoBase64(arquivo);
+        await apiFetch(`/produtos/${id}/imagem`, { method: 'PUT', body: JSON.stringify({ imagem_base64 }) });
+        mostrarToast('Foto atualizada!');
+        renderizarCardapio(await apiFetch('/produtos'));
+        await carregarProdutosAdmin();
+    } catch (err) {
+        alert('Erro ao atualizar foto: ' + err.message);
+    }
 }
 
 async function adicionarProduto() {
@@ -656,17 +689,23 @@ async function adicionarProduto() {
     const categoria = document.getElementById('prod-categoria').value;
     const descricao = document.getElementById('prod-descricao').value.trim();
     const preco_base = document.getElementById('prod-preco').value;
+    const arquivoImagem = document.getElementById('prod-imagem').files[0];
 
     if (!nome) return alert('Digite o nome do produto.');
+    if (arquivoImagem && arquivoImagem.size > 5 * 1024 * 1024) {
+        return alert('Imagem muito grande. Escolha uma de até 5MB.');
+    }
 
     try {
+        const imagem_base64 = arquivoImagem ? await lerArquivoComoBase64(arquivoImagem) : null;
         await apiFetch('/produtos', {
             method: 'POST',
-            body: JSON.stringify({ nome, tipo, categoria, descricao, preco_base: Number(preco_base || 0) })
+            body: JSON.stringify({ nome, tipo, categoria, descricao, preco_base: Number(preco_base || 0), imagem_base64 })
         });
         document.getElementById('prod-nome').value = '';
         document.getElementById('prod-descricao').value = '';
         document.getElementById('prod-preco').value = '';
+        document.getElementById('prod-imagem').value = '';
         renderizarCardapio(await apiFetch('/produtos'));
         await carregarProdutosAdmin(); // atualiza cache usado no "criar pedido"
     } catch (err) {

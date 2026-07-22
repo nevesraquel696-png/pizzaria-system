@@ -9,6 +9,7 @@ router.get('/', produtosController.listar);
 // Protegido: gestão do cardápio pelo admin
 router.post('/', autenticar, produtosController.criar);
 router.put('/:id', autenticar, produtosController.atualizar);
+router.put('/:id/imagem', autenticar, produtosController.atualizarImagem);
 router.patch('/:id/disponibilidade', autenticar, produtosController.alternarDisponibilidade);
 router.delete('/:id', autenticar, produtosController.excluir);
 
