@@ -111,7 +111,7 @@ function logout() {
 
 async function iniciarPainel() {
     document.getElementById('tela-login').style.display = 'none';
-    document.getElementById('painel').style.display = 'flex';
+    document.getElementById('painel').style.display = 'block';
 
     conectarSocket();
     tentarAutoativarSom();

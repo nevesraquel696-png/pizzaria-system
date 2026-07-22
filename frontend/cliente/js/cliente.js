@@ -1,13 +1,12 @@
-let PRODUTOS = { sabores: [], bordas: [], bebidas: [], outros: [] };
+let PRODUTOS = { sabores: [], bordas: [], bebidas: [] };
 let PRECOS_PIZZA = [];
 let CONFIG_LOJA = {};
 let IMAGENS_CATEGORIA = {}; // { tradicional: '/uploads/xxx.jpg', ... }
 let CARRINHO = []; // itens acumulados: { tipo_item, pizza_categoria, fatias, sabor_ids, borda_id, quantidade, _nome, _preco }
-let SABOR_ATUAL = null; // { categoria, fatias } - contexto da ficha de produto aberta no momento
+let SABOR_ATUAL = null; // sabor que abriu a ficha de produto no momento
 
 const NOMES_CATEGORIA = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
 const ICONES_CATEGORIA = { tradicional: 'pizza', especial: 'estrela', doce: 'gota', promocao: 'fogo' };
-const CATEGORIAS_ORDEM = ['tradicional', 'especial', 'doce', 'promocao'];
 
 document.addEventListener('DOMContentLoaded', async () => {
     aplicarIcones();
@@ -50,7 +49,6 @@ async function carregarProdutos() {
         PRODUTOS.sabores = produtos.filter(p => p.tipo === 'sabor_pizza');
         PRODUTOS.bordas = produtos.filter(p => p.tipo === 'borda');
         PRODUTOS.bebidas = produtos.filter(p => p.tipo === 'bebida');
-        PRODUTOS.outros = produtos.filter(p => p.tipo === 'outros');
     } catch (err) {
         document.getElementById('secoes-cardapio').innerHTML =
             `<p class="erro">Não foi possível carregar o cardápio. Verifique se o servidor está rodando.</p>`;
@@ -72,7 +70,15 @@ async function carregarStatusLoja() {
         CONFIG_LOJA = config;
         const agora = new Date();
         const horaAtual = agora.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour12: false });
-        const aberto = horaAtual >= config.horario_abertura && horaAtual <= config.horario_fechamento;
+        // Mesmo ajuste do backend: quando o fechamento passa da meia-noite
+        // (ex: abre 17:30, fecha 01:00), a comparação simples "entre
+        // abertura e fechamento" não funciona, porque 01:00 é "menor" que
+        // 17:30. Nesse caso a loja está aberta se a hora atual for >= abertura
+        // OU <= fechamento.
+        const cruzaMeiaNoite = config.horario_fechamento < config.horario_abertura;
+        const aberto = cruzaMeiaNoite
+            ? (horaAtual >= config.horario_abertura || horaAtual <= config.horario_fechamento)
+            : (horaAtual >= config.horario_abertura && horaAtual <= config.horario_fechamento);
 
         if (aberto) {
             faixa.textContent = `Loja aberta · Fecha às ${config.horario_fechamento?.slice(0, 5)}`;
@@ -91,164 +97,72 @@ function obterPreco(categoria, fatias) {
     return item ? Number(item.preco) : null;
 }
 
-// ---------- Renderização do cardápio ----------
-// Layout: uma única seção de "Tamanhos" (lista vertical, de cima pra baixo),
-// sem separar por categoria - a categoria (Tradicional/Especial/Doce/Promoção)
-// só é escolhida dentro da ficha do produto, não na tela inicial.
-// Bebidas e Outros sempre no final da página.
+// ---------- Renderização do cardápio (catálogo por categoria -> tamanho) ----------
 const FATIAS_OPCOES = [4, 6, 8, 12, 14];
-
-function categoriasComSabores() {
-    return CATEGORIAS_ORDEM.filter(cat => PRODUTOS.sabores.some(s => s.categoria === cat));
-}
-
-// Categoria usada como ponto de partida ao abrir a ficha do produto.
-function categoriaPadrao() {
-    return categoriasComSabores()[0] || CATEGORIAS_ORDEM[0];
-}
 
 function renderizarCardapio() {
     const main = document.getElementById('secoes-cardapio');
-    main.innerHTML = `
-        <section class="secao-categoria" id="secao-tamanhos">
-            <h2><span class="icone icone-titulo-secao">${ICONES.pizza}</span> Tamanhos</h2>
-            <div class="lista-linhas" id="lista-tamanhos"></div>
-        </section>
-        <section class="secao-categoria" id="secao-bebidas">
-            <h2><span class="icone icone-titulo-secao">${ICONES.bebida}</span> Bebidas</h2>
-            <div class="lista-linhas" id="lista-bebidas"></div>
-        </section>
-        <section class="secao-categoria" id="secao-outros">
-            <h2><span class="icone icone-titulo-secao">${ICONES.ferramentas}</span> Outros</h2>
-            <div class="lista-linhas" id="lista-outros"></div>
-        </section>
-    `;
+    const categorias = ['tradicional', 'especial', 'doce', 'promocao'];
+    let html = '';
 
-    renderizarTamanhos();
-    renderizarBebidas();
-    renderizarOutros();
-}
+    categorias.forEach(cat => {
+        const sabores = PRODUTOS.sabores.filter(s => s.categoria === cat);
+        if (sabores.length === 0) return; // sem sabores cadastrados nessa categoria ainda
 
-// Seção única de tamanhos: lista vertical, sem escolher categoria ainda.
-// O preço mostrado é "a partir de" (o menor entre as categorias com sabor
-// cadastrado pra aquele tamanho) - a categoria exata é escolhida na ficha.
-function renderizarTamanhos() {
-    const lista = document.getElementById('lista-tamanhos');
-    const categorias = categoriasComSabores();
+        html += `
+            <section class="secao-categoria" id="secao-${cat}">
+                <h2><span class="icone icone-titulo-secao">${ICONES[ICONES_CATEGORIA[cat]]}</span> ${NOMES_CATEGORIA[cat]}</h2>
+                <div class="trilho-cards">
+                    ${FATIAS_OPCOES.map(fatias => {
+                        const preco = obterPreco(cat, fatias);
+                        return `
+                            <button class="card-produto" data-categoria="${cat}" data-fatias="${fatias}">
+                                <div class="card-imagem">${iconeOuImagemCategoria(cat)}</div>
+                                <div class="card-nome">${fatias} fatias</div>
+                                ${preco !== null ? `<div class="card-preco">R$ ${preco.toFixed(2)}</div>` : ''}
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+            </section>
+        `;
+    });
 
-    if (categorias.length === 0) {
-        lista.innerHTML = '<p class="carregando">Nenhum sabor cadastrado ainda.</p>';
-        return;
+    if (PRODUTOS.bebidas.length > 0) {
+        html += `
+            <section class="secao-categoria" id="secao-bebidas">
+                <h2><span class="icone icone-titulo-secao">${ICONES.bebida}</span> Bebidas</h2>
+                <div class="trilho-cards">
+                    ${PRODUTOS.bebidas.map(b => `
+                        <div class="card-produto card-bebida">
+                            <div class="card-imagem"><span class="icone">${ICONES.bebida}</span></div>
+                            <div class="card-nome">${b.nome}</div>
+                            <div class="card-preco">R$ ${Number(b.preco_base).toFixed(2)}</div>
+                            <button class="btn-add-rapido" data-bebida-id="${b.id}"><span class="icone">${ICONES.mais}</span> Adicionar</button>
+                        </div>
+                    `).join('')}
+                </div>
+            </section>
+        `;
     }
 
-    const linhas = FATIAS_OPCOES.map(fatias => {
-        const precos = categorias.map(cat => obterPreco(cat, fatias)).filter(p => p !== null);
-        if (precos.length === 0) return '';
-        const menorPreco = Math.min(...precos);
-        return `
-            <button class="linha-produto" data-fatias="${fatias}">
-                <div class="linha-produto-imagem"><span class="icone">${ICONES.pizza}</span></div>
-                <div class="linha-produto-info">
-                    <div class="linha-produto-nome">${fatias} fatias</div>
-                    <div class="linha-produto-desc">Escolha o tipo e os sabores</div>
-                </div>
-                <span class="card-preco">a partir de R$ ${menorPreco.toFixed(2)}</span>
-                <span class="seta-linha" aria-hidden="true">›</span>
-            </button>
-        `;
-    }).join('');
+    main.innerHTML = html || '<p class="erro">Nenhum item disponível no cardápio ainda.</p>';
 
-    lista.innerHTML = linhas.trim() || '<p class="carregando">Preços não configurados ainda.</p>';
-
-    lista.querySelectorAll('.linha-produto[data-fatias]').forEach(linha => {
-        linha.addEventListener('click', () => abrirFichaProduto(Number(linha.dataset.fatias)));
+    main.querySelectorAll('.card-produto[data-categoria]').forEach(card => {
+        card.addEventListener('click', () => abrirFichaProduto(card.dataset.categoria, Number(card.dataset.fatias)));
     });
-}
-
-function renderizarBebidas() {
-    const secao = document.getElementById('secao-bebidas');
-    if (PRODUTOS.bebidas.length === 0) { secao.remove(); return; }
-
-    const lista = document.getElementById('lista-bebidas');
-    lista.innerHTML = PRODUTOS.bebidas.map(b => `
-        <div class="linha-produto linha-produto-simples">
-            <div class="linha-produto-imagem"><span class="icone">${ICONES.bebida}</span></div>
-            <div class="linha-produto-info"><div class="linha-produto-nome">${b.nome}</div></div>
-            <span class="card-preco">R$ ${Number(b.preco_base).toFixed(2)}</span>
-            <button class="btn-add-rapido" data-bebida-id="${b.id}" aria-label="Adicionar ${escapeHtml(b.nome)}"><span class="icone">${ICONES.mais}</span></button>
-        </div>
-    `).join('');
-
-    lista.querySelectorAll('.btn-add-rapido').forEach(btn => {
+    main.querySelectorAll('.btn-add-rapido').forEach(btn => {
         btn.addEventListener('click', () => adicionarBebidaRapida(Number(btn.dataset.bebidaId)));
     });
 }
 
-// "Outros" - itens do cardápio que não são pizza, borda nem bebida
-// (ex: sobremesas avulsas, molhos extras). Sempre por último na página.
-function renderizarOutros() {
-    const secao = document.getElementById('secao-outros');
-    if (!PRODUTOS.outros || PRODUTOS.outros.length === 0) { secao.remove(); return; }
-
-    const lista = document.getElementById('lista-outros');
-    lista.innerHTML = PRODUTOS.outros.map(o => `
-        <div class="linha-produto linha-produto-simples">
-            <div class="linha-produto-imagem"><span class="icone">${ICONES.ferramentas}</span></div>
-            <div class="linha-produto-info"><div class="linha-produto-nome">${o.nome}</div></div>
-            <span class="card-preco">R$ ${Number(o.preco_base).toFixed(2)}</span>
-            <button class="btn-add-rapido" data-outro-id="${o.id}" aria-label="Adicionar ${escapeHtml(o.nome)}"><span class="icone">${ICONES.mais}</span></button>
-        </div>
-    `).join('');
-
-    lista.querySelectorAll('.btn-add-rapido').forEach(btn => {
-        btn.addEventListener('click', () => adicionarOutroRapido(Number(btn.dataset.outroId)));
-    });
-}
-
 // ---------- Ficha do produto (sheet) ----------
-// A categoria (Tradicional/Especial/Doce/Promoção) é escolhida aqui dentro,
-// através das abas, não mais na tela inicial - só o tamanho vem de fora.
-function abrirFichaProduto(fatias) {
-    SABOR_ATUAL = { categoria: categoriaPadrao(), fatias };
-
-    document.getElementById('qtd-valor').textContent = '1';
-    renderizarAbasCategoriaSheet();
-    renderizarConteudoSheet();
-
-    const selectBorda = document.getElementById('sheet-borda');
-    selectBorda.innerHTML = '<option value="">Sem borda</option>' + PRODUTOS.bordas.map(b =>
-        `<option value="${b.id}" data-preco="${b.preco_base}">${b.nome} (+R$ ${Number(b.preco_base).toFixed(2)})</option>`
-    ).join('');
-
-    document.getElementById('sheet-fundo-produto').classList.remove('oculto');
-}
-
-// Abas de categoria dentro da ficha - só mostra categorias com sabor cadastrado.
-function renderizarAbasCategoriaSheet() {
-    const container = document.getElementById('sheet-categorias');
-    const categorias = categoriasComSabores();
-
-    container.innerHTML = categorias.map(cat => `
-        <button type="button" class="pill-categoria-sheet${cat === SABOR_ATUAL.categoria ? ' ativo' : ''}" data-categoria="${cat}">${NOMES_CATEGORIA[cat]}</button>
-    `).join('');
-
-    container.querySelectorAll('.pill-categoria-sheet').forEach(pill => {
-        pill.addEventListener('click', () => {
-            if (pill.dataset.categoria === SABOR_ATUAL.categoria) return;
-            SABOR_ATUAL.categoria = pill.dataset.categoria;
-            renderizarAbasCategoriaSheet();
-            renderizarConteudoSheet();
-        });
-    });
-}
-
-// Imagem, título, preço e lista de sabores - depende da categoria escolhida
-// nas abas acima, então é chamada de novo toda vez que ela muda.
-function renderizarConteudoSheet() {
-    const { categoria, fatias } = SABOR_ATUAL;
+function abrirFichaProduto(categoria, fatias) {
+    SABOR_ATUAL = { categoria, fatias };
 
     document.getElementById('sheet-imagem').innerHTML = iconeOuImagemCategoria(categoria);
     document.getElementById('sheet-titulo').textContent = `Pizza ${NOMES_CATEGORIA[categoria]} - ${fatias} fatias`;
+    document.getElementById('qtd-valor').textContent = '1';
     atualizarPrecoSheet();
 
     const sabores = PRODUTOS.sabores.filter(s => s.categoria === categoria);
@@ -269,6 +183,13 @@ function renderizarConteudoSheet() {
             alert('Máximo de 3 sabores por pizza.');
         }
     };
+
+    const selectBorda = document.getElementById('sheet-borda');
+    selectBorda.innerHTML = '<option value="">Sem borda</option>' + PRODUTOS.bordas.map(b =>
+        `<option value="${b.id}" data-preco="${b.preco_base}">${b.nome} (+R$ ${Number(b.preco_base).toFixed(2)})</option>`
+    ).join('');
+
+    document.getElementById('sheet-fundo-produto').classList.remove('oculto');
 }
 
 function atualizarPrecoSheet() {
@@ -328,23 +249,6 @@ function adicionarBebidaRapida(produtoId) {
             quantidade: 1,
             _nome: bebida.nome,
             _preco: Number(bebida.preco_base)
-        });
-    }
-    atualizarBarraCarrinho();
-}
-
-function adicionarOutroRapido(produtoId) {
-    const produto = PRODUTOS.outros.find(o => o.id === produtoId);
-    const existente = CARRINHO.find(i => i.tipo_item === 'outros' && i.produto_id === produtoId);
-    if (existente) {
-        existente.quantidade += 1;
-    } else {
-        CARRINHO.push({
-            tipo_item: 'outros',
-            produto_id: produtoId,
-            quantidade: 1,
-            _nome: produto.nome,
-            _preco: Number(produto.preco_base)
         });
     }
     atualizarBarraCarrinho();
@@ -475,7 +379,7 @@ async function confirmarPedido() {
                     quantidade: item.quantidade
                 };
             }
-            return { tipo_item: item.tipo_item, produto_id: item.produto_id, quantidade: item.quantidade };
+            return { tipo_item: 'bebida', produto_id: item.produto_id, quantidade: item.quantidade };
         })
     };
 
@@ -572,8 +476,8 @@ function configurarEventos() {
 
 function filtrarBusca() {
     const termo = document.getElementById('input-busca').value.trim().toLowerCase();
-    document.querySelectorAll('.linha-produto').forEach(linha => {
-        const nome = linha.querySelector('.linha-produto-nome').textContent.toLowerCase();
-        linha.style.display = nome.includes(termo) ? '' : 'none';
+    document.querySelectorAll('.card-produto').forEach(card => {
+        const nome = card.querySelector('.card-nome').textContent.toLowerCase();
+        card.style.display = nome.includes(termo) ? '' : 'none';
     });
 }
