@@ -111,7 +111,7 @@ function logout() {
 
 async function iniciarPainel() {
     document.getElementById('tela-login').style.display = 'none';
-    document.getElementById('painel').style.display = 'flex';
+    document.getElementById('painel').style.display = 'block';
 
     conectarSocket();
     tentarAutoativarSom();
@@ -401,9 +401,9 @@ function carregarSaboresAdmin() {
         return;
     }
 
-    container.innerHTML = '<p class="rotulo-grupo-selecao">Sabores (até 3):</p><div class="grade-selecao-itens">' + sabores.map(s => `
-        <label class="opcao-selecao-item"><input type="checkbox" name="adm-sabores" value="${s.id}"> ${escapeHtml(s.nome)}</label>
-    `).join('') + '</div>';
+    container.innerHTML = '<p><strong>Sabores (até 3):</strong></p>' + sabores.map(s => `
+        <label><input type="checkbox" name="adm-sabores" value="${s.id}"> ${s.nome}</label><br>
+    `).join('');
 
     container.onchange = () => {
         const marcados = container.querySelectorAll('input[name="adm-sabores"]:checked');
@@ -432,9 +432,9 @@ function renderizarBebidasAdmin() {
         container.innerHTML = '';
         return;
     }
-    container.innerHTML = '<p class="rotulo-grupo-selecao">Bebidas:</p><div class="grade-selecao-itens">' + PRODUTOS_ADMIN.bebidas.map(b => `
-        <label class="opcao-selecao-item"><input type="checkbox" name="adm-bebidas" value="${b.id}" data-preco="${b.preco_base}"> ${escapeHtml(b.nome)} (R$ ${Number(b.preco_base).toFixed(2)})</label>
-    `).join('') + '</div>';
+    container.innerHTML = '<p><strong>Bebidas:</strong></p>' + PRODUTOS_ADMIN.bebidas.map(b => `
+        <label><input type="checkbox" name="adm-bebidas" value="${b.id}" data-preco="${b.preco_base}"> ${b.nome} (R$ ${Number(b.preco_base).toFixed(2)})</label><br>
+    `).join('');
 }
 
 function controlarCamposEntregaAdmin(valor) {
@@ -531,8 +531,8 @@ function aplicarFiltroCardapio() {
     lista.innerHTML = filtrados.map(p => `
         <li class="item-cardapio">
             <div>
-                <span>${escapeHtml(p.nome)}</span>
-                ${p.descricao ? `<div class="descricao-produto">${escapeHtml(p.descricao)}</div>` : ''}
+                <span>${p.nome}</span>
+                ${p.descricao ? `<div class="descricao-produto">${p.descricao}</div>` : ''}
             </div>
             <div>
                 <label>
