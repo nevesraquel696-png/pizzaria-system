@@ -3,8 +3,7 @@ let PRECOS_PIZZA = [];
 let CONFIG_LOJA = {};
 let IMAGENS_CATEGORIA = {}; // { tradicional: '/uploads/xxx.jpg', ... }
 let CARRINHO = []; // itens acumulados: { tipo_item, pizza_categoria, fatias, sabor_ids, borda_id, quantidade, _nome, _preco }
-let SABOR_ATUAL = null; // sabor que abriu a ficha de produto no momento
-let CATEGORIA_TAMANHOS_ATUAL = 'tradicional'; // categoria escolhida nos chips, controla a seção única de tamanhos
+let SABOR_ATUAL = null; // { categoria, fatias } - contexto da ficha de produto aberta no momento
 
 const NOMES_CATEGORIA = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
 const ICONES_CATEGORIA = { tradicional: 'pizza', especial: 'estrela', doce: 'gota', promocao: 'fogo' };
@@ -93,29 +92,26 @@ function obterPreco(categoria, fatias) {
 }
 
 // ---------- Renderização do cardápio ----------
-// Layout: uma única seção de "Tamanhos" (lista vertical, de cima pra baixo)
-// que mostra a categoria escolhida nos chips, seguida de Bebidas e Outros
-// sempre no final da página - em vez do antigo carrossel por categoria.
+// Layout: uma única seção de "Tamanhos" (lista vertical, de cima pra baixo),
+// sem separar por categoria - a categoria (Tradicional/Especial/Doce/Promoção)
+// só é escolhida dentro da ficha do produto, não na tela inicial.
+// Bebidas e Outros sempre no final da página.
 const FATIAS_OPCOES = [4, 6, 8, 12, 14];
 
-// Primeira categoria (na ordem do cardápio físico) que já tem sabor
-// cadastrado - evita abrir numa categoria vazia se "Tradicional" não tiver nada ainda.
-function categoriaPadrao() {
-    return CATEGORIAS_ORDEM.find(cat => PRODUTOS.sabores.some(s => s.categoria === cat)) || CATEGORIAS_ORDEM[0];
+function categoriasComSabores() {
+    return CATEGORIAS_ORDEM.filter(cat => PRODUTOS.sabores.some(s => s.categoria === cat));
 }
 
-function sincronizarChipAtivo(categoria) {
-    document.querySelectorAll('.chip').forEach(c => c.classList.toggle('ativo', c.dataset.cat === categoria));
+// Categoria usada como ponto de partida ao abrir a ficha do produto.
+function categoriaPadrao() {
+    return categoriasComSabores()[0] || CATEGORIAS_ORDEM[0];
 }
 
 function renderizarCardapio() {
-    CATEGORIA_TAMANHOS_ATUAL = categoriaPadrao();
-    sincronizarChipAtivo(CATEGORIA_TAMANHOS_ATUAL);
-
     const main = document.getElementById('secoes-cardapio');
     main.innerHTML = `
         <section class="secao-categoria" id="secao-tamanhos">
-            <h2><span class="icone icone-titulo-secao" id="icone-secao-tamanhos"></span> <span id="titulo-secao-tamanhos"></span></h2>
+            <h2><span class="icone icone-titulo-secao">${ICONES.pizza}</span> Tamanhos</h2>
             <div class="lista-linhas" id="lista-tamanhos"></div>
         </section>
         <section class="secao-categoria" id="secao-bebidas">
@@ -133,41 +129,39 @@ function renderizarCardapio() {
     renderizarOutros();
 }
 
-// Seção única de tamanhos: lista vertical (de cima pra baixo) dos tamanhos
-// disponíveis pra categoria escolhida nos chips no momento.
+// Seção única de tamanhos: lista vertical, sem escolher categoria ainda.
+// O preço mostrado é "a partir de" (o menor entre as categorias com sabor
+// cadastrado pra aquele tamanho) - a categoria exata é escolhida na ficha.
 function renderizarTamanhos() {
-    const categoria = CATEGORIA_TAMANHOS_ATUAL;
-    document.getElementById('icone-secao-tamanhos').innerHTML = ICONES[ICONES_CATEGORIA[categoria]] || '';
-    document.getElementById('titulo-secao-tamanhos').textContent = NOMES_CATEGORIA[categoria] || '';
-
     const lista = document.getElementById('lista-tamanhos');
-    const sabores = PRODUTOS.sabores.filter(s => s.categoria === categoria);
+    const categorias = categoriasComSabores();
 
-    if (sabores.length === 0) {
-        lista.innerHTML = '<p class="carregando">Nenhum sabor cadastrado nessa categoria ainda.</p>';
+    if (categorias.length === 0) {
+        lista.innerHTML = '<p class="carregando">Nenhum sabor cadastrado ainda.</p>';
         return;
     }
 
     const linhas = FATIAS_OPCOES.map(fatias => {
-        const preco = obterPreco(categoria, fatias);
-        if (preco === null) return '';
+        const precos = categorias.map(cat => obterPreco(cat, fatias)).filter(p => p !== null);
+        if (precos.length === 0) return '';
+        const menorPreco = Math.min(...precos);
         return `
-            <button class="linha-produto" data-categoria="${categoria}" data-fatias="${fatias}">
-                <div class="linha-produto-imagem">${iconeOuImagemCategoria(categoria)}</div>
+            <button class="linha-produto" data-fatias="${fatias}">
+                <div class="linha-produto-imagem"><span class="icone">${ICONES.pizza}</span></div>
                 <div class="linha-produto-info">
                     <div class="linha-produto-nome">${fatias} fatias</div>
-                    <div class="linha-produto-desc">Escolha até 3 sabores</div>
+                    <div class="linha-produto-desc">Escolha o tipo e os sabores</div>
                 </div>
-                <span class="card-preco">R$ ${preco.toFixed(2)}</span>
+                <span class="card-preco">a partir de R$ ${menorPreco.toFixed(2)}</span>
                 <span class="seta-linha" aria-hidden="true">›</span>
             </button>
         `;
     }).join('');
 
-    lista.innerHTML = linhas.trim() || '<p class="carregando">Preços não configurados para essa categoria ainda.</p>';
+    lista.innerHTML = linhas.trim() || '<p class="carregando">Preços não configurados ainda.</p>';
 
-    lista.querySelectorAll('.linha-produto[data-categoria]').forEach(linha => {
-        linha.addEventListener('click', () => abrirFichaProduto(linha.dataset.categoria, Number(linha.dataset.fatias)));
+    lista.querySelectorAll('.linha-produto[data-fatias]').forEach(linha => {
+        linha.addEventListener('click', () => abrirFichaProduto(Number(linha.dataset.fatias)));
     });
 }
 
@@ -212,12 +206,49 @@ function renderizarOutros() {
 }
 
 // ---------- Ficha do produto (sheet) ----------
-function abrirFichaProduto(categoria, fatias) {
-    SABOR_ATUAL = { categoria, fatias };
+// A categoria (Tradicional/Especial/Doce/Promoção) é escolhida aqui dentro,
+// através das abas, não mais na tela inicial - só o tamanho vem de fora.
+function abrirFichaProduto(fatias) {
+    SABOR_ATUAL = { categoria: categoriaPadrao(), fatias };
+
+    document.getElementById('qtd-valor').textContent = '1';
+    renderizarAbasCategoriaSheet();
+    renderizarConteudoSheet();
+
+    const selectBorda = document.getElementById('sheet-borda');
+    selectBorda.innerHTML = '<option value="">Sem borda</option>' + PRODUTOS.bordas.map(b =>
+        `<option value="${b.id}" data-preco="${b.preco_base}">${b.nome} (+R$ ${Number(b.preco_base).toFixed(2)})</option>`
+    ).join('');
+
+    document.getElementById('sheet-fundo-produto').classList.remove('oculto');
+}
+
+// Abas de categoria dentro da ficha - só mostra categorias com sabor cadastrado.
+function renderizarAbasCategoriaSheet() {
+    const container = document.getElementById('sheet-categorias');
+    const categorias = categoriasComSabores();
+
+    container.innerHTML = categorias.map(cat => `
+        <button type="button" class="pill-categoria-sheet${cat === SABOR_ATUAL.categoria ? ' ativo' : ''}" data-categoria="${cat}">${NOMES_CATEGORIA[cat]}</button>
+    `).join('');
+
+    container.querySelectorAll('.pill-categoria-sheet').forEach(pill => {
+        pill.addEventListener('click', () => {
+            if (pill.dataset.categoria === SABOR_ATUAL.categoria) return;
+            SABOR_ATUAL.categoria = pill.dataset.categoria;
+            renderizarAbasCategoriaSheet();
+            renderizarConteudoSheet();
+        });
+    });
+}
+
+// Imagem, título, preço e lista de sabores - depende da categoria escolhida
+// nas abas acima, então é chamada de novo toda vez que ela muda.
+function renderizarConteudoSheet() {
+    const { categoria, fatias } = SABOR_ATUAL;
 
     document.getElementById('sheet-imagem').innerHTML = iconeOuImagemCategoria(categoria);
     document.getElementById('sheet-titulo').textContent = `Pizza ${NOMES_CATEGORIA[categoria]} - ${fatias} fatias`;
-    document.getElementById('qtd-valor').textContent = '1';
     atualizarPrecoSheet();
 
     const sabores = PRODUTOS.sabores.filter(s => s.categoria === categoria);
@@ -238,13 +269,6 @@ function abrirFichaProduto(categoria, fatias) {
             alert('Máximo de 3 sabores por pizza.');
         }
     };
-
-    const selectBorda = document.getElementById('sheet-borda');
-    selectBorda.innerHTML = '<option value="">Sem borda</option>' + PRODUTOS.bordas.map(b =>
-        `<option value="${b.id}" data-preco="${b.preco_base}">${b.nome} (+R$ ${Number(b.preco_base).toFixed(2)})</option>`
-    ).join('');
-
-    document.getElementById('sheet-fundo-produto').classList.remove('oculto');
 }
 
 function atualizarPrecoSheet() {
@@ -540,16 +564,8 @@ function configurarEventos() {
         chip.addEventListener('click', () => {
             document.querySelectorAll('.chip').forEach(c => c.classList.remove('ativo'));
             chip.classList.add('ativo');
-
-            if (chip.dataset.cat === 'bebidas') {
-                const secao = document.getElementById('secao-bebidas');
-                if (secao) secao.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                return;
-            }
-
-            CATEGORIA_TAMANHOS_ATUAL = chip.dataset.cat;
-            renderizarTamanhos();
-            document.getElementById('secao-tamanhos').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const secao = document.getElementById(`secao-${chip.dataset.cat}`);
+            if (secao) secao.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
 }

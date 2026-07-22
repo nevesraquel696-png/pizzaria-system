@@ -331,7 +331,31 @@ body {
 .rotulo-sheet {
     display: block;
     width: fit-content;
-    margin: 0 auto 6px;
+    margin: 0 auto 10px;
+}
+
+.sheet-categorias {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 0 0 14px;
+}
+
+.pill-categoria-sheet {
+    background: var(--cor-creme);
+    border: 1.5px solid #e2d4ae;
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--cor-texto);
+}
+
+.pill-categoria-sheet.ativo {
+    background: var(--cor-verde-escuro);
+    border-color: var(--cor-verde-escuro);
+    color: #fff;
 }
 
 .sheet h2 {
