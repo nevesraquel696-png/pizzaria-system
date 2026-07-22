@@ -1,24 +1,25 @@
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('./cloudinary');
 
-const pastaUploads = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(pastaUploads)) fs.mkdirSync(pastaUploads, { recursive: true });
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, pastaUploads),
-    filename: (req, file, cb) => {
-        const extensao = path.extname(file.originalname).toLowerCase();
-        const nomeUnico = `categoria-${req.params.categoria}-${Date.now()}${extensao}`;
-        cb(null, nomeUnico);
-    }
+// As imagens de categoria não ficam mais salvas no disco do servidor -
+// o disco do Render é apagado toda vez que o serviço reinicia (deploy novo,
+// ou o dyno "dormindo" no plano gratuito), o que fazia as imagens sumirem.
+// Agora o multer manda o arquivo direto para o Cloudinary, que guarda de
+// forma permanente e devolve uma URL pública fixa.
+const storage = new CloudinaryStorage({
+    cloudinary,
+    params: (req, file) => ({
+        folder: 'pizzaria/categorias',
+        public_id: `categoria-${req.params.categoria}-${Date.now()}`,
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+    }),
 });
 
 function filtrarArquivo(req, file, cb) {
     const tiposPermitidos = /jpeg|jpg|png|webp|gif/;
-    const extensaoValida = tiposPermitidos.test(path.extname(file.originalname).toLowerCase());
     const mimeValido = tiposPermitidos.test(file.mimetype);
-    if (extensaoValida && mimeValido) return cb(null, true);
+    if (mimeValido) return cb(null, true);
     cb(new Error('Apenas imagens (jpg, png, webp, gif) são permitidas.'));
 }
 

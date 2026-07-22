@@ -42,7 +42,8 @@ CREATE TABLE usuarios (
 -- nos cards de tamanho do cliente, se o admin fizer upload de uma)
 CREATE TABLE imagens_categoria (
     categoria ENUM('tradicional','especial','doce','promocao') PRIMARY KEY,
-    imagem_url VARCHAR(255) DEFAULT NULL
+    imagem_url VARCHAR(255) DEFAULT NULL,
+    imagem_public_id VARCHAR(255) DEFAULT NULL
 );
 INSERT INTO imagens_categoria (categoria, imagem_url) VALUES
 ('tradicional', NULL), ('especial', NULL), ('doce', NULL), ('promocao', NULL);
