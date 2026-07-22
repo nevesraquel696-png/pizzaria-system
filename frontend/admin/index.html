@@ -45,6 +45,7 @@
                 <button class="aba-btn" data-aba="novo-pedido"><span class="icone" data-icone="mais"></span><span class="rotulo-aba">Criar Pedido</span></button>
                 <button class="aba-btn" data-aba="cardapio"><span class="icone" data-icone="ferramentas"></span><span class="rotulo-aba">Cardápio</span></button>
                 <button class="aba-btn" data-aba="precos"><span class="icone" data-icone="cifrao"></span><span class="rotulo-aba">Preços</span></button>
+                <button class="aba-btn" data-aba="cupons"><span class="icone" data-icone="etiqueta"></span><span class="rotulo-aba">Cupons</span></button>
                 <button class="aba-btn" data-aba="config"><span class="icone" data-icone="engrenagem"></span><span class="rotulo-aba">Config.</span></button>
             </nav>
 
@@ -191,6 +192,41 @@
             </div>
         </section>
 
+        <!-- ABA: Cupons de desconto -->
+        <section id="aba-cupons" class="aba-conteudo" style="display:none;">
+            <h3>Cupons de Desconto</h3>
+            <p class="dica">O cliente digita o código no carrinho pra aplicar o desconto. Cupons desativados ou vencidos deixam de funcionar automaticamente.</p>
+
+            <div class="grid-2">
+                <div class="painel-card">
+                    <h4 class="titulo-card">Criar Cupom</h4>
+                    <label>Código: <input type="text" id="cupom-codigo" placeholder="Ex: BEMVINDO10" style="text-transform:uppercase;"></label>
+
+                    <div class="linha-form-2">
+                        <label>Tipo de desconto:
+                            <select id="cupom-tipo">
+                                <option value="percentual">Percentual (%)</option>
+                                <option value="fixo">Valor fixo (R$)</option>
+                            </select>
+                        </label>
+                        <label>Valor: <input type="number" id="cupom-valor" step="0.01" placeholder="Ex: 10"></label>
+                    </div>
+
+                    <div class="linha-form-2">
+                        <label>Validade (opcional): <input type="date" id="cupom-validade"></label>
+                        <label>Limite de uso (opcional): <input type="number" id="cupom-limite" min="1" placeholder="Ex: 50"></label>
+                    </div>
+
+                    <button id="btn-criar-cupom">Criar Cupom</button>
+                </div>
+
+                <div class="painel-card">
+                    <h4 class="titulo-card">Cupons Cadastrados</h4>
+                    <ul id="lista-cupons"><li class="carregando">Carregando...</li></ul>
+                </div>
+            </div>
+        </section>
+
         <!-- ABA: Configurações gerais -->
         <section id="aba-config" class="aba-conteudo" style="display:none;">
 
@@ -220,12 +256,22 @@
                 <label>Número (com DDD, só números): <input type="text" id="config-whatsapp" placeholder="Ex: 83999999999"></label>
             </div>
 
+            <div class="painel-card secao-config">
+                <h3 class="cabecalho-secao-config"><span class="icone-secao-config icone" data-icone="etiqueta"></span>Banner de Promoção</h3>
+                <p class="dica">Aviso fixo no topo da loja do cliente, tipo "Terça é dia de pizza em dobro!". Não aplica desconto sozinho - pra desconto, use a aba Cupons.</p>
+                <label class="opcao-checkbox">
+                    <input type="checkbox" id="config-promocao-ativa">
+                    Mostrar banner de promoção na loja
+                </label>
+                <label>Texto do banner: <input type="text" id="config-promocao-texto" placeholder="Ex: Toda terça, a pizza de 8 fatias sai por R$ 35!" maxlength="150"></label>
+            </div>
+
             <button id="btn-salvar-config">Salvar Configurações</button>
 
             <div class="painel-card secao-config" style="margin-top:22px;">
-                <h3 class="cabecalho-secao-config"><span class="icone-secao-config icone" data-icone="imagem"></span>Imagens dos Tamanhos de Pizza</h3>
-                <p class="dica">Substitui o ícone padrão pelos cards de tamanho no site do cliente, por categoria. Deixe em branco pra usar o ícone padrão.</p>
-                <div id="lista-imagens-categoria" class="grid-2"></div>
+                <h3 class="cabecalho-secao-config"><span class="icone-secao-config icone" data-icone="imagem"></span>Fotos por Tamanho de Pizza</h3>
+                <p class="dica">Substitui o ícone padrão pelos cards de tamanho no site do cliente (4, 6, 8, 12 e 14 fatias). Deixe em branco pra usar o ícone padrão.</p>
+                <div id="lista-imagens-tamanho" class="grid-2"></div>
             </div>
         </section>
 

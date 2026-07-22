@@ -24,17 +24,13 @@ const verificarHorarioFuncionamento = async (req, res, next) => {
 
         const { horario_abertura, horario_fechamento } = results[0];
 
-        // Quando o fechamento passa da meia-noite (ex: abre 17:30, fecha
-        // 01:00), o horário de fechamento em número é "menor" que o de
-        // abertura. Nesse caso a lógica de comparação precisa ser invertida:
-        // a loja está aberta se a hora atual for >= abertura OU <= fechamento
-        // (em vez de "entre" abertura e fechamento, como no caso normal).
-        const cruzaMeiaNoite = horario_fechamento < horario_abertura;
-        const aberto = cruzaMeiaNoite
-            ? (horaAtual >= horario_abertura || horaAtual <= horario_fechamento)
-            : (horaAtual >= horario_abertura && horaAtual <= horario_fechamento);
+        console.log('--- Verificação de horário ---');
+        console.log('Hora atual (Brasil):', JSON.stringify(horaAtual));
+        console.log('Abertura configurada:', JSON.stringify(horario_abertura));
+        console.log('Fechamento configurado:', JSON.stringify(horario_fechamento));
+        console.log('Resultado: hora < abertura?', horaAtual < horario_abertura, '| hora > fechamento?', horaAtual > horario_fechamento);
 
-        if (!aberto) {
+        if (horaAtual < horario_abertura || horaAtual > horario_fechamento) {
             return res.status(403).json({
                 fechado: true,
                 mensagem: `Pizzaria fechada! Horário de funcionamento: ${horario_abertura} às ${horario_fechamento}.`

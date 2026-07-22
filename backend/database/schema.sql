@@ -25,7 +25,9 @@ CREATE TABLE configuracoes (
     horario_fechamento TIME NOT NULL DEFAULT '23:30:00',
     taxa_entrega DECIMAL(10,2) DEFAULT 0.00,
     chave_pix VARCHAR(255) DEFAULT NULL,
-    whatsapp_numero VARCHAR(20) DEFAULT NULL
+    whatsapp_numero VARCHAR(20) DEFAULT NULL,
+    promocao_ativa BOOLEAN DEFAULT FALSE,
+    promocao_texto VARCHAR(255) DEFAULT NULL
 );
 INSERT INTO configuracoes (horario_abertura, horario_fechamento) VALUES ('17:30:00', '23:30:00');
 
@@ -38,15 +40,29 @@ CREATE TABLE usuarios (
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Imagem customizada por categoria (aparece no lugar do ícone genérico
--- nos cards de tamanho do cliente, se o admin fizer upload de uma)
-CREATE TABLE imagens_categoria (
-    categoria ENUM('tradicional','especial','doce','promocao') PRIMARY KEY,
-    imagem_url VARCHAR(255) DEFAULT NULL,
-    imagem_public_id VARCHAR(255) DEFAULT NULL
+-- Cupons de desconto (criados pelo admin em Configurações > Cupons)
+CREATE TABLE cupons (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    codigo VARCHAR(40) NOT NULL UNIQUE,
+    tipo ENUM('percentual', 'fixo') NOT NULL,
+    valor DECIMAL(10,2) NOT NULL,
+    validade DATE DEFAULT NULL,
+    limite_uso INT DEFAULT NULL,
+    usos_atuais INT DEFAULT 0,
+    ativo BOOLEAN DEFAULT TRUE,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-INSERT INTO imagens_categoria (categoria, imagem_url) VALUES
-('tradicional', NULL), ('especial', NULL), ('doce', NULL), ('promocao', NULL);
+
+-- Imagem customizada por TAMANHO de pizza (aparece no lugar do ícone genérico
+-- nos cards de tamanho do cliente, se o admin fizer upload de uma). Guardada
+-- em base64 direto no banco - nada de arquivo em disco, que se perde toda
+-- vez que o servidor reinicia em serviços como o Render.
+CREATE TABLE imagens_tamanho (
+    fatias INT PRIMARY KEY,
+    imagem_base64 LONGTEXT DEFAULT NULL
+);
+INSERT INTO imagens_tamanho (fatias, imagem_base64) VALUES
+(4, NULL), (6, NULL), (8, NULL), (12, NULL), (14, NULL);
 
 -- Tabela de preços: uma linha por combinação categoria + tamanho.
 -- Edite os valores pelo painel admin (ou direto aqui) com os preços reais.
@@ -87,6 +103,8 @@ CREATE TABLE pedidos (
     forma_pagamento ENUM('pix','cartao','dinheiro') NOT NULL,
     troco_para DECIMAL(10,2) DEFAULT 0.00,
     taxa_entrega DECIMAL(10,2) DEFAULT 0.00,
+    cupom_codigo VARCHAR(40) DEFAULT NULL,
+    desconto DECIMAL(10,2) DEFAULT 0.00,
     status ENUM('pendente','preparo','saiu_entrega','entregue') DEFAULT 'pendente',
     total DECIMAL(10,2) NOT NULL,
     vezes_impresso INT DEFAULT 1,

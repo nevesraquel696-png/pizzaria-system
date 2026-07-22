@@ -1,9 +1,10 @@
 let PRODUTOS = { sabores: [], bordas: [], bebidas: [], outros: [] };
 let PRECOS_PIZZA = [];
 let CONFIG_LOJA = {};
-let IMAGENS_CATEGORIA = {}; // { tradicional: '/uploads/xxx.jpg', ... }
+let IMAGENS_TAMANHO = {}; // { 4: 'data:image/...', 6: ..., ... } - base64 vindo do banco
 let CARRINHO = []; // itens acumulados: { tipo_item, pizza_categoria, fatias, sabor_ids, borda_id, quantidade, _nome, _preco }
 let SABOR_ATUAL = null; // { categoria, fatias } - contexto da ficha de produto aberta no momento
+let CUPOM_APLICADO = null; // { codigo, tipo, valor, desconto } - null se nenhum cupom válido aplicado
 
 const NOMES_CATEGORIA = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
 const ICONES_CATEGORIA = { tradicional: 'pizza', especial: 'estrela', doce: 'gota', promocao: 'fogo' };
@@ -11,7 +12,7 @@ const CATEGORIAS_ORDEM = ['tradicional', 'especial', 'doce', 'promocao'];
 
 document.addEventListener('DOMContentLoaded', async () => {
     aplicarIcones();
-    await Promise.all([carregarProdutos(), carregarPrecos(), carregarStatusLoja(), carregarImagensCategoria()]);
+    await Promise.all([carregarProdutos(), carregarPrecos(), carregarStatusLoja(), carregarImagensTamanho()]);
     renderizarCardapio();
     configurarEventos();
 });
@@ -23,25 +24,26 @@ function aplicarIcones() {
     });
 }
 
-async function carregarImagensCategoria() {
+async function carregarImagensTamanho() {
     try {
-        const imagens = await apiFetch('/imagens-categoria');
+        const imagens = await apiFetch('/imagens-tamanho');
         imagens.forEach(img => {
-            if (img.imagem_url) IMAGENS_CATEGORIA[img.categoria] = img.imagem_url;
+            if (img.imagem_base64) IMAGENS_TAMANHO[img.fatias] = img.imagem_base64;
         });
     } catch (err) {
-        console.error('Erro ao carregar imagens de categoria:', err.message);
+        console.error('Erro ao carregar imagens de tamanho:', err.message);
     }
 }
 
 // Retorna o HTML pra mostrar no "quadrado" do card: a foto customizada do
-// admin, se existir, senão o ícone SVG padrão
-function iconeOuImagemCategoria(categoria) {
-    if (IMAGENS_CATEGORIA[categoria]) {
-        const urlCompleta = API_URL.replace('/api', '') + IMAGENS_CATEGORIA[categoria];
-        return `<img src="${urlCompleta}" alt="${NOMES_CATEGORIA[categoria]}" class="imagem-categoria-card">`;
+// admin pra esse tamanho, se existir, senão o ícone SVG padrão de pizza.
+// Já vem em base64 direto do banco - não depende de nenhum arquivo em disco,
+// que era o motivo da foto sumir quando o servidor reiniciava.
+function iconeOuImagemTamanho(fatias) {
+    if (IMAGENS_TAMANHO[fatias]) {
+        return `<img src="${IMAGENS_TAMANHO[fatias]}" alt="${fatias} fatias" class="imagem-categoria-card">`;
     }
-    return `<span class="icone">${ICONES[ICONES_CATEGORIA[categoria]]}</span>`;
+    return `<span class="icone">${ICONES.pizza}</span>`;
 }
 
 async function carregarProdutos() {
@@ -81,8 +83,22 @@ async function carregarStatusLoja() {
             faixa.textContent = `Loja fechada · Abre hoje às ${config.horario_abertura?.slice(0, 5)}`;
             faixa.classList.remove('aberta');
         }
+
+        renderizarFaixaPromocao(config);
     } catch (err) {
         faixa.style.display = 'none';
+    }
+}
+
+// Banner fixo de promoção, configurado pelo admin - só um aviso, não aplica
+// desconto sozinho (desconto de verdade é via cupom).
+function renderizarFaixaPromocao(config) {
+    const faixa = document.getElementById('faixa-promocao');
+    if (config.promocao_ativa && config.promocao_texto) {
+        faixa.textContent = `📣 ${config.promocao_texto}`;
+        faixa.classList.remove('oculto');
+    } else {
+        faixa.classList.add('oculto');
     }
 }
 
@@ -147,7 +163,7 @@ function renderizarTamanhos() {
         const menorPreco = Math.min(...precos);
         return `
             <button class="linha-produto" data-fatias="${fatias}">
-                <div class="linha-produto-imagem"><span class="icone">${ICONES.pizza}</span></div>
+                <div class="linha-produto-imagem">${iconeOuImagemTamanho(fatias)}</div>
                 <div class="linha-produto-info">
                     <div class="linha-produto-nome">${fatias} fatias</div>
                     <div class="linha-produto-desc">Escolha o tipo e os sabores</div>
@@ -247,7 +263,7 @@ function renderizarAbasCategoriaSheet() {
 function renderizarConteudoSheet() {
     const { categoria, fatias } = SABOR_ATUAL;
 
-    document.getElementById('sheet-imagem').innerHTML = iconeOuImagemCategoria(categoria);
+    document.getElementById('sheet-imagem').innerHTML = iconeOuImagemTamanho(fatias);
     document.getElementById('sheet-titulo').textContent = `Pizza ${NOMES_CATEGORIA[categoria]} - ${fatias} fatias`;
     atualizarPrecoSheet();
 
@@ -361,9 +377,24 @@ function calcularTaxaEntrega() {
     return tipoEntrega === 'entrega' ? Number(CONFIG_LOJA.taxa_entrega || 0) : 0;
 }
 
+function calcularSubtotalCarrinho() {
+    return CARRINHO.reduce((soma, item) => soma + item._preco * item.quantidade, 0);
+}
+
+// Recalculado a partir do subtotal atual (não guarda um valor fixo), pra
+// ficar certo mesmo se o cliente mudar o carrinho depois de aplicar o cupom.
+function calcularDesconto() {
+    if (!CUPOM_APLICADO) return 0;
+    const subtotal = calcularSubtotalCarrinho();
+    const desconto = CUPOM_APLICADO.tipo === 'percentual'
+        ? subtotal * (CUPOM_APLICADO.valor / 100)
+        : CUPOM_APLICADO.valor;
+    return Math.min(desconto, subtotal);
+}
+
 function calcularTotalCarrinho() {
-    const subtotal = CARRINHO.reduce((soma, item) => soma + item._preco * item.quantidade, 0);
-    return subtotal + calcularTaxaEntrega();
+    const total = calcularSubtotalCarrinho() + calcularTaxaEntrega() - calcularDesconto();
+    return Math.max(0, total);
 }
 
 function atualizarBarraCarrinho() {
@@ -415,7 +446,54 @@ function renderizarCarrinho() {
         linhaTaxa.classList.add('oculto');
     }
 
+    const desconto = calcularDesconto();
+    const linhaDesconto = document.getElementById('linha-desconto');
+    if (CUPOM_APLICADO && desconto > 0) {
+        linhaDesconto.classList.remove('oculto');
+        document.getElementById('codigo-cupom-aplicado').textContent = CUPOM_APLICADO.codigo;
+        document.getElementById('valor-desconto').textContent = `-R$ ${desconto.toFixed(2)}`;
+    } else {
+        linhaDesconto.classList.add('oculto');
+    }
+
     document.getElementById('carrinho-total').textContent = `R$ ${calcularTotalCarrinho().toFixed(2)}`;
+}
+
+// Confere o cupom com o servidor e, se válido, guarda em CUPOM_APLICADO pra
+// entrar no cálculo do total. O desconto de verdade é revalidado de novo no
+// servidor quando o pedido é confirmado - isso aqui é só a prévia pro cliente.
+async function aplicarCupom() {
+    const input = document.getElementById('input-cupom');
+    const codigo = input.value.trim();
+    const msg = document.getElementById('mensagem-cupom');
+
+    if (!codigo) return;
+
+    if (CARRINHO.length === 0) {
+        return exibirMensagemCupom('Adicione itens ao carrinho antes de aplicar um cupom.', false);
+    }
+
+    try {
+        const resultado = await apiFetch('/cupons/validar', {
+            method: 'POST',
+            body: JSON.stringify({ codigo, subtotal: calcularSubtotalCarrinho() })
+        });
+        CUPOM_APLICADO = resultado;
+        exibirMensagemCupom(`Cupom ${resultado.codigo} aplicado! -R$ ${resultado.desconto.toFixed(2)}`, true);
+    } catch (err) {
+        CUPOM_APLICADO = null;
+        exibirMensagemCupom(err.message, false);
+    }
+
+    renderizarCarrinho();
+    atualizarBarraCarrinho();
+}
+
+function exibirMensagemCupom(texto, sucesso) {
+    const msg = document.getElementById('mensagem-cupom');
+    msg.textContent = texto;
+    msg.classList.remove('oculto', 'mensagem-cupom-sucesso', 'mensagem-cupom-erro');
+    msg.classList.add(sucesso ? 'mensagem-cupom-sucesso' : 'mensagem-cupom-erro');
 }
 
 function controlarCamposEntrega(valor) {
@@ -464,6 +542,7 @@ async function confirmarPedido() {
         observacoes: observacoes || null,
         forma_pagamento: formaPagamento,
         troco_para: formaPagamento === 'dinheiro' ? Number(troco || 0) : 0,
+        cupom_codigo: CUPOM_APLICADO ? CUPOM_APLICADO.codigo : null,
         itens: CARRINHO.map(item => {
             if (item.tipo_item === 'pizza') {
                 return {
@@ -548,6 +627,7 @@ function configurarEventos() {
     document.getElementById('barra-carrinho').addEventListener('click', abrirCarrinho);
     document.getElementById('fechar-sheet-carrinho').addEventListener('click', fecharCarrinho);
     document.getElementById('btn-confirmar-pedido').addEventListener('click', confirmarPedido);
+    document.getElementById('btn-aplicar-cupom').addEventListener('click', aplicarCupom);
 
     document.getElementById('btn-copiar-pix').addEventListener('click', copiarChavePix);
     document.getElementById('btn-fechar-sucesso').addEventListener('click', () => window.location.reload());
