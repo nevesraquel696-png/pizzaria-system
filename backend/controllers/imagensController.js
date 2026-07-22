@@ -31,12 +31,21 @@ exports.upload = async (req, res) => {
     }
 
     try {
-        // req.file.path já vem preenchido pelo multer-storage-cloudinary com
-        // a URL pública e permanente da imagem no Cloudinary.
-        const imagemUrl = req.file.path;
-        const imagemPublicId = req.file.filename; // usado depois pra poder apagar
-        await ImagemCategoria.atualizar(categoria, imagemUrl, imagemPublicId);
-        res.json({ mensagem: 'Imagem atualizada com sucesso.', imagem_url: imagemUrl });
+        // Sobe o arquivo (que está só na memória, em req.file.buffer) direto
+        // pro Cloudinary via stream, sem precisar salvar em disco antes.
+        const resultado = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                {
+                    folder: 'pizzaria/categorias',
+                    public_id: `categoria-${categoria}-${Date.now()}`,
+                },
+                (err, result) => (err ? reject(err) : resolve(result))
+            );
+            stream.end(req.file.buffer);
+        });
+
+        await ImagemCategoria.atualizar(categoria, resultado.secure_url, resultado.public_id);
+        res.json({ mensagem: 'Imagem atualizada com sucesso.', imagem_url: resultado.secure_url });
     } catch (err) {
         res.status(500).json({ erro: 'Erro ao salvar imagem.' });
     }
