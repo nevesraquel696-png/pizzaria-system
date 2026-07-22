@@ -19,6 +19,7 @@ exports.listar = async (req, res) => {
         const imagens = await ImagemCategoria.listarTodas();
         res.json(imagens);
     } catch (err) {
+        console.error('Erro ao listar imagens de categoria:', err);
         res.status(500).json({ erro: 'Erro ao buscar imagens.' });
     }
 };
@@ -47,7 +48,10 @@ exports.upload = async (req, res) => {
         await ImagemCategoria.atualizar(categoria, resultado.secure_url, resultado.public_id);
         res.json({ mensagem: 'Imagem atualizada com sucesso.', imagem_url: resultado.secure_url });
     } catch (err) {
-        res.status(500).json({ erro: 'Erro ao salvar imagem.' });
+        // Log detalhado: sem isso, o erro real nunca aparecia nos Logs do
+        // Render, só a mensagem genérica que volta pro navegador.
+        console.error('Erro ao subir imagem para o Cloudinary:', err);
+        res.status(500).json({ erro: 'Erro ao salvar imagem: ' + (err.message || 'erro desconhecido') });
     }
 };
 
@@ -59,11 +63,14 @@ exports.remover = async (req, res) => {
             // Apaga o arquivo no Cloudinary também, pra não acumular lixo
             // na conta gratuita. Se der erro (ex: já tinha sido apagado
             // manualmente lá), seguimos em frente e limpamos o banco mesmo assim.
-            await cloudinary.uploader.destroy(atual.imagem_public_id).catch(() => {});
+            await cloudinary.uploader.destroy(atual.imagem_public_id).catch((err) => {
+                console.error('Aviso: não foi possível apagar a imagem antiga no Cloudinary:', err);
+            });
         }
         await ImagemCategoria.atualizar(categoria, null, null);
         res.json({ mensagem: 'Imagem removida, voltando ao ícone padrão.' });
     } catch (err) {
+        console.error('Erro ao remover imagem de categoria:', err);
         res.status(500).json({ erro: 'Erro ao remover imagem.' });
     }
 };
