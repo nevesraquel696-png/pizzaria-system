@@ -13,7 +13,7 @@
         <img src="../imagens/logo.png" alt="Estação da Pizza">
         <div class="topo-info">
             <h1>Estação da Pizza</h1>
-            <p>Desde 2008</p>
+            <p class="tagline-topo">Desde 2008 · direto do forno</p>
         </div>
         <button class="icone-busca" id="btn-busca" aria-label="Buscar"><span class="icone" data-icone="busca"></span></button>
     </header>
@@ -41,6 +41,7 @@
         <div class="sheet" id="sheet-produto">
             <button class="fechar-sheet" id="fechar-sheet-produto">×</button>
             <div class="sheet-imagem" id="sheet-imagem"></div>
+            <span class="rotulo-estacao rotulo-sheet">Monte a sua</span>
             <h2 id="sheet-titulo">Pizza Tradicional - 8 fatias</h2>
             <p id="sheet-preco"></p>
 
@@ -69,6 +70,7 @@
     <div class="sheet-fundo oculto" id="sheet-fundo-carrinho">
         <div class="sheet" id="sheet-carrinho">
             <button class="fechar-sheet" id="fechar-sheet-carrinho">×</button>
+            <span class="rotulo-estacao rotulo-sheet">Revise antes de enviar</span>
             <h2>Seu Carrinho</h2>
 
             <div id="itens-carrinho"><p class="carregando">Carrinho vazio.</p></div>

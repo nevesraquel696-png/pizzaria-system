@@ -6,7 +6,10 @@ body {
 
 /* ---------- Topo ---------- */
 .topo-loja {
-    background: linear-gradient(135deg, var(--cor-verde-escuro), var(--cor-verde));
+    background:
+        radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(135deg, var(--cor-verde-escuro), var(--cor-verde));
+    background-size: 4px 4px, 100% 100%;
     padding: 16px;
     display: flex;
     align-items: center;
@@ -15,6 +18,7 @@ body {
     top: 0;
     z-index: 30;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    border-bottom: 3px solid var(--cor-dourado);
 }
 
 .topo-loja img {
@@ -33,10 +37,13 @@ body {
     letter-spacing: 0.3px;
 }
 
-.topo-info p {
-    color: rgba(255, 255, 255, 0.75);
-    font-size: 11px;
-    margin: 2px 0 0;
+.tagline-topo {
+    color: var(--cor-dourado);
+    font-family: var(--fonte-mao);
+    font-size: 17px;
+    font-weight: 700;
+    margin: -2px 0 0;
+    letter-spacing: 0.2px;
 }
 
 .icone-busca {
@@ -61,10 +68,11 @@ body {
     background: var(--cor-texto);
     color: #fff;
     text-align: center;
-    padding: 9px;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.2px;
+    padding: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 .faixa-status.aberta {
@@ -111,8 +119,8 @@ body {
 }
 
 .chip.ativo {
-    background: var(--cor-vermelho);
-    border-color: var(--cor-vermelho);
+    background: var(--cor-terracota);
+    border-color: var(--cor-terracota);
     color: #fff;
 }
 
@@ -138,90 +146,117 @@ body {
     color: var(--cor-vermelho);
 }
 
-.trilho-cards {
-    display: flex;
-    gap: 12px;
-    overflow-x: auto;
-    padding-bottom: 10px;
+.card-preco {
+    flex-shrink: 0;
+    display: inline-block;
+    background: var(--cor-marcador);
+    font-family: var(--fonte-mao);
+    font-size: 16px;
+    font-weight: 700;
+    color: #16324a;
+    padding: 0 8px;
+    border-radius: 3px;
+    transform: rotate(-2deg);
 }
 
-.card-produto {
+.lista-linhas {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.linha-produto {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
     background: #fff;
     border: 1px solid #f0ece0;
-    border-radius: 14px;
-    padding: 12px;
-    width: 140px;
-    flex-shrink: 0;
+    border-left: 3px dashed var(--cor-dourado);
+    border-radius: 4px 12px 12px 4px;
+    padding: 10px 14px 10px 12px;
     text-align: left;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 3px 10px rgba(0, 0, 0, 0.05);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.card-produto:active {
-    transform: scale(0.97);
+.linha-produto:active {
+    transform: scale(0.99);
 }
 
-.card-imagem {
-    width: 100%;
-    height: 76px;
+.linha-produto-imagem {
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
     background: linear-gradient(160deg, var(--cor-creme), #fff);
     border-radius: 10px;
     border: 1px solid #f0ece0;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 8px;
+    overflow: hidden;
 }
 
-.card-imagem .icone {
-    width: 32px;
-    height: 32px;
+.linha-produto-imagem .icone {
+    width: 22px;
+    height: 22px;
     color: var(--cor-vermelho);
 }
 
-.imagem-categoria-card {
+.linha-produto-imagem .imagem-categoria-card {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 10px;
 }
 
-.card-nome {
-    font-weight: 600;
-    font-size: 13px;
-    margin-bottom: 4px;
+.linha-produto-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.linha-produto-nome {
+    font-weight: 700;
+    font-size: 14.5px;
     line-height: 1.25;
 }
 
-.card-preco {
+.linha-produto-desc {
     font-size: 12px;
-    color: var(--cor-verde-escuro);
-    font-weight: 600;
+    color: #8a8272;
+    margin-top: 2px;
 }
 
-.card-bebida {
-    display: flex;
-    flex-direction: column;
+.seta-linha {
+    flex-shrink: 0;
+    font-size: 20px;
+    color: #cbbf9e;
+    line-height: 1;
+}
+
+.linha-produto-simples {
+    padding: 10px 10px 10px 12px;
 }
 
 .btn-add-rapido {
-    margin-top: 8px;
-    background: var(--cor-vermelho);
+    flex-shrink: 0;
+    background: var(--cor-verde-escuro);
     color: #fff;
     border: none;
-    border-radius: 6px;
-    padding: 7px;
-    font-size: 12px;
-    font-weight: 600;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
 }
 
 .btn-add-rapido .icone {
-    width: 12px;
-    height: 12px;
+    width: 15px;
+    height: 15px;
+}
+
+.btn-add-rapido:active {
+    background: var(--cor-verde);
 }
 
 .carregando,
@@ -291,6 +326,12 @@ body {
     max-width: 260px;
     height: 120px;
     border-radius: 12px;
+}
+
+.rotulo-sheet {
+    display: block;
+    width: fit-content;
+    margin: 0 auto 6px;
 }
 
 .sheet h2 {
@@ -420,10 +461,15 @@ body {
 }
 
 .preco-item {
-    font-size: 13px;
-    color: var(--cor-verde-escuro);
-    font-weight: 600;
-    margin-top: 2px;
+    display: inline-block;
+    background: var(--cor-marcador);
+    font-family: var(--fonte-mao);
+    font-size: 15px;
+    font-weight: 700;
+    color: #16324a;
+    padding: 0 7px;
+    border-radius: 3px;
+    margin-top: 4px;
 }
 
 .btn-remover {
@@ -453,9 +499,10 @@ body {
 }
 
 .caixa-pix {
-    background: #eaf5ee;
+    background: var(--cor-creme);
     border: 1px solid var(--cor-verde);
-    border-radius: 10px;
+    border-left: 4px solid var(--cor-verde);
+    border-radius: 8px;
     padding: 12px;
     margin-top: 10px;
 }
@@ -481,8 +528,9 @@ body {
 
 .aviso-pix {
     font-size: 12.5px;
-    color: #7a5b00;
-    background: #fff3cd;
+    color: #6b4a05;
+    background: rgba(217, 164, 65, 0.18);
+    border-left: 3px solid var(--cor-dourado);
     border-radius: 6px;
     padding: 8px 10px;
     margin: 6px 0 0;
@@ -538,6 +586,7 @@ body {
     font-weight: 700;
     font-size: 14px;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    border-top: 3px solid var(--cor-dourado);
 }
 
 /* ---------- Navegação inferior ---------- */
@@ -576,4 +625,5 @@ body {
 
 .nav-item.ativo {
     color: var(--cor-vermelho);
+    box-shadow: inset 0 3px 0 var(--cor-dourado);
 }
