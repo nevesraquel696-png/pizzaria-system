@@ -17,6 +17,11 @@ const autenticar = (req, res, next) => {
         req.usuario = payload; // { id, nome, nivel }
         next();
     } catch (err) {
+        // Log detalhado: sem isso, não dá pra saber se o token expirou de
+        // verdade, se a assinatura não bate (JWT_SECRET diferente do que
+        // assinou o token) ou outro motivo - a mensagem genérica pro
+        // navegador não diz qual é.
+        console.error('Falha ao verificar token JWT:', err.name, '-', err.message);
         return res.status(401).json({ erro: 'Token inválido ou expirado.' });
     }
 };
