@@ -10,9 +10,10 @@ exports.listar = async (req, res) => {
         const produtos = req.query.disponiveis === 'true'
             ? await Produto.listarDisponiveis()
             : await Produto.listarTodos();
-        cache.definir(chaveCache, produtos, 30000); // 30s - card​ápio não muda o tempo todo
+        cache.definir(chaveCache, produtos, 30000); // 30s - cardápio não muda o tempo todo
         res.json(produtos);
     } catch (err) {
+        console.error('Erro ao listar produtos:', err.message);
         res.status(500).json({ erro: 'Erro ao buscar produtos.' });
     }
 };
@@ -32,7 +33,11 @@ exports.criar = async (req, res) => {
         invalidarCacheProdutos();
         res.status(201).json({ mensagem: 'Produto cadastrado com sucesso.', id });
     } catch (err) {
-        res.status(500).json({ erro: 'Erro ao cadastrar produto.' });
+        // Log detalhado: sem isso, não dá pra saber se o erro é a coluna
+        // imagem_base64 não existir ainda no banco (falta rodar a migração)
+        // ou outra causa - a mensagem genérica pro navegador não diz qual é.
+        console.error('Erro ao cadastrar produto:', err.message);
+        res.status(500).json({ erro: 'Erro ao cadastrar produto: ' + err.message });
     }
 };
 
@@ -47,7 +52,8 @@ exports.atualizarImagem = async (req, res) => {
         invalidarCacheProdutos();
         res.json({ mensagem: 'Foto atualizada com sucesso.' });
     } catch (err) {
-        res.status(500).json({ erro: 'Erro ao atualizar foto.' });
+        console.error('Erro ao atualizar foto do produto:', err.message);
+        res.status(500).json({ erro: 'Erro ao atualizar foto: ' + err.message });
     }
 };
 
@@ -62,6 +68,7 @@ exports.atualizar = async (req, res) => {
         invalidarCacheProdutos();
         res.json({ mensagem: 'Produto atualizado com sucesso.' });
     } catch (err) {
+        console.error('Erro ao atualizar produto:', err.message);
         res.status(500).json({ erro: 'Erro ao atualizar produto.' });
     }
 };
@@ -72,6 +79,7 @@ exports.alternarDisponibilidade = async (req, res) => {
         invalidarCacheProdutos();
         res.json({ mensagem: 'Disponibilidade alterada.' });
     } catch (err) {
+        console.error('Erro ao alterar disponibilidade do produto:', err.message);
         res.status(500).json({ erro: 'Erro ao alterar disponibilidade.' });
     }
 };
@@ -82,6 +90,7 @@ exports.excluir = async (req, res) => {
         invalidarCacheProdutos();
         res.json({ mensagem: 'Produto excluído com sucesso.' });
     } catch (err) {
+        console.error('Erro ao excluir produto:', err.message);
         res.status(500).json({ erro: 'Erro ao excluir produto.' });
     }
 };
