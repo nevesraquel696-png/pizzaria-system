@@ -81,6 +81,7 @@ async function carregarStatusLoja() {
     try {
         const config = await apiFetch('/config');
         CONFIG_LOJA = config;
+        preencherRodape(config); 
         const agora = new Date();
         const horaAtual = agora.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour12: false });
         // Mesmo ajuste do backend: quando o fechamento passa da meia-noite
@@ -673,4 +674,16 @@ function filtrarBusca() {
         const nome = linha.querySelector('.linha-produto-nome').textContent.toLowerCase();
         linha.style.display = nome.includes(termo) ? '' : 'none';
     });
+}
+function preencherRodape(config) {
+    document.getElementById('rodape-ano').textContent = new Date().getFullYear();
+
+    const horarioEl = document.getElementById('rodape-horario');
+    horarioEl.textContent = `🕒 Funcionamos das ${config.horario_abertura?.slice(0,5)} às ${config.horario_fechamento?.slice(0,5)}`;
+
+    const whatsappEl = document.getElementById('rodape-whatsapp');
+    if (config.whatsapp_numero) {
+        whatsappEl.href = `https://wa.me/55${config.whatsapp_numero.replace(/\D/g, '')}`;
+        whatsappEl.classList.remove('oculto');
+    }
 }

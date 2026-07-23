@@ -366,6 +366,8 @@ body {
     object-position: center;
 }
 
+
+
 .rotulo-sheet {
     display: block;
     width: fit-content;
@@ -714,6 +716,7 @@ body {
     background: #fff;
     border-top: 1px solid #eee;
     display: flex;
+    padding: 25px;
 }
 
 .nav-item {
@@ -742,3 +745,32 @@ body {
     color: var(--cor-vermelho);
     box-shadow: inset 0 3px 0 var(--cor-dourado);
 }
+.rodape-site {
+    padding: 24px 20px 100px; /* 100px embaixo pra não ficar atrás da nav-inferior fixa */
+    background: var(--cor-verde-escuro);
+    color: #fff;
+    text-align: center;
+}
+
+.rodape-marca {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+.rodape-marca img { width: 40px; height: 40px; }
+.rodape-marca div { display: flex; flex-direction: column; text-align: left; }
+.rodape-marca strong { font-family: var(--fonte-display); font-size: 16px; }
+.rodape-marca span { font-size: 11px; opacity: 0.75; }
+
+.rodape-info p { margin: 6px 0; font-size: 13px; opacity: 0.9; }
+.rodape-link {
+    display: inline-block; margin-top: 8px; color: #fff; font-weight: 600;
+    font-size: 13px; text-decoration: none; background: rgba(255,255,255,0.12);
+    padding: 6px 14px; border-radius: 20px;
+}
+
+.rodape-copyright { margin-top: 18px; font-size: 11px; opacity: 0.6; }
