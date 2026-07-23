@@ -11,7 +11,10 @@
     <header class="logo-topo">
         <img src="../imagens/logo.png" alt="Estação da Pizza">
         <h1>👨‍🍳 Pedidos em Preparo</h1>
-        <button id="btn-ativar-som" type="button">🔔 Ativar Som</button>
+        <div class="acoes-cabecalho-cozinha">
+            <button id="btn-tema-claro" type="button" title="Alternar modo claro"><span class="icone" data-icone="sol"></span> Modo Claro</button>
+            <button id="btn-ativar-som" type="button">🔔 Ativar Som</button>
+        </div>
     </header>
     <div id="lista-cozinha"><p>Carregando pedidos...</p></div>
 
@@ -19,6 +22,7 @@
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="../js/api.js"></script>
+    <script src="../js/icones.js"></script>
     <script src="js/cozinha.js"></script>
 </body>
 </html>

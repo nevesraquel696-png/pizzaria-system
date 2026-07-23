@@ -19,6 +19,9 @@
     --cor-branco: #FFFFFF;
     --cor-marcador: #BFE3EF; /* azul de marca-texto, igual à etiqueta de preço do cardápio físico */
 
+    --cor-superficie: #FFFFFF; /* fundo de cards/caixas - separado de --cor-branco (que também é usado como cor de texto) */
+    --cor-borda-suave: #E5DCC3;
+
     --fonte-display: 'Times New Roman', serif;
     --fonte-corpo: 'Inter', 'Segoe UI', Arial, sans-serif;
     --fonte-mao: 'Caveat', cursive;
@@ -83,4 +86,19 @@ button {
     padding: 3px 10px;
     border-radius: 3px;
     margin-bottom: 6px;
+}
+
+/* ============================================
+   MODO ESCURO - ativado com a classe "tema-escuro" no <body>,
+   ligado por um botão no topo do admin (ver admin.js/cozinha.js).
+   Só redefine as variáveis - o resto do CSS já usa var(...) em
+   quase tudo, então a troca é automática.
+   ============================================ */
+body.tema-escuro {
+    --cor-creme: #1B1F1C;
+    --cor-papel: #20241F;
+    --cor-texto: #E8E4DA;
+    --cor-superficie: #262B26;
+    --cor-borda-suave: #3A3F38;
+    background-image: none; /* a textura granulada de papel some no escuro, fica mais limpo */
 }

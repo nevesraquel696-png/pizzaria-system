@@ -1,12 +1,35 @@
-body { background: #1c2b22; color: #fff; padding: 0; margin: 0; }
-header.logo-topo { background: var(--cor-verde-escuro); padding: 15px 20px; justify-content: space-between; }
+/* A cozinha já nasce no modo escuro por padrão (tela fica ligada o tempo
+   todo perto do forno, e escuro cansa menos a vista à noite). O botão no
+   cabeçalho permite trocar pro modo claro se preferirem. */
+:root {
+    --cozinha-fundo: #1c2b22;
+    --cozinha-texto: #fff;
+    --cozinha-card: #24382c;
+    --cozinha-item-bg: rgba(255,255,255,0.06);
+    --cozinha-obs-bg: #4a3b1a;
+    --cozinha-obs-texto: #fff;
+}
+body.tema-claro {
+    --cozinha-fundo: var(--cor-creme);
+    --cozinha-texto: var(--cor-texto);
+    --cozinha-card: #FFFFFF;
+    --cozinha-item-bg: var(--cor-creme);
+    --cozinha-obs-bg: #fff3cd;
+    --cozinha-obs-texto: #4a3b1a;
+}
+
+body { background: var(--cozinha-fundo); color: var(--cozinha-texto); padding: 0; margin: 0; }
+header.logo-topo { background: var(--cor-verde-escuro); padding: 15px 20px; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 header.logo-topo h1 { color: #fff; font-size: 20px; }
-#btn-ativar-som { background: var(--cor-vermelho); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; }
+.acoes-cabecalho-cozinha { display: flex; gap: 8px; flex-wrap: wrap; }
+#btn-ativar-som, #btn-tema-claro { background: var(--cor-vermelho); color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+#btn-tema-claro { background: rgba(255,255,255,0.15); }
 #btn-ativar-som:disabled { opacity: 0.6; cursor: default; }
+.acoes-cabecalho-cozinha .icone { width: 16px; height: 16px; }
 #lista-cozinha { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; padding: 20px; }
-.card-cozinha { background: #24382c; padding: 15px; border-radius: 8px; width: 250px; border: 1px solid var(--cor-terracota); }
-.itens-pedido-detalhe { background: rgba(255,255,255,0.06); border-radius: 6px; padding: 8px 10px; margin: 8px 0; }
+.card-cozinha { background: var(--cozinha-card); padding: 15px; border-radius: 8px; width: 250px; border: 1px solid var(--cor-terracota); }
+.itens-pedido-detalhe { background: var(--cozinha-item-bg); border-radius: 6px; padding: 8px 10px; margin: 8px 0; }
 .linha-item-pedido { margin: 4px 0; font-size: 13px; }
-.observacoes-pedido { background: #4a3b1a; border-left: 4px solid #f0ad4e; padding: 6px 8px; border-radius: 4px; margin: 8px 0; font-size: 13px; }
+.observacoes-pedido { background: var(--cozinha-obs-bg); color: var(--cozinha-obs-texto); border-left: 4px solid #f0ad4e; padding: 6px 8px; border-radius: 4px; margin: 8px 0; font-size: 13px; }
 .card-cozinha button { display: block; width: 100%; margin-top: 8px; padding: 8px; border: none; border-radius: 5px; background: var(--cor-vermelho); color: #fff; }
 .erro { color: #ff8080; text-align: center; }

@@ -3,6 +3,8 @@
 // própria aqui, igual à do admin, e use um usuário com nivel = 'cozinha'.
 
 document.addEventListener('DOMContentLoaded', () => {
+    aplicarTemaSalvoCozinha();
+    document.getElementById('btn-tema-claro').addEventListener('click', alternarTemaClaro);
     document.getElementById('btn-ativar-som').addEventListener('click', ativarSom);
     tentarAutoativarSom();
 
@@ -15,6 +17,27 @@ document.addEventListener('DOMContentLoaded', () => {
     conectarSocketCozinha();
     carregarPedidosCozinha();
 });
+
+// Modo claro - lembrado entre visitas via localStorage. A cozinha nasce
+// escura por padrão (tela fica ligada o tempo todo perto do forno), esse
+// botão é só pra quem preferir a tela clara.
+function aplicarTemaSalvoCozinha() {
+    const claro = localStorage.getItem('pizzaria_cozinha_tema_claro') === 'true';
+    document.body.classList.toggle('tema-claro', claro);
+    atualizarBotaoTemaCozinha(claro);
+}
+
+function alternarTemaClaro() {
+    const claro = document.body.classList.toggle('tema-claro');
+    localStorage.setItem('pizzaria_cozinha_tema_claro', claro);
+    atualizarBotaoTemaCozinha(claro);
+}
+
+function atualizarBotaoTemaCozinha(claro) {
+    const btn = document.getElementById('btn-tema-claro');
+    btn.querySelector('.icone').innerHTML = claro ? ICONES.lua : ICONES.sol;
+    btn.lastChild.textContent = claro ? ' Modo Escuro' : ' Modo Claro';
+}
 
 // Mesmo destravamento de áudio usado no admin: sem isso, o navegador
 // bloqueia o som que toca automaticamente quando chega um pedido novo.

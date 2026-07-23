@@ -11,11 +11,33 @@ function aplicarIcones() {
     });
 }
 
+// Modo escuro - lembrado entre visitas via localStorage, independente de
+// login (é só preferência visual, não precisa de conta pra isso).
+function aplicarTemaSalvo() {
+    const ativo = localStorage.getItem('pizzaria_tema_escuro') === 'true';
+    document.body.classList.toggle('tema-escuro', ativo);
+    atualizarBotaoTema(ativo);
+}
+
+function alternarTemaEscuro() {
+    const ativo = document.body.classList.toggle('tema-escuro');
+    localStorage.setItem('pizzaria_tema_escuro', ativo);
+    atualizarBotaoTema(ativo);
+}
+
+function atualizarBotaoTema(ativo) {
+    const btn = document.getElementById('btn-tema-escuro');
+    btn.querySelector('.icone').innerHTML = ativo ? ICONES.sol : ICONES.lua;
+    btn.querySelector('.texto-acao').textContent = ativo ? 'Modo Claro' : 'Modo Escuro';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     aplicarIcones();
+    aplicarTemaSalvo();
 
     document.getElementById('btn-login').addEventListener('click', login);
     document.getElementById('btn-logout').addEventListener('click', logout);
+    document.getElementById('btn-tema-escuro').addEventListener('click', alternarTemaEscuro);
     document.getElementById('btn-salvar-config').addEventListener('click', salvarConfiguracoes);
     document.getElementById('btn-salvar-precos').addEventListener('click', salvarPrecos);
     document.getElementById('btn-lancar-pedido').addEventListener('click', lancarPedidoAdmin);
