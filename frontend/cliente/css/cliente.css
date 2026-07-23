@@ -398,6 +398,32 @@ body {
     color: #fff;
 }
 
+/* Contador de sabores já marcados dentro de cada aba - deixa visível que a
+   seleção continua guardada mesmo depois de trocar de categoria. */
+.badge-contagem-sabor {
+    display: inline-block;
+    background: var(--cor-laranja, #d3742a);
+    color: #fff;
+    border-radius: 999px;
+    font-size: 10.5px;
+    line-height: 1;
+    padding: 2px 6px;
+    margin-left: 4px;
+}
+
+.pill-categoria-sheet.ativo .badge-contagem-sabor {
+    background: #fff;
+    color: var(--cor-verde-escuro);
+}
+
+.aviso-preco-misto {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--cor-texto-suave, #6b6355);
+    margin-top: 2px;
+}
+
 .sheet h2 {
     text-align: center;
     font-family: var(--fonte-display);
@@ -716,7 +742,6 @@ body {
     background: #fff;
     border-top: 1px solid #eee;
     display: flex;
-    padding: 25px;
 }
 
 .nav-item {

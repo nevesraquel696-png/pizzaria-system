@@ -3,7 +3,12 @@ let PRECOS_PIZZA = [];
 let CONFIG_LOJA = {};
 let IMAGENS_TAMANHO = {}; // { 4: 'data:image/...', 6: ..., ... } - base64 vindo do banco
 let CARRINHO = []; // itens acumulados: { tipo_item, pizza_categoria, fatias, sabor_ids, borda_id, quantidade, _nome, _preco }
-let SABOR_ATUAL = null; // { categoria, fatias } - contexto da ficha de produto aberta no momento
+// { categoriaAtiva, fatias, selecionados } - contexto da ficha de produto aberta.
+// "categoriaAtiva" é só a aba visível no momento; "selecionados" é um Map
+// sabor_id -> categoria com TODOS os sabores escolhidos, de qualquer aba,
+// que é o que permite montar uma pizza com sabores de categorias diferentes
+// (ex: 1 tradicional + 1 doce) sem perder a marcação ao trocar de aba.
+let SABOR_ATUAL = null;
 let CUPOM_APLICADO = null; // { codigo, tipo, valor, desconto } - null se nenhum cupom válido aplicado
 
 const NOMES_CATEGORIA = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
@@ -243,7 +248,7 @@ function renderizarOutros() {
 // A categoria (Tradicional/Especial/Doce/Promoção) é escolhida aqui dentro,
 // através das abas, não mais na tela inicial - só o tamanho vem de fora.
 function abrirFichaProduto(fatias) {
-    SABOR_ATUAL = { categoria: categoriaPadrao(), fatias };
+    SABOR_ATUAL = { categoriaAtiva: categoriaPadrao(), fatias, selecionados: new Map() };
 
     document.getElementById('qtd-valor').textContent = '1';
     renderizarAbasCategoriaSheet();
@@ -258,18 +263,26 @@ function abrirFichaProduto(fatias) {
 }
 
 // Abas de categoria dentro da ficha - só mostra categorias com sabor cadastrado.
+// Trocar de aba só muda o que fica visível pra marcar; os sabores já
+// escolhidos em outras abas continuam guardados em SABOR_ATUAL.selecionados,
+// então dá pra combinar sabores de categorias diferentes na mesma pizza.
 function renderizarAbasCategoriaSheet() {
     const container = document.getElementById('sheet-categorias');
     const categorias = categoriasComSabores();
 
-    container.innerHTML = categorias.map(cat => `
-        <button type="button" class="pill-categoria-sheet${cat === SABOR_ATUAL.categoria ? ' ativo' : ''}" data-categoria="${cat}">${NOMES_CATEGORIA[cat]}</button>
-    `).join('');
+    container.innerHTML = categorias.map(cat => {
+        const qtdNaAba = [...SABOR_ATUAL.selecionados.values()].filter(c => c === cat).length;
+        return `
+        <button type="button" class="pill-categoria-sheet${cat === SABOR_ATUAL.categoriaAtiva ? ' ativo' : ''}" data-categoria="${cat}">
+            ${NOMES_CATEGORIA[cat]}${qtdNaAba > 0 ? ` <span class="badge-contagem-sabor">${qtdNaAba}</span>` : ''}
+        </button>
+    `;
+    }).join('');
 
     container.querySelectorAll('.pill-categoria-sheet').forEach(pill => {
         pill.addEventListener('click', () => {
-            if (pill.dataset.categoria === SABOR_ATUAL.categoria) return;
-            SABOR_ATUAL.categoria = pill.dataset.categoria;
+            if (pill.dataset.categoria === SABOR_ATUAL.categoriaAtiva) return;
+            SABOR_ATUAL.categoriaAtiva = pill.dataset.categoria;
             renderizarAbasCategoriaSheet();
             renderizarConteudoSheet();
         });
@@ -279,38 +292,66 @@ function renderizarAbasCategoriaSheet() {
 // Imagem, título, preço e lista de sabores - depende da categoria escolhida
 // nas abas acima, então é chamada de novo toda vez que ela muda.
 function renderizarConteudoSheet() {
-    const { categoria, fatias } = SABOR_ATUAL;
+    const { categoriaAtiva, fatias, selecionados } = SABOR_ATUAL;
 
     document.getElementById('sheet-imagem').innerHTML = iconeOuImagemTamanho(fatias);
-    document.getElementById('sheet-titulo').textContent = `Pizza ${NOMES_CATEGORIA[categoria]} - ${fatias} fatias`;
+    document.getElementById('sheet-titulo').textContent = `Pizza - ${fatias} fatias`;
     atualizarPrecoSheet();
 
-    const sabores = PRODUTOS.sabores.filter(s => s.categoria === categoria);
+    const sabores = PRODUTOS.sabores.filter(s => s.categoria === categoriaAtiva);
     const container = document.getElementById('sheet-sabores-extra');
-    container.innerHTML = sabores.map((s, i) => `
+    container.innerHTML = sabores.map(s => `
         <label class="opcao-sabor">
-            <input type="checkbox" name="sheet-sabor" value="${s.id}" ${i === 0 ? 'checked' : ''}>
+            <input type="checkbox" name="sheet-sabor" value="${s.id}" ${selecionados.has(s.id) ? 'checked' : ''}>
             <span>
                 <strong>${s.nome}</strong>
                 ${s.descricao ? `<br><small>${s.descricao}</small>` : ''}
             </span>
         </label>
     `).join('');
-    container.onchange = () => {
-        const marcados = container.querySelectorAll('input:checked');
-        if (marcados.length > 3) {
-            event.target.checked = false;
-            alert('Máximo de 3 sabores por pizza.');
+
+    container.onchange = (event) => {
+        const id = Number(event.target.value);
+        if (event.target.checked) {
+            if (selecionados.size >= 3) {
+                event.target.checked = false;
+                alert('Máximo de 3 sabores por pizza, no total (pode ser de categorias diferentes).');
+                return;
+            }
+            selecionados.set(id, categoriaAtiva);
+        } else {
+            selecionados.delete(id);
         }
+        renderizarAbasCategoriaSheet();
+        atualizarPrecoSheet();
     };
 }
 
+// Preço da pizza = preço da categoria mais cara entre as dos sabores já
+// escolhidos (regra pra combinações mistas). Enquanto nada foi marcado ainda,
+// mostra o preço "a partir de" da aba aberta no momento, só como prévia.
 function atualizarPrecoSheet() {
-    const { categoria, fatias } = SABOR_ATUAL;
-    const preco = obterPreco(categoria, fatias);
-    document.getElementById('sheet-preco').innerHTML = preco !== null
-        ? `<span class="etiqueta-preco">R$ ${preco.toFixed(2)}</span>`
-        : '<span class="erro">Preço não configurado.</span>';
+    const { categoriaAtiva, fatias, selecionados } = SABOR_ATUAL;
+    const el = document.getElementById('sheet-preco');
+
+    if (selecionados.size === 0) {
+        const preco = obterPreco(categoriaAtiva, fatias);
+        el.innerHTML = preco !== null
+            ? `<span class="etiqueta-preco">a partir de R$ ${preco.toFixed(2)}</span>`
+            : '<span class="erro">Preço não configurado.</span>';
+        return;
+    }
+
+    const categoriasEnvolvidas = [...new Set(selecionados.values())];
+    const precos = categoriasEnvolvidas.map(cat => obterPreco(cat, fatias));
+    if (precos.some(p => p === null)) {
+        el.innerHTML = '<span class="erro">Preço não configurado.</span>';
+        return;
+    }
+    const maiorPreco = Math.max(...precos);
+    const misturouCategorias = categoriasEnvolvidas.length > 1;
+    el.innerHTML = `<span class="etiqueta-preco">R$ ${maiorPreco.toFixed(2)}</span>` +
+        (misturouCategorias ? ' <small class="aviso-preco-misto">(preço da categoria mais cara)</small>' : '');
 }
 
 function fecharFichaProduto() {
@@ -319,12 +360,21 @@ function fecharFichaProduto() {
 }
 
 function adicionarAoCarrinho() {
-    const { categoria, fatias } = SABOR_ATUAL;
-    const precoPizza = obterPreco(categoria, fatias);
-    if (precoPizza === null) return alert('Preço não configurado para essa combinação.');
+    const { fatias, selecionados } = SABOR_ATUAL;
 
-    const saborIds = [...document.querySelectorAll('input[name="sheet-sabor"]:checked')].map(i => Number(i.value));
+    const saborIds = [...selecionados.keys()];
     if (saborIds.length === 0) return alert('Escolha ao menos 1 sabor.');
+
+    // Categoria de cobrança: a mais cara entre as dos sabores escolhidos.
+    // O servidor recalcula isso de novo a partir do banco na hora de confirmar
+    // o pedido - aqui é só pra mostrar preço e nome certos no carrinho.
+    const categoriasEnvolvidas = [...new Set(selecionados.values())];
+    const precosPorCategoria = categoriasEnvolvidas.map(cat => ({ cat, preco: obterPreco(cat, fatias) }));
+    if (precosPorCategoria.some(p => p.preco === null)) {
+        return alert('Preço não configurado para essa combinação.');
+    }
+    const categoriaCobranca = precosPorCategoria.reduce((maior, atual) => atual.preco > maior.preco ? atual : maior).cat;
+    const precoPizza = precosPorCategoria.reduce((maior, atual) => atual.preco > maior.preco ? atual : maior).preco;
 
     const nomesSabores = saborIds.map(id => PRODUTOS.sabores.find(s => s.id === id)?.nome).join(', ');
 
@@ -337,12 +387,12 @@ function adicionarAoCarrinho() {
 
     CARRINHO.push({
         tipo_item: 'pizza',
-        pizza_categoria: categoria,
+        pizza_categoria: categoriaCobranca,
         fatias,
         sabor_ids: saborIds,
         borda_id: bordaId,
         quantidade,
-        _nome: `Pizza ${NOMES_CATEGORIA[categoria]} (${fatias} fatias) - ${nomesSabores}${nomeBorda ? ' + ' + nomeBorda : ''}`,
+        _nome: `Pizza (${fatias} fatias) - ${nomesSabores}${nomeBorda ? ' + ' + nomeBorda : ''}`,
         _preco: precoPizza + precoBorda
     });
 

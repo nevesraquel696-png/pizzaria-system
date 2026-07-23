@@ -1,7 +1,7 @@
 const Pedido = require('../models/Pedido');
 const Produto = require('../models/Produto');
 const Configuracao = require('../models/Configuracao');
-const { PrecoPizza, CATEGORIAS_VALIDAS, FATIAS_VALIDAS } = require('../models/PrecoPizza');
+const { PrecoPizza, FATIAS_VALIDAS } = require('../models/PrecoPizza');
 const Cupom = require('../models/Cupom');
 const validarCupom = require('../utils/validarCupom');
 
@@ -61,11 +61,8 @@ async function processarItens(itensRecebidos) {
         const prefixo = `Item ${i + 1}:`;
 
         if (item.tipo_item === 'pizza') {
-            const { pizza_categoria, fatias, sabor_ids, borda_id } = item;
+            const { fatias, sabor_ids, borda_id } = item;
 
-            if (!CATEGORIAS_VALIDAS.includes(pizza_categoria)) {
-                return erros.push(`${prefixo} categoria de pizza inválida.`);
-            }
             if (!FATIAS_VALIDAS.includes(Number(fatias))) {
                 return erros.push(`${prefixo} número de fatias inválido.`);
             }
@@ -73,11 +70,14 @@ async function processarItens(itensRecebidos) {
                 return erros.push(`${prefixo} escolha de 1 a 3 sabores.`);
             }
 
+            // Os sabores agora podem vir de categorias diferentes (ex: 1 sabor
+            // tradicional + 1 doce na mesma pizza) - não exigimos mais que
+            // todos pertençam à mesma categoria enviada pelo cliente.
             const saboresValidos = sabor_ids
                 .map(id => produtosPorId.get(id))
-                .filter(s => s && s.tipo === 'sabor_pizza' && s.categoria === pizza_categoria && s.disponivel);
+                .filter(s => s && s.tipo === 'sabor_pizza' && s.disponivel);
             if (saboresValidos.length !== sabor_ids.length) {
-                return erros.push(`${prefixo} um ou mais sabores são inválidos ou não estão disponíveis nessa categoria.`);
+                return erros.push(`${prefixo} um ou mais sabores são inválidos ou não estão disponíveis.`);
             }
 
             let precoBorda = 0;
@@ -91,19 +91,30 @@ async function processarItens(itensRecebidos) {
                 nomeBorda = borda.nome;
             }
 
-            const precoPizza = buscarPreco(pizza_categoria, Number(fatias));
-            if (precoPizza === null) {
+            // Regra de cobrança pra combinação "mista": vale o preço da
+            // categoria mais cara entre as envolvidas na pizza. Nunca confiamos
+            // na categoria enviada pelo cliente - ela é sempre derivada aqui,
+            // a partir da categoria real de cada sabor (já validado no banco).
+            const categoriasEnvolvidas = [...new Set(saboresValidos.map(s => s.categoria))];
+            const precosPorCategoria = categoriasEnvolvidas.map(categoria => ({
+                categoria,
+                preco: buscarPreco(categoria, Number(fatias))
+            }));
+            if (precosPorCategoria.some(p => p.preco === null)) {
                 return erros.push(`${prefixo} preço não configurado para essa categoria/tamanho.`);
             }
+            const categoriaMaisCara = precosPorCategoria.reduce((maior, atual) =>
+                atual.preco > maior.preco ? atual : maior
+            );
 
             itensProcessados.push({
                 tipo_item: 'pizza',
-                pizza_categoria,
+                pizza_categoria: categoriaMaisCara.categoria,
                 fatias: Number(fatias),
                 sabores: saboresValidos.map(s => s.nome),
                 borda: nomeBorda,
                 quantidade: item.quantidade || 1,
-                preco_unitario: precoPizza + precoBorda
+                preco_unitario: categoriaMaisCara.preco + precoBorda
             });
 
         } else if (item.tipo_item === 'bebida' || item.tipo_item === 'outros') {
