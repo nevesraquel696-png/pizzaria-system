@@ -11,10 +11,10 @@ const Produto = {
         return produtos;
     },
 
-    async criar({ nome, tipo, categoria, preco_base, descricao }) {
+    async criar({ nome, tipo, categoria, preco_base, descricao, imagem_base64 }) {
         const [result] = await db.query(
-            'INSERT INTO produtos (nome, tipo, categoria, preco_base, descricao) VALUES (?, ?, ?, ?, ?)',
-            [nome, tipo, tipo === 'sabor_pizza' ? categoria : null, tipo === 'sabor_pizza' ? 0 : (preco_base || 0), descricao || null]
+            'INSERT INTO produtos (nome, tipo, categoria, preco_base, descricao, imagem_base64) VALUES (?, ?, ?, ?, ?, ?)',
+            [nome, tipo, tipo === 'sabor_pizza' ? categoria : null, tipo === 'sabor_pizza' ? 0 : (preco_base || 0), descricao || null, imagem_base64 || null]
         );
         return result.insertId;
     },
@@ -24,6 +24,12 @@ const Produto = {
             'UPDATE produtos SET nome = ?, tipo = ?, categoria = ?, preco_base = ?, descricao = ? WHERE id = ?',
             [nome, tipo, tipo === 'sabor_pizza' ? categoria : null, tipo === 'sabor_pizza' ? 0 : (preco_base || 0), descricao || null, id]
         );
+    },
+
+    // Só a foto - separado do atualizar() geral pra não arriscar sobrescrever
+    // o resto do produto sem querer.
+    async atualizarImagem(id, imagem_base64) {
+        await db.query('UPDATE produtos SET imagem_base64 = ? WHERE id = ?', [imagem_base64, id]);
     },
 
     async buscarPorIds(ids) {

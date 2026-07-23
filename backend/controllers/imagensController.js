@@ -1,76 +1,58 @@
-const ImagemCategoria = require('../models/ImagemCategoria');
-const cloudinary = require('../config/cloudinary');
+const ImagemTamanho = require('../models/ImagemTamanho');
 
-const CATEGORIAS_VALIDAS = ['tradicional', 'especial', 'doce', 'promocao'];
+const FATIAS_VALIDAS = [4, 6, 8, 12, 14];
 
-// Precisa rodar ANTES do multer (que já usa req.params.categoria pra montar
-// o nome do arquivo). Se a validação ficasse só dentro do
-// controller, o arquivo já teria sido enviado com um valor não confiável
-// antes de chegarmos até aqui.
-exports.validarCategoria = (req, res, next) => {
-    if (!CATEGORIAS_VALIDAS.includes(req.params.categoria)) {
-        return res.status(400).json({ erro: 'Categoria inválida.' });
+// Precisa rodar ANTES do controller salvar, pra não aceitar um valor de
+// fatias fora da lista esperada.
+exports.validarFatias = (req, res, next) => {
+    if (!FATIAS_VALIDAS.includes(Number(req.params.fatias))) {
+        return res.status(400).json({ erro: 'Tamanho (número de fatias) inválido.' });
     }
     next();
 };
 
 exports.listar = async (req, res) => {
     try {
-        const imagens = await ImagemCategoria.listarTodas();
+        const imagens = await ImagemTamanho.listarTodas();
         res.json(imagens);
     } catch (err) {
-        console.error('Erro ao listar imagens de categoria:', err);
         res.status(500).json({ erro: 'Erro ao buscar imagens.' });
     }
 };
 
-exports.upload = async (req, res) => {
-    const { categoria } = req.params;
+// A imagem chega já em base64 (data URL) no corpo da requisição, montada no
+// navegador com FileReader - nada de arquivo em disco. Isso é o que garante
+// que a foto nunca some: fica gravada direto no banco, que é persistente,
+// diferente do disco do servidor (que se perde a cada reinício no Render).
+exports.salvar = async (req, res) => {
+    const { fatias } = req.params;
+    const { imagem_base64 } = req.body;
 
-    if (!req.file) {
-        return res.status(400).json({ erro: 'Nenhuma imagem enviada.' });
+    if (!imagem_base64 || !imagem_base64.startsWith('data:image/')) {
+        return res.status(400).json({ erro: 'Imagem inválida.' });
+    }
+
+    // ~5MB de imagem original vira ~6.7MB em base64 - limite generoso mas
+    // que evita alguém mandar um arquivo gigante sem querer.
+    const tamanhoAproximadoBytes = imagem_base64.length * 0.75;
+    if (tamanhoAproximadoBytes > 6 * 1024 * 1024) {
+        return res.status(400).json({ erro: 'Imagem muito grande (máximo ~5MB).' });
     }
 
     try {
-        // Sobe o arquivo (que está só na memória, em req.file.buffer) direto
-        // pro Cloudinary via stream, sem precisar salvar em disco antes.
-        const resultado = await new Promise((resolve, reject) => {
-            const stream = cloudinary.uploader.upload_stream(
-                {
-                    folder: 'pizzaria/categorias',
-                    public_id: `categoria-${categoria}-${Date.now()}`,
-                },
-                (err, result) => (err ? reject(err) : resolve(result))
-            );
-            stream.end(req.file.buffer);
-        });
-
-        await ImagemCategoria.atualizar(categoria, resultado.secure_url, resultado.public_id);
-        res.json({ mensagem: 'Imagem atualizada com sucesso.', imagem_url: resultado.secure_url });
+        await ImagemTamanho.atualizar(Number(fatias), imagem_base64);
+        res.json({ mensagem: 'Imagem atualizada com sucesso.' });
     } catch (err) {
-        // Log detalhado: sem isso, o erro real nunca aparecia nos Logs do
-        // Render, só a mensagem genérica que volta pro navegador.
-        console.error('Erro ao subir imagem para o Cloudinary:', err);
-        res.status(500).json({ erro: 'Erro ao salvar imagem: ' + (err.message || 'erro desconhecido') });
+        res.status(500).json({ erro: 'Erro ao salvar imagem.' });
     }
 };
 
 exports.remover = async (req, res) => {
-    const { categoria } = req.params;
+    const { fatias } = req.params;
     try {
-        const atual = await ImagemCategoria.buscarPorCategoria(categoria);
-        if (atual && atual.imagem_public_id) {
-            // Apaga o arquivo no Cloudinary também, pra não acumular lixo
-            // na conta gratuita. Se der erro (ex: já tinha sido apagado
-            // manualmente lá), seguimos em frente e limpamos o banco mesmo assim.
-            await cloudinary.uploader.destroy(atual.imagem_public_id).catch((err) => {
-                console.error('Aviso: não foi possível apagar a imagem antiga no Cloudinary:', err);
-            });
-        }
-        await ImagemCategoria.atualizar(categoria, null, null);
+        await ImagemTamanho.atualizar(Number(fatias), null);
         res.json({ mensagem: 'Imagem removida, voltando ao ícone padrão.' });
     } catch (err) {
-        console.error('Erro ao remover imagem de categoria:', err);
         res.status(500).json({ erro: 'Erro ao remover imagem.' });
     }
 };

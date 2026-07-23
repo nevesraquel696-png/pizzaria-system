@@ -79,6 +79,18 @@ body {
     background: var(--cor-verde);
 }
 
+.faixa-promocao {
+    background: linear-gradient(135deg, var(--cor-dourado), #e8b95c);
+    color: #4a3106;
+    text-align: center;
+    padding: 14px 18px;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.35;
+    letter-spacing: 0.2px;
+    border-bottom: 3px solid var(--cor-terracota);
+}
+
 .barra-busca {
     padding: 10px 16px;
     background: #fff;
@@ -168,13 +180,13 @@ body {
 .linha-produto {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     width: 100%;
     background: #fff;
     border: 1px solid #f0ece0;
     border-left: 3px dashed var(--cor-dourado);
-    border-radius: 4px 12px 12px 4px;
-    padding: 10px 14px 10px 12px;
+    border-radius: 4px 14px 14px 4px;
+    padding: 12px 16px 12px 12px;
     text-align: left;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 3px 10px rgba(0, 0, 0, 0.05);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -185,11 +197,11 @@ body {
 }
 
 .linha-produto-imagem {
-    width: 46px;
-    height: 46px;
+    width: 64px;
+    height: 64px;
     flex-shrink: 0;
     background: linear-gradient(160deg, var(--cor-creme), #fff);
-    border-radius: 10px;
+    border-radius: 12px;
     border: 1px solid #f0ece0;
     display: flex;
     align-items: center;
@@ -198,8 +210,8 @@ body {
 }
 
 .linha-produto-imagem .icone {
-    width: 22px;
-    height: 22px;
+    width: 30px;
+    height: 30px;
     color: var(--cor-vermelho);
 }
 
@@ -207,6 +219,29 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+/* A seção de tamanhos é a vitrine principal - foto bem maior aqui, pra dar
+   mais vontade de comprar, mesmo que a pessoa não estivesse tão afim. */
+#lista-tamanhos .linha-produto {
+    padding: 14px 16px 14px 14px;
+    gap: 16px;
+}
+
+#lista-tamanhos .linha-produto-imagem {
+    width: 104px;
+    height: 104px;
+    border-radius: 16px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+#lista-tamanhos .linha-produto-imagem .icone {
+    width: 46px;
+    height: 46px;
+}
+
+#lista-tamanhos .linha-produto-nome {
+    font-size: 16.5px;
 }
 
 .linha-produto-info {
@@ -316,16 +351,17 @@ body {
 }
 
 .sheet-imagem .icone {
-    width: 44px;
-    height: 44px;
+    width: 64px;
+    height: 64px;
     color: var(--cor-vermelho);
 }
 
 .sheet-imagem .imagem-categoria-card {
     width: 100%;
-    max-width: 260px;
-    height: 120px;
-    border-radius: 12px;
+    max-width: 320px;
+    height: 180px;
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
 }
 
 .rotulo-sheet {
@@ -520,6 +556,59 @@ body {
     font-size: 13px;
     color: #6b6459;
     margin: 6px 0;
+}
+
+.linha-desconto {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--cor-verde-escuro);
+    font-weight: 700;
+    margin: 6px 0;
+}
+
+.linha-cupom {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.linha-cupom input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1.5px solid #e2d4ae;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-family: inherit;
+}
+
+.linha-cupom button {
+    flex-shrink: 0;
+    background: var(--cor-verde-escuro);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0 16px;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.linha-cupom button:active {
+    background: var(--cor-verde);
+}
+
+.mensagem-cupom {
+    font-size: 12.5px;
+    font-weight: 600;
+    margin: 6px 0 0;
+}
+
+.mensagem-cupom-sucesso {
+    color: var(--cor-verde-escuro);
+}
+
+.mensagem-cupom-erro {
+    color: var(--cor-vermelho);
 }
 
 .caixa-pix {

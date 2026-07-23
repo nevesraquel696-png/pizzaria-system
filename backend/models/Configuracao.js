@@ -16,13 +16,17 @@ const Configuracao = {
             horario_fechamento: campos.horario_fechamento ?? atual.horario_fechamento,
             taxa_entrega: campos.taxa_entrega ?? atual.taxa_entrega,
             chave_pix: campos.chave_pix ?? atual.chave_pix,
-            whatsapp_numero: campos.whatsapp_numero ?? atual.whatsapp_numero
+            whatsapp_numero: campos.whatsapp_numero ?? atual.whatsapp_numero,
+            promocao_ativa: campos.promocao_ativa ?? atual.promocao_ativa,
+            promocao_texto: campos.promocao_texto ?? atual.promocao_texto
         };
 
         await db.query(
             `UPDATE configuracoes SET horario_abertura = ?, horario_fechamento = ?,
-             taxa_entrega = ?, chave_pix = ?, whatsapp_numero = ? WHERE id = ?`,
-            [dados.horario_abertura, dados.horario_fechamento, dados.taxa_entrega, dados.chave_pix, dados.whatsapp_numero, atual.id]
+             taxa_entrega = ?, chave_pix = ?, whatsapp_numero = ?,
+             promocao_ativa = ?, promocao_texto = ? WHERE id = ?`,
+            [dados.horario_abertura, dados.horario_fechamento, dados.taxa_entrega, dados.chave_pix, dados.whatsapp_numero,
+             dados.promocao_ativa, dados.promocao_texto, atual.id]
         );
     }
 };

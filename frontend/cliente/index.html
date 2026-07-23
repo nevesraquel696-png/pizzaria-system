@@ -19,6 +19,7 @@
     </header>
 
     <div class="faixa-status" id="faixa-status">Carregando horário...</div>
+    <div class="faixa-promocao oculto" id="faixa-promocao"></div>
 
     <div class="barra-busca oculto" id="barra-busca">
         <input type="text" id="input-busca" placeholder="Pesquise pelo nome do sabor...">
@@ -73,7 +74,15 @@
             <h2>Seu Carrinho</h2>
 
             <div id="itens-carrinho"><p class="carregando">Carrinho vazio.</p></div>
+
+            <div class="linha-cupom">
+                <input type="text" id="input-cupom" placeholder="Código do cupom" style="text-transform:uppercase;">
+                <button type="button" id="btn-aplicar-cupom">Aplicar</button>
+            </div>
+            <p id="mensagem-cupom" class="mensagem-cupom oculto"></p>
+
             <p class="linha-taxa-entrega oculto" id="linha-taxa-entrega">Taxa de entrega <span id="valor-taxa-entrega">R$ 0,00</span></p>
+            <p class="linha-desconto oculto" id="linha-desconto">Desconto (<span id="codigo-cupom-aplicado"></span>) <span id="valor-desconto">-R$ 0,00</span></p>
             <p class="linha-total">Total <span class="etiqueta-preco" id="carrinho-total">R$ 0,00</span></p>
 
             <hr>
