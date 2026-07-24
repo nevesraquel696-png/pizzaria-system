@@ -13,31 +13,27 @@ function aplicarIcones() {
 
 // Modo escuro - lembrado entre visitas via localStorage, independente de
 // login (é só preferência visual, não precisa de conta pra isso).
-function aplicarTemaSalvo() {
-    const ativo = localStorage.getItem('pizzaria_tema_escuro') === 'true';
-    document.body.classList.toggle('tema-escuro', ativo);
-    atualizarBotaoTema(ativo);
-}
-
-function alternarTemaEscuro() {
-    const ativo = document.body.classList.toggle('tema-escuro');
-    localStorage.setItem('pizzaria_tema_escuro', ativo);
-    atualizarBotaoTema(ativo);
-}
-
-function atualizarBotaoTema(ativo) {
-    const btn = document.getElementById('btn-tema-escuro');
-    btn.querySelector('.icone').innerHTML = ativo ? ICONES.sol : ICONES.lua;
-    btn.querySelector('.texto-acao').textContent = ativo ? 'Modo Claro' : 'Modo Escuro';
-}
+// Lógica compartilhada com a cozinha mora em js/tema.js; a aplicação
+// imediata (sem esperar o DOMContentLoaded) acontece no script inline
+// no topo do <body>, pra não piscar o tema errado.
+const temaAdmin = criarAlternadorTema({
+    chave: 'pizzaria_tema_escuro',
+    classe: 'tema-escuro',
+    botaoId: 'btn-tema-escuro',
+    padraoAtivo: false,
+    respeitarSistema: true, // sem preferência salva, segue o tema do sistema operacional
+    iconeAtivo: ICONES.sol,
+    iconeInativo: ICONES.lua,
+    textoAtivo: 'Modo Claro',
+    textoInativo: 'Modo Escuro',
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     aplicarIcones();
-    aplicarTemaSalvo();
+    temaAdmin.iniciar();
 
     document.getElementById('btn-login').addEventListener('click', login);
     document.getElementById('btn-logout').addEventListener('click', logout);
-    document.getElementById('btn-tema-escuro').addEventListener('click', alternarTemaEscuro);
     document.getElementById('btn-salvar-config').addEventListener('click', salvarConfiguracoes);
     document.getElementById('btn-salvar-precos').addEventListener('click', salvarPrecos);
     document.getElementById('btn-lancar-pedido').addEventListener('click', lancarPedidoAdmin);
