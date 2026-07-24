@@ -82,10 +82,14 @@ html, body { height: 100%; margin: 0; }
 .grid-2 { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
 .grid-2 > div { flex: 1; min-width: 280px; }
 
-/* Card branco genérico, usado nos formulários e seções de configuração
-   pra agrupar visualmente o que antes ficava solto no fundo creme */
+/* Card genérico, usado nos formulários e seções de configuração pra
+   agrupar visualmente o que antes ficava solto no fundo creme.
+   Usa var(--cor-superficie) (não branco fixo!) pra acompanhar o tema:
+   antes ficava #fff sempre, e no modo escuro o texto virava claro
+   sobre fundo branco - quase ilegível. */
 .painel-card {
-    background: #fff; border-radius: 10px; padding: 20px 22px; margin-bottom: 18px;
+    background: var(--cor-superficie); border: 1px solid var(--cor-borda-suave);
+    border-radius: 10px; padding: 20px 22px; margin-bottom: 18px;
     box-shadow: var(--sombra-card); border-top: 3px solid var(--cor-terracota);
 }
 .titulo-card {
@@ -142,7 +146,10 @@ html, body { height: 100%; margin: 0; }
 
 .itens-pedido-detalhe { background: var(--cor-creme); border-radius: 6px; padding: 10px 12px; margin: 10px 0; }
 .linha-item-pedido { margin: 4px 0; font-size: 14px; }
-.observacoes-pedido { background: #fff3cd; border-left: 4px solid #f0ad4e; padding: 8px 10px; border-radius: 4px; margin: 8px 0; }
+/* Fundo sempre claro tipo post-it, por isso a cor do texto é fixa (não
+   usa var(--cor-texto)) - senão fica clara sobre amarelo no modo escuro,
+   mesmo problema que o .painel-card tinha. */
+.observacoes-pedido { background: #fff3cd; color: #664d03; border-left: 4px solid #f0ad4e; padding: 8px 10px; border-radius: 4px; margin: 8px 0; }
 
 .toast-notificacao {
     position: fixed; top: 16px; right: 16px; z-index: 999;
