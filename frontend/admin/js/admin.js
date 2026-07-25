@@ -13,27 +13,31 @@ function aplicarIcones() {
 
 // Modo escuro - lembrado entre visitas via localStorage, independente de
 // login (é só preferência visual, não precisa de conta pra isso).
-// Lógica compartilhada com a cozinha mora em js/tema.js; a aplicação
-// imediata (sem esperar o DOMContentLoaded) acontece no script inline
-// no topo do <body>, pra não piscar o tema errado.
-const temaAdmin = criarAlternadorTema({
-    chave: 'pizzaria_tema_escuro',
-    classe: 'tema-escuro',
-    botaoId: 'btn-tema-escuro',
-    padraoAtivo: false,
-    respeitarSistema: true, // sem preferência salva, segue o tema do sistema operacional
-    iconeAtivo: ICONES.sol,
-    iconeInativo: ICONES.lua,
-    textoAtivo: 'Modo Claro',
-    textoInativo: 'Modo Escuro',
-});
+function aplicarTemaSalvo() {
+    const ativo = localStorage.getItem('pizzaria_tema_escuro') === 'true';
+    document.body.classList.toggle('tema-escuro', ativo);
+    atualizarBotaoTema(ativo);
+}
+
+function alternarTemaEscuro() {
+    const ativo = document.body.classList.toggle('tema-escuro');
+    localStorage.setItem('pizzaria_tema_escuro', ativo);
+    atualizarBotaoTema(ativo);
+}
+
+function atualizarBotaoTema(ativo) {
+    const btn = document.getElementById('btn-tema-escuro');
+    btn.querySelector('.icone').innerHTML = ativo ? ICONES.sol : ICONES.lua;
+    btn.querySelector('.texto-acao').textContent = ativo ? 'Modo Claro' : 'Modo Escuro';
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     aplicarIcones();
-    temaAdmin.iniciar();
+    aplicarTemaSalvo();
 
     document.getElementById('btn-login').addEventListener('click', login);
     document.getElementById('btn-logout').addEventListener('click', logout);
+    document.getElementById('btn-tema-escuro').addEventListener('click', alternarTemaEscuro);
     document.getElementById('btn-salvar-config').addEventListener('click', salvarConfiguracoes);
     document.getElementById('btn-salvar-precos').addEventListener('click', salvarPrecos);
     document.getElementById('btn-lancar-pedido').addEventListener('click', lancarPedidoAdmin);
@@ -102,6 +106,11 @@ function trocarAba(aba) {
     document.querySelectorAll('.aba-btn').forEach(el => el.classList.remove('ativa'));
     document.getElementById(`aba-${aba}`).style.display = 'block';
     document.querySelector(`.aba-btn[data-aba="${aba}"]`).classList.add('ativa');
+
+    if (aba === 'historico' && !HISTORICO_DIAS_CARREGADO) {
+        HISTORICO_DIAS_CARREGADO = true;
+        carregarHistoricoDias();
+    }
 }
 
 // ---------- Login ----------
@@ -168,7 +177,7 @@ async function tentarCarregar(fn, nomeParaErro) {
 }
 
 function conectarSocket() {
-    socket = io(SOCKET_URL);
+    socket = io(SOCKET_URL, { auth: { token: getToken() } });
 
     socket.on('novoPedido', (dadosDoPedido) => {
         document.getElementById('som-sino').play().catch(() => {});
@@ -491,6 +500,97 @@ async function mudarStatus(id, status) {
     } catch (err) {
         alert('Erro ao atualizar status: ' + err.message);
     }
+}
+
+// ---------- Histórico ----------
+let HISTORICO_DIAS_CARREGADO = false;
+let DIAS_HISTORICO = [];
+
+function formatarDiaOperacionalBr(diaISO) {
+    // Evita usar `new Date('YYYY-MM-DD')` direto (interpreta como UTC e pode
+    // voltar um dia no fuso de Brasília) - monta a data local a partir das
+    // partes do próprio texto.
+    const [ano, mes, dia] = diaISO.split('-').map(Number);
+    return new Date(ano, mes - 1, dia).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+async function carregarHistoricoDias() {
+    const select = document.getElementById('select-dia-historico');
+    try {
+        DIAS_HISTORICO = await apiFetch('/pedidos/historico/dias');
+
+        if (DIAS_HISTORICO.length === 0) {
+            select.innerHTML = '<option value="">Nenhum dia com pedidos ainda</option>';
+            document.getElementById('lista-historico-pedidos').innerHTML = '';
+            return;
+        }
+
+        select.innerHTML = DIAS_HISTORICO.map(d =>
+            `<option value="${d.dia_operacional}">${formatarDiaOperacionalBr(d.dia_operacional)} - ${d.total_pedidos} pedido(s)</option>`
+        ).join('');
+
+        select.onchange = () => selecionarDiaHistorico(select.value);
+        selecionarDiaHistorico(select.value); // já abre o dia mais recente (primeira opção)
+    } catch (err) {
+        select.innerHTML = '<option value="">Erro ao carregar</option>';
+        document.getElementById('lista-historico-pedidos').innerHTML = `<p class="erro">${err.message}</p>`;
+    }
+}
+
+async function selecionarDiaHistorico(dia) {
+    if (!dia) return;
+
+    const resumoEl = document.getElementById('resumo-dia-historico');
+    const infoDia = DIAS_HISTORICO.find(d => d.dia_operacional === dia);
+    if (infoDia) {
+        resumoEl.innerHTML = `<p class="dica"><strong>${infoDia.total_pedidos}</strong> pedido(s) - <strong>Total faturado: R$ ${Number(infoDia.total_faturado).toFixed(2)}</strong></p>`;
+    }
+
+    const container = document.getElementById('lista-historico-pedidos');
+    container.innerHTML = '<p>Carregando pedidos do dia...</p>';
+    try {
+        const pedidos = await apiFetch(`/pedidos/historico/${dia}`);
+        renderizarHistoricoPedidos(pedidos);
+    } catch (err) {
+        container.innerHTML = `<p class="erro">${err.message}</p>`;
+    }
+}
+
+// Igual ao card de pedido normal, mas sem os controles de status/exclusão -
+// pedido de um dia já encerrado não deve ser alterado por engano. Mantém só
+// o botão de reimprimir, útil se o cliente perder a comanda física.
+function renderizarHistoricoPedidos(pedidos) {
+    const container = document.getElementById('lista-historico-pedidos');
+    if (pedidos.length === 0) {
+        container.innerHTML = '<p class="vazio-lista">Nenhum pedido nesse dia.</p>';
+        return;
+    }
+
+    container.innerHTML = pedidos.map(p => {
+        const status = STATUS_PEDIDO[p.status] || { texto: p.status, classe: '' };
+        return `
+        <div class="card-pedido">
+            <div class="cabecalho-card-pedido">
+                <h4>Pedido #${String(p.id).padStart(4, '0')} - ${escapeHtml(p.cliente_nome)}</h4>
+                <span class="carimbo-status ${status.classe}">${status.texto}</span>
+            </div>
+            <p><strong>Tipo:</strong> ${escapeHtml(p.tipo_entrega)} | <strong>Pagamento:</strong> ${escapeHtml(p.forma_pagamento)}
+               ${p.troco_para > 0 ? ` (Troco para R$${Number(p.troco_para).toFixed(2)})` : ''}</p>
+            ${p.tipo_entrega === 'entrega' ? `<p><strong>Endereço:</strong> ${escapeHtml(p.endereco) || '-'} | <strong>Tel:</strong> ${escapeHtml(p.telefone) || '-'}</p>` : ''}
+            ${p.observacoes ? `<p class="observacoes-pedido"><strong>Observações:</strong> ${escapeHtml(p.observacoes)}</p>` : ''}
+
+            <div class="itens-pedido-detalhe">
+                ${(p.itens || []).map(item => `<p class="linha-item-pedido">${descreverItem(item)}</p>`).join('')}
+            </div>
+
+            <p><strong>Total:</strong> R$ ${Number(p.total).toFixed(2)}${p.taxa_entrega > 0 ? ` <small>(inclui taxa de entrega R$ ${Number(p.taxa_entrega).toFixed(2)})</small>` : ''}</p>
+
+            <div class="acoes-pedido">
+                <button onclick="imprimirComandaPorId(${p.id})" class="btn-imprimir-pedido"><span class="icone">${ICONES.impressora}</span> Reimprimir</button>
+            </div>
+        </div>
+    `;
+    }).join('');
 }
 
 // ---------- Criar pedido pelo admin ----------
