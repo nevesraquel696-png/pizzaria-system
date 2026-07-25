@@ -109,7 +109,13 @@ CREATE TABLE pedidos (
     status ENUM('pendente','preparo','saiu_entrega','entregue') DEFAULT 'pendente',
     total DECIMAL(10,2) NOT NULL,
     vezes_impresso INT DEFAULT 1,
-    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Dia do EXPEDIENTE ao qual o pedido pertence (não necessariamente o
+    -- mesmo dia do calendário - ver backend/utils/diaOperacional.js). É o
+    -- que permite a aba "Pedidos" reiniciar sozinha a cada novo expediente
+    -- e a aba "Histórico" separar o movimento dia a dia.
+    dia_operacional DATE NOT NULL,
+    INDEX idx_pedidos_dia_operacional (dia_operacional)
 );
 
 CREATE TABLE itens_pedido (

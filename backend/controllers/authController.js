@@ -1,7 +1,15 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Usuario = require('../models/Usuario');
+const { ALGORITMO_JWT } = require('../middleware/autenticacao');
 require('dotenv').config();
+
+// Hash "fake" só pra gastar o mesmo tempo de bcrypt.compare quando o email
+// nem existe. Sem isso, a resposta de "email não encontrado" volta bem mais
+// rápido que a de "senha errada" (que faz o compare de verdade) - alguém
+// medindo o tempo de resposta conseguiria descobrir quais emails têm conta
+// cadastrada, mesmo sem nunca ver a mensagem de erro mudar.
+const HASH_FALSO = '$2a$10$CwTycUXWue0Thq9StjUM0uJ8Q0Q8Q0Q8Q0Q8Q0Q8Q0Q8Q0Q8Q0Q8O';
 
 exports.login = async (req, res) => {
     const { email, senha } = req.body;
@@ -9,15 +17,14 @@ exports.login = async (req, res) => {
 
     try {
         const usuario = await Usuario.buscarPorEmail(email);
-        if (!usuario) return res.status(401).json({ erro: 'Credenciais inválidas.' });
 
-        const senhaCorreta = await bcrypt.compare(senha, usuario.senha_hash);
-        if (!senhaCorreta) return res.status(401).json({ erro: 'Credenciais inválidas.' });
+        const senhaCorreta = await bcrypt.compare(senha, usuario ? usuario.senha_hash : HASH_FALSO);
+        if (!usuario || !senhaCorreta) return res.status(401).json({ erro: 'Credenciais inválidas.' });
 
         const token = jwt.sign(
             { id: usuario.id, nome: usuario.nome, nivel: usuario.nivel },
             process.env.JWT_SECRET,
-            { expiresIn: '8h' }
+            { expiresIn: '8h', algorithm: ALGORITMO_JWT[0] }
         );
 
         res.json({ token, nome: usuario.nome, nivel: usuario.nivel });
@@ -46,7 +53,7 @@ exports.cadastrar = async (req, res) => {
                 return res.status(401).json({ erro: 'Já existe um administrador cadastrado. Faça login como admin para cadastrar novos usuários.' });
             }
             try {
-                const payload = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+                const payload = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET, { algorithms: ALGORITMO_JWT });
                 if (payload.nivel !== 'admin') {
                     return res.status(403).json({ erro: 'Só administradores podem cadastrar novos usuários.' });
                 }

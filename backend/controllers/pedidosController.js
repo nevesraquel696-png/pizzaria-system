@@ -4,6 +4,7 @@ const Configuracao = require('../models/Configuracao');
 const { PrecoPizza, FATIAS_VALIDAS } = require('../models/PrecoPizza');
 const Cupom = require('../models/Cupom');
 const validarCupom = require('../utils/validarCupom');
+const { obterDiaOperacional } = require('../utils/diaOperacional');
 
 // Validação estrutural básica do corpo do pedido (antes de calcular preços)
 function validarEstrutura(body) {
@@ -147,11 +148,16 @@ async function processarECriarPedido(req, mensagemSucesso) {
 
     const subtotal = itensProcessados.reduce((soma, item) => soma + item.preco_unitario * item.quantidade, 0);
 
+    // Config buscada sempre agora (não só pra taxa de entrega): também é
+    // usada pra calcular a qual dia operacional (expediente) o pedido
+    // pertence - ver backend/utils/diaOperacional.js.
+    const config = await Configuracao.obter();
+    const diaOperacional = obterDiaOperacional(config);
+
     // Taxa de entrega: só se aplica quando o pedido é do tipo "entrega",
     // e o valor vem do que o admin configurou (nunca confiar em valor do cliente)
     let taxaEntrega = 0;
     if (req.body.tipo_entrega === 'entrega') {
-        const config = await Configuracao.obter();
         taxaEntrega = Number(config.taxa_entrega || 0);
     }
 
@@ -178,7 +184,8 @@ async function processarECriarPedido(req, mensagemSucesso) {
         taxa_entrega: taxaEntrega,
         cupom_codigo: cupomAplicado ? cupomAplicado.codigo : null,
         desconto,
-        itens: itensProcessados
+        itens: itensProcessados,
+        dia_operacional: diaOperacional
     });
 
     if (cupomAplicado) {
@@ -230,12 +237,46 @@ exports.criarPedidoAdmin = async (req, res) => {
     }
 };
 
+// Aba "Pedidos" do painel/cozinha: mostra só o expediente em curso. Reinicia
+// sozinha a cada novo dia operacional - sem precisar de nenhum botão de
+// "fechar o dia", é só uma questão de qual dia_operacional está em vigor
+// agora (ver backend/utils/diaOperacional.js).
 exports.listarPedidos = async (req, res) => {
     try {
-        const pedidos = await Pedido.listarTodos();
+        const config = await Configuracao.obter();
+        const diaOperacional = obterDiaOperacional(config);
+        const pedidos = await Pedido.listarPorDiaOperacional(diaOperacional);
         res.json(pedidos);
     } catch (err) {
         res.status(500).json({ erro: 'Erro ao buscar pedidos.' });
+    }
+};
+
+// Histórico: lista os dias com movimento (mais recente primeiro), com
+// contagem de pedidos e total faturado de cada um - usado pra montar o
+// seletor de dias na aba "Histórico" do admin.
+exports.listarDiasHistorico = async (req, res) => {
+    try {
+        const dias = await Pedido.listarDiasComPedidos();
+        res.json(dias);
+    } catch (err) {
+        res.status(500).json({ erro: 'Erro ao buscar histórico de dias.' });
+    }
+};
+
+// Histórico: pedidos completos de um dia operacional específico (formato
+// YYYY-MM-DD), pra quando o admin abre um dia no seletor.
+exports.listarPedidosPorDia = async (req, res) => {
+    const { dia } = req.params;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) {
+        return res.status(400).json({ erro: 'Data inválida. Use o formato AAAA-MM-DD.' });
+    }
+
+    try {
+        const pedidos = await Pedido.listarPorDiaOperacional(dia);
+        res.json(pedidos);
+    } catch (err) {
+        res.status(500).json({ erro: 'Erro ao buscar pedidos do dia.' });
     }
 };
 

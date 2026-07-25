@@ -3,15 +3,15 @@ const db = require('../config/db');
 const Pedido = {
     // Cria o pedido + seus itens dentro de uma transação
     // (se algum item falhar, o pedido inteiro é desfeito)
-    async criar({ cliente_nome, telefone, tipo_entrega, endereco, observacoes, forma_pagamento, troco_para, taxa_entrega, cupom_codigo, desconto, total, itens }) {
+    async criar({ cliente_nome, telefone, tipo_entrega, endereco, observacoes, forma_pagamento, troco_para, taxa_entrega, cupom_codigo, desconto, total, itens, dia_operacional }) {
         const connection = await db.getConnection();
         try {
             await connection.beginTransaction();
 
             const [resultPedido] = await connection.query(
-                `INSERT INTO pedidos (cliente_nome, telefone, tipo_entrega, endereco, observacoes, forma_pagamento, troco_para, taxa_entrega, cupom_codigo, desconto, total)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                [cliente_nome, telefone || null, tipo_entrega, endereco || null, observacoes || null, forma_pagamento, troco_para || 0, taxa_entrega || 0, cupom_codigo || null, desconto || 0, total]
+                `INSERT INTO pedidos (cliente_nome, telefone, tipo_entrega, endereco, observacoes, forma_pagamento, troco_para, taxa_entrega, cupom_codigo, desconto, total, dia_operacional)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [cliente_nome, telefone || null, tipo_entrega, endereco || null, observacoes || null, forma_pagamento, troco_para || 0, taxa_entrega || 0, cupom_codigo || null, desconto || 0, total, dia_operacional]
             );
 
             const pedidoId = resultPedido.insertId;
@@ -44,13 +44,12 @@ const Pedido = {
         }
     },
 
-    async listarTodos() {
-        const [pedidos] = await db.query('SELECT * FROM pedidos ORDER BY criado_em DESC');
+    // Junta os itens de uma lista de pedidos já carregada (1 consulta extra
+    // no total, em vez de 1 consulta por pedido) - reaproveitado tanto pelo
+    // dia atual quanto pelo histórico de dias anteriores.
+    async _comItens(pedidos) {
         if (pedidos.length === 0) return [];
 
-        // Busca os itens de TODOS os pedidos de uma vez (1 consulta extra no total,
-        // em vez de 1 consulta por pedido) e agrupa por pedido_id em memória.
-        // Importante pra não ficar lento quando a lista de pedidos crescer.
         const ids = pedidos.map(p => p.id);
         const [todosOsItens] = await db.query('SELECT * FROM itens_pedido WHERE pedido_id IN (?)', [ids]);
 
@@ -61,6 +60,30 @@ const Pedido = {
         });
 
         return pedidos.map(p => ({ ...p, itens: itensPorPedido.get(p.id) || [] }));
+    },
+
+    // Usado pela aba "Pedidos" do painel/cozinha: só o expediente em curso.
+    // Reinicia sozinha a cada novo dia operacional, sem precisar de nenhuma
+    // ação manual de "fechar o dia".
+    async listarPorDiaOperacional(diaOperacional) {
+        const [pedidos] = await db.query(
+            'SELECT * FROM pedidos WHERE dia_operacional = ? ORDER BY criado_em DESC',
+            [diaOperacional]
+        );
+        return this._comItens(pedidos);
+    },
+
+    // Usado pela aba "Histórico": lista os dias com movimento, mais recentes
+    // primeiro, já com contagem e total do dia (pra mostrar um resumo antes
+    // de abrir os pedidos de um dia específico).
+    async listarDiasComPedidos() {
+        const [dias] = await db.query(
+            `SELECT dia_operacional, COUNT(*) AS total_pedidos, SUM(total) AS total_faturado
+             FROM pedidos
+             GROUP BY dia_operacional
+             ORDER BY dia_operacional DESC`
+        );
+        return dias;
     },
 
     async buscarPorId(id) {
