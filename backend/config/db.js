@@ -13,7 +13,14 @@ const configuracaoPool = {
     connectionLimit: 10,
     queueLimit: 0,
     enableKeepAlive: true,       // evita reconectar do zero a cada requisição
-    keepAliveInitialDelay: 10000 // manda um "sinal de vida" a cada 10s na conexão
+    keepAliveInitialDelay: 10000, // manda um "sinal de vida" a cada 10s na conexão
+    // Sem isso, colunas do tipo DATE (ex: dia_operacional) voltam do driver
+    // como objeto Date do JS - e quando esse objeto vira JSON pro front, o
+    // driver converte pra timestamp completo em UTC (ex: "2026-07-26T00:00:00.000Z")
+    // em vez do simples "2026-07-26". Isso quebrava a rota de histórico, que
+    // espera receber só a data (AAAA-MM-DD). Afeta só o tipo DATE - colunas
+    // DATETIME/TIMESTAMP (como criado_em) continuam vindo como objeto Date normalmente.
+    dateStrings: ['DATE']
 };
 
 // Bancos gratuitos hospedados (ex: TiDB Cloud) normalmente exigem SSL.
