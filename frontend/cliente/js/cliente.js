@@ -151,7 +151,7 @@ function renderizarCardapio() {
     main.innerHTML = `
         <section class="secao-categoria" id="secao-tamanhos">
             <h2><span class="icone icone-titulo-secao">${ICONES.pizza}</span> Tamanhos</h2>
-            <p class="dica-passo">👉 Clique aqui e escolha o tamanho da sua pizza</p>
+            <p class="dica-passo">👉 selecione abaixo o tamanho da sua pizza</p>
             <div class="lista-linhas" id="lista-tamanhos"></div>
         </section>
         <section class="secao-categoria" id="secao-bebidas">
@@ -192,7 +192,7 @@ function renderizarTamanhos() {
                 <div class="linha-produto-imagem">${iconeOuImagemTamanho(fatias)}</div>
                 <div class="linha-produto-info">
                     <div class="linha-produto-nome">${fatias} fatias</div>
-                    <div class="linha-produto-desc">Escolha o tipo e os sabores</div>
+                    <div class="linha-produto-desc">Clique aqui e escolha o tipo e os sabores</div>
                 </div>
                 <span class="card-preco">a partir de R$ ${menorPreco.toFixed(2)}</span>
                 <span class="seta-linha" aria-hidden="true">›</span>
@@ -217,6 +217,7 @@ function renderizarBebidas() {
             <div class="linha-produto-imagem">${iconeOuImagemProduto(b, ICONES.bebida)}</div>
             <div class="linha-produto-info"><div class="linha-produto-nome">${b.nome}</div></div>
             <span class="card-preco">R$ ${Number(b.preco_base).toFixed(2)}</span>
+            <div class="linha-produto-desc">clique aqui 👉</div>
             <button class="btn-add-rapido" data-bebida-id="${b.id}" aria-label="Adicionar ${escapeHtml(b.nome)}"><span class="icone">${ICONES.mais}</span></button>
         </div>
     `).join('');
