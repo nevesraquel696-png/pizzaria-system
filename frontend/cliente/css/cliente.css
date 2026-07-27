@@ -301,6 +301,16 @@ body {
     font-style: italic;
 }
 
+.dica-passo {
+    margin: 0 16px 12px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: var(--cor-marcador);
+    border-radius: var(--raio-borda);
+    font-size: 0.85rem;
+    color: var(--cor-texto);
+}
+
 .erro {
     color: var(--cor-vermelho);
 }

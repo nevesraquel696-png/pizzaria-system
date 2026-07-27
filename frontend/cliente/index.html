@@ -21,6 +21,8 @@
     <div class="faixa-status" id="faixa-status">Carregando horário...</div>
     <div class="faixa-promocao oculto" id="faixa-promocao"></div>
 
+    <p class="dica-passo">👉 Como pedir: toque em um <strong>tamanho</strong> abaixo para montar sua pizza, ou use os botões acima para ver Bebidas e Outros.</p>
+
     <div class="barra-busca oculto" id="barra-busca">
         <input type="text" id="input-busca" placeholder="Pesquise pelo nome do sabor...">
     </div>
@@ -45,10 +47,10 @@
             <h2 id="sheet-titulo">Pizza Tradicional - 8 fatias</h2>
             <p id="sheet-preco"></p>
 
-            <label>Escolha até 3 sabores (pode combinar categorias diferentes)</label>
+            <label>👉 Toque para escolher até 3 sabores (pode combinar categorias diferentes)</label>
             <div id="sheet-sabores-extra" class="grade-opcoes"></div>
 
-            <label>Borda Recheada</label>
+            <label for="sheet-borda">👉 Clique aqui e escolha a borda recheada (opcional)</label>
             <select id="sheet-borda">
                 <option value="">Sem borda</option>
             </select>
@@ -62,7 +64,7 @@
                 </div>
             </div>
 
-            <button id="btn-add-carrinho" class="botao-principal">Adicionar ao Carrinho</button>
+            <button id="btn-add-carrinho" class="botao-principal">Clique aqui para Adicionar ao Carrinho</button>
         </div>
     </div>
 
@@ -76,8 +78,8 @@
             <div id="itens-carrinho"><p class="carregando">Carrinho vazio.</p></div>
 
             <div class="linha-cupom">
-                <input type="text" id="input-cupom" placeholder="Código do cupom" style="text-transform:uppercase;">
-                <button type="button" id="btn-aplicar-cupom">Aplicar</button>
+                <input type="text" id="input-cupom" placeholder="Digite aqui o código do cupom (se tiver)" style="text-transform:uppercase;">
+                <button type="button" id="btn-aplicar-cupom">Clique aqui para aplicar o cupom</button>
             </div>
             <p id="mensagem-cupom" class="mensagem-cupom oculto"></p>
 
@@ -87,10 +89,10 @@
 
             <hr>
 
-            <label for="nome">Seu Nome:</label>
-            <input type="text" id="nome" placeholder="Digite seu nome">
+            <label for="nome">👉 Digite seu nome aqui:</label>
+            <input type="text" id="nome" placeholder="Digite seu nome aqui">
 
-            <label for="tipo-entrega">Como deseja receber?</label>
+            <label for="tipo-entrega">👉 Clique aqui e selecione o método de entrega:</label>
             <select id="tipo-entrega" onchange="controlarCamposEntrega(this.value)">
                 <option value="local">Consumo no Local</option>
                 <option value="retirada">Retirada</option>
@@ -98,17 +100,17 @@
             </select>
 
             <div id="campos-entrega" class="oculto">
-                <label for="telefone">Telefone / WhatsApp:</label>
-                <input type="text" id="telefone" placeholder="(00) 00000-0000">
+                <label for="telefone">👉 Digite seu Telefone / WhatsApp aqui:</label>
+                <input type="text" id="telefone" placeholder="Digite aqui: (00) 00000-0000">
                 <p id="mensagem-cliente-reconhecido" class="mensagem-cupom mensagem-cupom-sucesso oculto"></p>
-                <label for="endereco">Endereço Completo:</label>
-                <textarea id="endereco" placeholder="Rua, Número, Bairro e Ponto de Referência"></textarea>
+                <label for="endereco">👉 Digite seu Endereço Completo aqui:</label>
+                <textarea id="endereco" placeholder="Digite aqui: Rua, Número, Bairro e Ponto de Referência"></textarea>
             </div>
 
-            <label for="observacoes">Observações:</label>
+            <label for="observacoes">Observações (se quiser, digite aqui):</label>
             <input type="text" id="observacoes" placeholder="Ex: sem cebola, campainha quebrada...">
 
-            <label for="forma-pagamento">Forma de Pagamento</label>
+            <label for="forma-pagamento">👉 Clique aqui e escolha a Forma de Pagamento:</label>
             <select id="forma-pagamento" onchange="controlarTroco(this.value); controlarInfoPix(this.value)">
                 <option value="pix">Pix</option>
                 <option value="cartao">Cartão</option>
@@ -116,7 +118,7 @@
             </select>
 
             <div id="campo-troco" class="oculto">
-                <label for="troco">Precisa de troco para quanto?</label>
+                <label for="troco">👉 Digite aqui para quanto precisa de troco:</label>
                 <input type="number" id="troco" step="0.01" placeholder="Ex: 50.00">
             </div>
 
@@ -127,7 +129,7 @@
             </div>
 
             <p id="aviso-carrinho" class="erro oculto"></p>
-            <button id="btn-confirmar-pedido" class="botao-principal">Confirmar Pedido</button>
+            <button id="btn-confirmar-pedido" class="botao-principal">Clique aqui para Confirmar o Pedido</button>
         </div>
     </div>
 
