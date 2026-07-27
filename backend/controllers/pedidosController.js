@@ -178,7 +178,7 @@ async function processarECriarPedido(req, mensagemSucesso) {
 
     const total = subtotal + taxaEntrega - desconto;
 
-    const pedidoId = await Pedido.criar({
+    const { id: pedidoId, numero_pedido_dia: numeroPedidoDia } = await Pedido.criar({
         ...req.body,
         total,
         taxa_entrega: taxaEntrega,
@@ -195,12 +195,13 @@ async function processarECriarPedido(req, mensagemSucesso) {
     const io = req.app.get('io');
     io.emit('novoPedido', {
         pedidoId,
+        numeroPedidoDia,
         cliente_nome: req.body.cliente_nome,
         tipo_entrega: req.body.tipo_entrega,
         total
     });
 
-    return { status: 201, corpo: { mensagem: mensagemSucesso, pedidoId, total, taxa_entrega: taxaEntrega, desconto } };
+    return { status: 201, corpo: { mensagem: mensagemSucesso, pedidoId, numeroPedidoDia, total, taxa_entrega: taxaEntrega, desconto } };
 }
 
 exports.criarPedido = async (req, res) => {
@@ -241,6 +242,31 @@ exports.criarPedidoAdmin = async (req, res) => {
 // sozinha a cada novo dia operacional - sem precisar de nenhum botão de
 // "fechar o dia", é só uma questão de qual dia_operacional está em vigor
 // agora (ver backend/utils/diaOperacional.js).
+// Checkout do cliente: ao digitar o telefone completo, devolve nome e
+// endereço do pedido mais recente feito com esse número (se existir), pra
+// pré-preencher o formulário. Só aceita telefone com formato de telefone
+// (10 ou 11 dígitos) - evita usarem essa rota pra tentar buscar qualquer
+// string aleatória no banco.
+exports.buscarClientePorTelefone = async (req, res) => {
+    const digitos = String(req.params.telefone || '').replace(/\D/g, '');
+    if (digitos.length < 10 || digitos.length > 11) {
+        return res.status(400).json({ erro: 'Telefone inválido.' });
+    }
+
+    try {
+        const cliente = await Pedido.buscarDadosClientePorTelefone(digitos);
+        if (!cliente) return res.status(404).json({ erro: 'Nenhum pedido anterior encontrado com esse telefone.' });
+
+        res.json({
+            cliente_nome: cliente.cliente_nome,
+            endereco: cliente.endereco,
+            tipo_entrega: cliente.tipo_entrega
+        });
+    } catch (err) {
+        res.status(500).json({ erro: 'Erro ao buscar dados do cliente.' });
+    }
+};
+
 exports.listarPedidos = async (req, res) => {
     try {
         const config = await Configuracao.obter();

@@ -33,4 +33,17 @@ const limitarGeral = rateLimit({
     message: { erro: 'Muitas requisições. Aguarde um instante.' }
 });
 
-module.exports = { limitarLogin, limitarCriacaoPedido, limitarGeral };
+// Busca de dados salvos do cliente por telefone (rota pública, sem login):
+// devolve nome e endereço de quem já fez pedido com aquele número. Como
+// isso expõe nome+endereço pra quem souber/adivinhar um telefone, o limite
+// é bem mais apertado que os outros - dificulta tentar vários números em
+// sequência pra "catalogar" clientes.
+const limitarBuscaCliente = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 15,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { erro: 'Muitas consultas em pouco tempo. Aguarde alguns minutos.' }
+});
+
+module.exports = { limitarLogin, limitarCriacaoPedido, limitarGeral, limitarBuscaCliente };

@@ -116,7 +116,7 @@ function renderizar(pedidos) {
 
     container.innerHTML = pedidos.map(p => `
         <div class="card-cozinha">
-            <h3>Pedido #${String(p.id).padStart(4, '0')}</h3>
+            <h3>Pedido #${String(p.numero_pedido_dia).padStart(4, '0')}</h3>
             <p><strong>Cliente:</strong> ${escapeHtml(p.cliente_nome)}</p>
             <p><strong>Tipo:</strong> ${escapeHtml(p.tipo_entrega)}</p>
             ${p.observacoes ? `<p class="observacoes-pedido"><strong>Obs:</strong> ${escapeHtml(p.observacoes)}</p>` : ''}

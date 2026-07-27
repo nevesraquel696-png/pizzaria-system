@@ -451,7 +451,7 @@ function renderizarPedidos(pedidos) {
         return `
         <div class="card-pedido">
             <div class="cabecalho-card-pedido">
-                <h4>Pedido #${String(p.id).padStart(4, '0')} - ${escapeHtml(p.cliente_nome)}</h4>
+                <h4>Pedido #${String(p.numero_pedido_dia).padStart(4, '0')} - ${escapeHtml(p.cliente_nome)}</h4>
                 <span class="carimbo-status ${status.classe}">${status.texto}</span>
             </div>
             <p><strong>Tipo:</strong> ${escapeHtml(p.tipo_entrega)} | <strong>Pagamento:</strong> ${escapeHtml(p.forma_pagamento)}
@@ -571,7 +571,7 @@ function renderizarHistoricoPedidos(pedidos) {
         return `
         <div class="card-pedido">
             <div class="cabecalho-card-pedido">
-                <h4>Pedido #${String(p.id).padStart(4, '0')} - ${escapeHtml(p.cliente_nome)}</h4>
+                <h4>Pedido #${String(p.numero_pedido_dia).padStart(4, '0')} - ${escapeHtml(p.cliente_nome)}</h4>
                 <span class="carimbo-status ${status.classe}">${status.texto}</span>
             </div>
             <p><strong>Tipo:</strong> ${escapeHtml(p.tipo_entrega)} | <strong>Pagamento:</strong> ${escapeHtml(p.forma_pagamento)}

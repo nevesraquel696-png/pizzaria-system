@@ -28,7 +28,7 @@ function construirViaComanda(pedido) {
         <div class="via-comanda">
             <div class="comanda-cabecalho">
                 <strong>ESTAÇÃO DA PIZZA</strong>
-                <div>Pedido #${String(pedido.id).padStart(4, '0')}</div>
+                <div>Pedido #${String(pedido.numero_pedido_dia).padStart(4, '0')}</div>
                 <div>${data}</div>
             </div>
             <hr>

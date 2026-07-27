@@ -4,9 +4,14 @@ const pedidosController = require('../controllers/pedidosController');
 const autenticar = require('../middleware/autenticacao');
 const { autorizarNiveis } = require('../middleware/autenticacao');
 const verificarHorarioFuncionamento = require('../middleware/horarioFuncionamento');
+const { limitarBuscaCliente } = require('../middleware/limitadores');
 
 // Público: cliente cria o pedido (bloqueado fora do horário de funcionamento)
 router.post('/', verificarHorarioFuncionamento, pedidosController.criarPedido);
+
+// Público: busca nome/endereço salvos de um telefone já usado antes, pra
+// pré-preencher o checkout. Rate limit próprio, mais apertado - ver limitadores.js.
+router.get('/cliente/:telefone', limitarBuscaCliente, pedidosController.buscarClientePorTelefone);
 
 // Admin: cria pedido manualmente pelo painel
 router.post('/admin', autenticar, autorizarNiveis('admin'), pedidosController.criarPedidoAdmin);

@@ -115,7 +115,19 @@ CREATE TABLE pedidos (
     -- que permite a aba "Pedidos" reiniciar sozinha a cada novo expediente
     -- e a aba "Histórico" separar o movimento dia a dia.
     dia_operacional DATE NOT NULL,
+    -- Número do pedido DENTRO do dia operacional (o que aparece pro cliente/
+    -- cozinha como "Pedido #0007") - reinicia em 1 a cada novo expediente.
+    -- Diferente do `id` acima, que é a chave real do banco e nunca reinicia.
+    numero_pedido_dia INT NOT NULL,
     INDEX idx_pedidos_dia_operacional (dia_operacional)
+);
+
+-- Contador atômico usado só internamente pra gerar o numero_pedido_dia sem
+-- risco de dois pedidos simultâneos saírem com o mesmo número (ver
+-- backend/models/Pedido.js).
+CREATE TABLE contadores_pedido_dia (
+    dia_operacional DATE PRIMARY KEY,
+    ultimo_numero INT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE itens_pedido (

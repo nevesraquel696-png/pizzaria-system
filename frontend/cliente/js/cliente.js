@@ -569,6 +569,37 @@ function controlarCamposEntrega(valor) {
     renderizarCarrinho(); // a taxa de entrega muda o total, precisa recalcular na hora
 }
 
+// Ao terminar de digitar o telefone, busca se esse número já fez pedido
+// antes e pré-preenche nome/endereço - só quando esses campos ainda
+// estiverem vazios, pra nunca sobrescrever algo que o cliente já digitou
+// na mão. Silenciosamente não faz nada se não achar (telefone novo é o
+// caso mais comum, não é um erro).
+async function buscarDadosClienteSalvos() {
+    const campoTelefone = document.getElementById('telefone');
+    const digitos = campoTelefone.value.replace(/\D/g, '');
+    const mensagem = document.getElementById('mensagem-cliente-reconhecido');
+    mensagem.classList.add('oculto');
+
+    if (digitos.length < 10) return; // telefone ainda incompleto
+
+    try {
+        const dados = await apiFetch(`/pedidos/cliente/${digitos}`);
+
+        const campoNome = document.getElementById('nome');
+        const campoEndereco = document.getElementById('endereco');
+        if (!campoNome.value.trim()) campoNome.value = dados.cliente_nome;
+        if (!campoEndereco.value.trim()) campoEndereco.value = dados.endereco || '';
+
+        const primeiroNome = dados.cliente_nome.split(' ')[0];
+        mensagem.textContent = `Bem-vindo(a) de volta, ${primeiroNome}! Preenchemos seus dados do último pedido.`;
+        mensagem.classList.remove('oculto');
+    } catch (err) {
+        // 404 (telefone novo, sem pedido anterior) é o caso normal - não avisa nada.
+        // Erros de rede/limite também ficam quietos aqui: é só uma comodidade,
+        // não deve travar o cliente terminando de preencher o pedido na mão.
+    }
+}
+
 function controlarTroco(valor) {
     document.getElementById('campo-troco').classList.toggle('oculto', valor !== 'dinheiro');
 }
@@ -638,14 +669,14 @@ async function confirmarPedido() {
 function mostrarTelaSucesso(resultado, formaPagamento, nome) {
     fecharCarrinho();
 
-    document.getElementById('numero-pedido-sucesso').textContent = String(resultado.pedidoId).padStart(4, '0');
+    document.getElementById('numero-pedido-sucesso').textContent = String(resultado.numeroPedidoDia).padStart(4, '0');
     document.getElementById('texto-sucesso').textContent =
         `Obrigado, ${nome}! Total: R$ ${Number(resultado.total).toFixed(2)}.`;
 
     const blocoWhatsapp = document.getElementById('bloco-whatsapp-pix');
     if (formaPagamento === 'pix' && CONFIG_LOJA.whatsapp_numero) {
         const mensagem = encodeURIComponent(
-            `Olá! Segue o comprovante do Pix do meu pedido #${String(resultado.pedidoId).padStart(4, '0')} na Estação da Pizza.`
+            `Olá! Segue o comprovante do Pix do meu pedido #${String(resultado.numeroPedidoDia).padStart(4, '0')} na Estação da Pizza.`
         );
         document.getElementById('btn-enviar-whatsapp').href =
             `https://wa.me/55${CONFIG_LOJA.whatsapp_numero.replace(/\D/g, '')}?text=${mensagem}`;
@@ -695,6 +726,7 @@ function configurarEventos() {
     document.getElementById('barra-carrinho').addEventListener('click', abrirCarrinho);
     document.getElementById('fechar-sheet-carrinho').addEventListener('click', fecharCarrinho);
     document.getElementById('btn-confirmar-pedido').addEventListener('click', confirmarPedido);
+    document.getElementById('telefone').addEventListener('blur', buscarDadosClienteSalvos);
     document.getElementById('btn-aplicar-cupom').addEventListener('click', aplicarCupom);
 
     document.getElementById('btn-copiar-pix').addEventListener('click', copiarChavePix);
