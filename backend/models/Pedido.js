@@ -131,7 +131,7 @@ const Pedido = {
     },
 
     async atualizarStatus(id, status) {
-        const statusValidos = ['pendente', 'preparo', 'saiu_entrega', 'entregue'];
+        const statusValidos = ['pendente', 'preparo', 'saiu_entrega', 'retirado', 'entregue'];
         if (!statusValidos.includes(status)) {
             throw new Error('Status inválido');
         }

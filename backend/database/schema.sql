@@ -106,7 +106,7 @@ CREATE TABLE pedidos (
     taxa_entrega DECIMAL(10,2) DEFAULT 0.00,
     cupom_codigo VARCHAR(40) DEFAULT NULL,
     desconto DECIMAL(10,2) DEFAULT 0.00,
-    status ENUM('pendente','preparo','saiu_entrega','entregue') DEFAULT 'pendente',
+    status ENUM('pendente','preparo','saiu_entrega','retirado','entregue') DEFAULT 'pendente',
     total DECIMAL(10,2) NOT NULL,
     vezes_impresso INT DEFAULT 1,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

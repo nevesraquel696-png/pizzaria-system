@@ -433,6 +433,7 @@ const STATUS_PEDIDO = {
     pendente: { texto: 'Pendente', classe: 'status-pendente' },
     preparo: { texto: 'Em Preparo', classe: 'status-preparo' },
     saiu_entrega: { texto: 'Saiu p/ Entrega', classe: 'status-saiu' },
+    retirado: { texto: 'Retirado p/ Entregador', classe: 'status-retirado' },
     entregue: { texto: 'Entregue', classe: 'status-entregue' },
 };
 
@@ -471,6 +472,7 @@ function renderizarPedidos(pedidos) {
                         <option value="pendente" ${p.status === 'pendente' ? 'selected' : ''}>Pendente</option>
                         <option value="preparo" ${p.status === 'preparo' ? 'selected' : ''}>Em Preparo</option>
                         <option value="saiu_entrega" ${p.status === 'saiu_entrega' ? 'selected' : ''}>Saiu para Entrega</option>
+                        <option value="retirado" ${p.status === 'retirado' ? 'selected' : ''}>Retirado pelo Entregador</option>
                         <option value="entregue" ${p.status === 'entregue' ? 'selected' : ''}>Já foi Entregue</option>
                     </select>
                 </label>
