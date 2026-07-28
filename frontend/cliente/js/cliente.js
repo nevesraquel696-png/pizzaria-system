@@ -1,5 +1,6 @@
 let PRODUTOS = { sabores: [], bordas: [], bebidas: [], outros: [] };
 let PRECOS_PIZZA = [];
+let PROMOCOES = []; // promoções ativas: pizza de tamanho/sabores fixos e preço "de/por"
 let CONFIG_LOJA = {};
 let IMAGENS_TAMANHO = {}; // { 4: 'data:image/...', 6: ..., ... } - base64 vindo do banco
 let CARRINHO = []; // itens acumulados: { tipo_item, pizza_categoria, fatias, sabor_ids, borda_id, quantidade, _nome, _preco }
@@ -17,7 +18,7 @@ const CATEGORIAS_ORDEM = ['tradicional', 'especial', 'doce', 'promocao'];
 
 document.addEventListener('DOMContentLoaded', async () => {
     aplicarIcones();
-    await Promise.all([carregarProdutos(), carregarPrecos(), carregarStatusLoja(), carregarImagensTamanho()]);
+    await Promise.all([carregarProdutos(), carregarPrecos(), carregarPromocoes(), carregarStatusLoja(), carregarImagensTamanho()]);
     renderizarCardapio();
     configurarEventos();
 });
@@ -78,6 +79,14 @@ async function carregarPrecos() {
         PRECOS_PIZZA = await apiFetch('/precos-pizza');
     } catch (err) {
         console.error(err);
+    }
+}
+
+async function carregarPromocoes() {
+    try {
+        PROMOCOES = await apiFetch('/promocoes');
+    } catch (err) {
+        console.error('Erro ao carregar promoções:', err.message);
     }
 }
 
@@ -149,9 +158,14 @@ function categoriaPadrao() {
 function renderizarCardapio() {
     const main = document.getElementById('secoes-cardapio');
     main.innerHTML = `
+        <section class="secao-categoria" id="secao-promocoes">
+            <h2><span class="icone icone-titulo-secao">${ICONES.fogo}</span> Promoções</h2>
+            <p class="dica-passo">👉 Clique aqui e escolha uma promoção - os sabores já vêm limitados aos dessa promoção</p>
+            <div class="lista-linhas" id="lista-promocoes"></div>
+        </section>
         <section class="secao-categoria" id="secao-tamanhos">
             <h2><span class="icone icone-titulo-secao">${ICONES.pizza}</span> Tamanhos</h2>
-            <p class="dica-passo">👉 selecione abaixo o tamanho da sua pizza</p>
+            <p class="dica-passo">👉 Clique aqui e escolha o tamanho da sua pizza</p>
             <div class="lista-linhas" id="lista-tamanhos"></div>
         </section>
         <section class="secao-categoria" id="secao-bebidas">
@@ -166,9 +180,44 @@ function renderizarCardapio() {
         </section>
     `;
 
+    renderizarPromocoesCliente();
     renderizarTamanhos();
     renderizarBebidas();
     renderizarOutros();
+}
+
+// Promoções: pizza de tamanho e sabores fixos, definida pelo admin, com
+// preço fixo "de/por" (não usa a tabela de preços por categoria). Some da
+// tela se não houver nenhuma promoção ativa.
+function renderizarPromocoesCliente() {
+    const secao = document.getElementById('secao-promocoes');
+    if (!PROMOCOES || PROMOCOES.length === 0) { secao.remove(); return; }
+
+    const lista = document.getElementById('lista-promocoes');
+    lista.innerHTML = PROMOCOES.map(promo => {
+        const nomesSabores = promo.sabor_ids
+            .map(id => PRODUTOS.sabores.find(s => s.id === id)?.nome)
+            .filter(Boolean)
+            .join(', ');
+        return `
+            <button class="linha-produto" data-promocao-id="${promo.id}">
+                <div class="linha-produto-imagem">${iconeOuImagemTamanho(promo.fatias)}</div>
+                <div class="linha-produto-info">
+                    <div class="linha-produto-nome">${escapeHtml(promo.nome)} (${promo.fatias} fatias)</div>
+                    <div class="linha-produto-desc">${escapeHtml(nomesSabores)}</div>
+                </div>
+                <span class="card-preco card-preco-promo">
+                    <s>R$ ${Number(promo.preco_de).toFixed(2)}</s>
+                    R$ ${Number(promo.preco_por).toFixed(2)}
+                </span>
+                <span class="seta-linha" aria-hidden="true">›</span>
+            </button>
+        `;
+    }).join('');
+
+    lista.querySelectorAll('.linha-produto[data-promocao-id]').forEach(linha => {
+        linha.addEventListener('click', () => abrirFichaPromocao(Number(linha.dataset.promocaoId)));
+    });
 }
 
 // Seção única de tamanhos: lista vertical, sem escolher categoria ainda.
@@ -192,7 +241,7 @@ function renderizarTamanhos() {
                 <div class="linha-produto-imagem">${iconeOuImagemTamanho(fatias)}</div>
                 <div class="linha-produto-info">
                     <div class="linha-produto-nome">${fatias} fatias</div>
-                    <div class="linha-produto-desc">Clique aqui e escolha o tipo e os sabores</div>
+                    <div class="linha-produto-desc">Escolha o tipo e os sabores</div>
                 </div>
                 <span class="card-preco">a partir de R$ ${menorPreco.toFixed(2)}</span>
                 <span class="seta-linha" aria-hidden="true">›</span>
@@ -217,7 +266,6 @@ function renderizarBebidas() {
             <div class="linha-produto-imagem">${iconeOuImagemProduto(b, ICONES.bebida)}</div>
             <div class="linha-produto-info"><div class="linha-produto-nome">${b.nome}</div></div>
             <span class="card-preco">R$ ${Number(b.preco_base).toFixed(2)}</span>
-            <div class="linha-produto-desc">clique aqui 👉</div>
             <button class="btn-add-rapido" data-bebida-id="${b.id}" aria-label="Adicionar ${escapeHtml(b.nome)}"><span class="icone">${ICONES.mais}</span></button>
         </div>
     `).join('');
@@ -252,10 +300,31 @@ function renderizarOutros() {
 // A categoria (Tradicional/Especial/Doce/Promoção) é escolhida aqui dentro,
 // através das abas, não mais na tela inicial - só o tamanho vem de fora.
 function abrirFichaProduto(fatias) {
-    SABOR_ATUAL = { categoriaAtiva: categoriaPadrao(), fatias, selecionados: new Map() };
+    SABOR_ATUAL = { categoriaAtiva: categoriaPadrao(), fatias, selecionados: new Map(), promocao: null };
 
     document.getElementById('qtd-valor').textContent = '1';
     renderizarAbasCategoriaSheet();
+    renderizarConteudoSheet();
+
+    const selectBorda = document.getElementById('sheet-borda');
+    selectBorda.innerHTML = '<option value="">Sem borda</option>' + PRODUTOS.bordas.map(b =>
+        `<option value="${b.id}" data-preco="${b.preco_base}">${b.nome} (+R$ ${Number(b.preco_base).toFixed(2)})</option>`
+    ).join('');
+
+    document.getElementById('sheet-fundo-produto').classList.remove('oculto');
+}
+
+// Ficha de uma promoção: mesma janela da pizza normal, mas sem abas de
+// categoria - os sabores mostrados já vêm limitados aos que o admin marcou
+// nessa promoção, e o preço é sempre o fixo "de/por", não o da tabela normal.
+function abrirFichaPromocao(promocaoId) {
+    const promocao = PROMOCOES.find(p => p.id === promocaoId);
+    if (!promocao) return;
+
+    SABOR_ATUAL = { categoriaAtiva: null, fatias: promocao.fatias, selecionados: new Map(), promocao };
+
+    document.getElementById('qtd-valor').textContent = '1';
+    document.getElementById('sheet-categorias').innerHTML = '';
     renderizarConteudoSheet();
 
     const selectBorda = document.getElementById('sheet-borda');
@@ -296,13 +365,20 @@ function renderizarAbasCategoriaSheet() {
 // Imagem, título, preço e lista de sabores - depende da categoria escolhida
 // nas abas acima, então é chamada de novo toda vez que ela muda.
 function renderizarConteudoSheet() {
-    const { categoriaAtiva, fatias, selecionados } = SABOR_ATUAL;
+    const { categoriaAtiva, fatias, selecionados, promocao } = SABOR_ATUAL;
 
     document.getElementById('sheet-imagem').innerHTML = iconeOuImagemTamanho(fatias);
-    document.getElementById('sheet-titulo').textContent = `Pizza - ${fatias} fatias`;
+    document.getElementById('sheet-titulo').textContent = promocao
+        ? `${promocao.nome} - ${fatias} fatias`
+        : `Pizza - ${fatias} fatias`;
     atualizarPrecoSheet();
 
-    const sabores = PRODUTOS.sabores.filter(s => s.categoria === categoriaAtiva);
+    // Em promoção, a lista de sabores já vem limitada aos que o admin
+    // marcou ao criar a promoção (podem ser de categorias diferentes).
+    const sabores = promocao
+        ? promocao.sabor_ids.map(id => PRODUTOS.sabores.find(s => s.id === id)).filter(Boolean)
+        : PRODUTOS.sabores.filter(s => s.categoria === categoriaAtiva);
+
     const container = document.getElementById('sheet-sabores-extra');
     container.innerHTML = sabores.map(s => `
         <label class="opcao-sabor">
@@ -322,11 +398,12 @@ function renderizarConteudoSheet() {
                 alert('Máximo de 3 sabores por pizza, no total (pode ser de categorias diferentes).');
                 return;
             }
-            selecionados.set(id, categoriaAtiva);
+            const sabor = sabores.find(s => s.id === id);
+            selecionados.set(id, sabor ? sabor.categoria : categoriaAtiva);
         } else {
             selecionados.delete(id);
         }
-        renderizarAbasCategoriaSheet();
+        if (!promocao) renderizarAbasCategoriaSheet();
         atualizarPrecoSheet();
     };
 }
@@ -335,8 +412,13 @@ function renderizarConteudoSheet() {
 // escolhidos (regra pra combinações mistas). Enquanto nada foi marcado ainda,
 // mostra o preço "a partir de" da aba aberta no momento, só como prévia.
 function atualizarPrecoSheet() {
-    const { categoriaAtiva, fatias, selecionados } = SABOR_ATUAL;
+    const { categoriaAtiva, fatias, selecionados, promocao } = SABOR_ATUAL;
     const el = document.getElementById('sheet-preco');
+
+    if (promocao) {
+        el.innerHTML = `<span class="etiqueta-preco-promo"><s>R$ ${Number(promocao.preco_de).toFixed(2)}</s> R$ ${Number(promocao.preco_por).toFixed(2)}</span>`;
+        return;
+    }
 
     if (selecionados.size === 0) {
         const preco = obterPreco(categoriaAtiva, fatias);
@@ -364,10 +446,37 @@ function fecharFichaProduto() {
 }
 
 function adicionarAoCarrinho() {
-    const { fatias, selecionados } = SABOR_ATUAL;
+    const { fatias, selecionados, promocao } = SABOR_ATUAL;
 
     const saborIds = [...selecionados.keys()];
     if (saborIds.length === 0) return alert('Escolha ao menos 1 sabor.');
+
+    const bordaSelect = document.getElementById('sheet-borda');
+    const bordaId = bordaSelect.value ? Number(bordaSelect.value) : null;
+    const precoBorda = bordaId ? Number(bordaSelect.selectedOptions[0].dataset.preco) : 0;
+    const nomeBorda = bordaId ? bordaSelect.selectedOptions[0].textContent : null;
+    const quantidade = Number(document.getElementById('qtd-valor').textContent);
+    const nomesSabores = saborIds.map(id => PRODUTOS.sabores.find(s => s.id === id)?.nome).join(', ');
+
+    // Pizza de promoção: preço fixo "de/por" definido pelo admin, não usa
+    // a tabela de preços por categoria (o servidor confere tudo de novo).
+    if (promocao) {
+        CARRINHO.push({
+            tipo_item: 'pizza',
+            pizza_categoria: 'promocao',
+            promocao_id: promocao.id,
+            fatias,
+            sabor_ids: saborIds,
+            borda_id: bordaId,
+            quantidade,
+            _nome: `${promocao.nome} (${fatias} fatias) - ${nomesSabores}${nomeBorda ? ' + ' + nomeBorda : ''}`,
+            _preco: Number(promocao.preco_por) + precoBorda
+        });
+
+        fecharFichaProduto();
+        atualizarBarraCarrinho();
+        return;
+    }
 
     // Categoria de cobrança: a mais cara entre as dos sabores escolhidos.
     // O servidor recalcula isso de novo a partir do banco na hora de confirmar
@@ -379,15 +488,6 @@ function adicionarAoCarrinho() {
     }
     const categoriaCobranca = precosPorCategoria.reduce((maior, atual) => atual.preco > maior.preco ? atual : maior).cat;
     const precoPizza = precosPorCategoria.reduce((maior, atual) => atual.preco > maior.preco ? atual : maior).preco;
-
-    const nomesSabores = saborIds.map(id => PRODUTOS.sabores.find(s => s.id === id)?.nome).join(', ');
-
-    const bordaSelect = document.getElementById('sheet-borda');
-    const bordaId = bordaSelect.value ? Number(bordaSelect.value) : null;
-    const precoBorda = bordaId ? Number(bordaSelect.selectedOptions[0].dataset.preco) : 0;
-    const nomeBorda = bordaId ? bordaSelect.selectedOptions[0].textContent : null;
-
-    const quantidade = Number(document.getElementById('qtd-valor').textContent);
 
     CARRINHO.push({
         tipo_item: 'pizza',
@@ -651,6 +751,7 @@ async function confirmarPedido() {
                 return {
                     tipo_item: 'pizza',
                     pizza_categoria: item.pizza_categoria,
+                    promocao_id: item.promocao_id || null,
                     fatias: item.fatias,
                     sabor_ids: item.sabor_ids,
                     borda_id: item.borda_id,

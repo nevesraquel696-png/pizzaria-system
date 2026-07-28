@@ -127,7 +127,6 @@ html, body { height: 100%; margin: 0; }
 .status-pendente { background: var(--cor-dourado); color: #4a3400; }
 .status-preparo { background: var(--cor-terracota); color: #fff; }
 .status-saiu { background: var(--cor-marcador); color: #16324a; }
-.status-retirado { background: var(--cor-vermelho); color: #fff; }
 .status-entregue { background: var(--cor-verde-escuro); color: #fff; }
 
 .acoes-pedido { margin-top: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }

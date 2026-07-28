@@ -14,7 +14,8 @@ const NOMES_CATEGORIA_COMANDA = { tradicional: 'Tradicional', especial: 'Especia
 function descreverItemComanda(item) {
     if (item.tipo_item === 'pizza') {
         const sabores = Array.isArray(item.sabores) ? item.sabores : (item.sabores ? JSON.parse(item.sabores) : []);
-        return `${item.quantidade}x Pizza ${NOMES_CATEGORIA_COMANDA[item.pizza_categoria] || ''} (${item.fatias} fatias)<br>&nbsp;&nbsp;${escapeHtml(sabores.join(', '))}${item.borda ? '<br>&nbsp;&nbsp;+ borda ' + escapeHtml(item.borda) : ''}`;
+        const rotuloPromocao = item.pizza_categoria === 'promocao' && item.nome_item ? `[${escapeHtml(item.nome_item)}]<br>&nbsp;&nbsp;` : '';
+        return `${rotuloPromocao}${item.quantidade}x Pizza ${NOMES_CATEGORIA_COMANDA[item.pizza_categoria] || ''} (${item.fatias} fatias)<br>&nbsp;&nbsp;${escapeHtml(sabores.join(', '))}${item.borda ? '<br>&nbsp;&nbsp;+ borda ' + escapeHtml(item.borda) : ''}`;
     }
     const nome = item.nome_item ? escapeHtml(item.nome_item) : (item.tipo_item === 'bebida' ? 'Bebida (pedido antigo)' : 'Item (pedido antigo)');
     return `${item.quantidade}x ${nome} - R$ ${Number(item.preco_unitario).toFixed(2)} cada`;

@@ -171,6 +171,19 @@ body {
     transform: rotate(-2deg);
 }
 
+.card-preco-promo {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.15;
+    background: var(--cor-dourado);
+}
+
+.card-preco-promo s {
+    font-size: 12px;
+    opacity: 0.75;
+}
+
 .lista-linhas {
     display: flex;
     flex-direction: column;
@@ -303,7 +316,6 @@ body {
 
 .dica-passo {
     margin: 0 16px 12px;
-    margin-top: 8px;
     padding: 8px 12px;
     background: var(--cor-marcador);
     border-radius: var(--raio-borda);

@@ -3,6 +3,7 @@ const Produto = require('../models/Produto');
 const Configuracao = require('../models/Configuracao');
 const { PrecoPizza, FATIAS_VALIDAS } = require('../models/PrecoPizza');
 const Cupom = require('../models/Cupom');
+const Promocao = require('../models/Promocao');
 const validarCupom = require('../utils/validarCupom');
 const { obterDiaOperacional } = require('../utils/diaOperacional');
 
@@ -46,12 +47,15 @@ async function processarItens(itensRecebidos) {
         }
     });
 
-    // 2) Busca tudo de uma vez: produtos por ID + tabela de preços inteira
-    const [produtosEncontrados, precosPizza] = await Promise.all([
+    // 2) Busca tudo de uma vez: produtos por ID + tabela de preços inteira +
+    // promoções envolvidas (se algum item referenciar uma)
+    const [produtosEncontrados, precosPizza, promocoesEncontradas] = await Promise.all([
         Produto.buscarPorIds([...todosOsIds]),
-        PrecoPizza.listarTodos()
+        PrecoPizza.listarTodos(),
+        Promocao.buscarPorIds([...new Set(itensRecebidos.filter(i => i.promocao_id).map(i => i.promocao_id))])
     ]);
     const produtosPorId = new Map(produtosEncontrados.map(p => [p.id, p]));
+    const promocoesPorId = new Map(promocoesEncontradas.map(p => [p.id, p]));
     const buscarPreco = (categoria, fatias) => {
         const encontrado = precosPizza.find(p => p.categoria === categoria && Number(p.fatias) === Number(fatias));
         return encontrado ? Number(encontrado.preco) : null;
@@ -90,6 +94,37 @@ async function processarItens(itensRecebidos) {
                 }
                 precoBorda = Number(borda.preco_base);
                 nomeBorda = borda.nome;
+            }
+
+            // Pizza de promoção: preço fixo "de/por" definido pelo admin,
+            // não usa a tabela de preços por categoria. Nunca confiamos no
+            // preço enviado pelo cliente - o valor de verdade vem sempre da
+            // promoção buscada agora no banco.
+            if (item.promocao_id) {
+                const promocao = promocoesPorId.get(Number(item.promocao_id));
+                if (!promocao || !promocao.ativo) {
+                    return erros.push(`${prefixo} promoção inválida ou não está mais disponível.`);
+                }
+                if (Number(fatias) !== Number(promocao.fatias)) {
+                    return erros.push(`${prefixo} tamanho não corresponde ao da promoção.`);
+                }
+                const idsPermitidos = promocao.sabor_ids.map(Number);
+                const todosPermitidos = sabor_ids.every(id => idsPermitidos.includes(Number(id)));
+                if (!todosPermitidos) {
+                    return erros.push(`${prefixo} sabor fora da lista permitida para essa promoção.`);
+                }
+
+                itensProcessados.push({
+                    tipo_item: 'pizza',
+                    pizza_categoria: 'promocao',
+                    fatias: Number(fatias),
+                    sabores: saboresValidos.map(s => s.nome),
+                    borda: nomeBorda,
+                    nome_item: promocao.nome,
+                    quantidade: item.quantidade || 1,
+                    preco_unitario: Number(promocao.preco_por) + precoBorda
+                });
+                return;
             }
 
             // Regra de cobrança pra combinação "mista": vale o preço da

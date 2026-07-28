@@ -16,6 +16,7 @@ DROP TABLE IF EXISTS itens_pedido;
 DROP TABLE IF EXISTS pedidos;
 DROP TABLE IF EXISTS produtos;
 DROP TABLE IF EXISTS precos_pizza;
+DROP TABLE IF EXISTS promocoes;
 DROP TABLE IF EXISTS usuarios;
 DROP TABLE IF EXISTS configuracoes;
 
@@ -94,6 +95,20 @@ CREATE TABLE produtos (
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Promoções: pizza de tamanho fixo com sabores fixos escolhidos pelo admin,
+-- vendida por um preço fixo "de/por" (ignora a tabela de preços por
+-- categoria acima). Aparece pro cliente numa aba própria no cardápio.
+CREATE TABLE promocoes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    fatias INT NOT NULL,
+    sabor_ids JSON NOT NULL,
+    preco_de DECIMAL(10,2) NOT NULL,
+    preco_por DECIMAL(10,2) NOT NULL,
+    ativo BOOLEAN DEFAULT TRUE,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE pedidos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     cliente_nome VARCHAR(100) NOT NULL,
@@ -106,7 +121,7 @@ CREATE TABLE pedidos (
     taxa_entrega DECIMAL(10,2) DEFAULT 0.00,
     cupom_codigo VARCHAR(40) DEFAULT NULL,
     desconto DECIMAL(10,2) DEFAULT 0.00,
-    status ENUM('pendente','preparo','saiu_entrega','retirado','entregue') DEFAULT 'pendente',
+    status ENUM('pendente','preparo','saiu_entrega','entregue') DEFAULT 'pendente',
     total DECIMAL(10,2) NOT NULL,
     vezes_impresso INT DEFAULT 1,
     criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

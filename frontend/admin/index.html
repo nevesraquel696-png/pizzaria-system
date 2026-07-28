@@ -48,6 +48,7 @@
                 <button class="aba-btn" data-aba="cardapio"><span class="icone" data-icone="ferramentas"></span><span class="rotulo-aba">Cardápio</span></button>
                 <button class="aba-btn" data-aba="precos"><span class="icone" data-icone="cifrao"></span><span class="rotulo-aba">Preços</span></button>
                 <button class="aba-btn" data-aba="cupons"><span class="icone" data-icone="etiqueta"></span><span class="rotulo-aba">Cupons</span></button>
+                <button class="aba-btn" data-aba="promocoes"><span class="icone" data-icone="etiqueta"></span><span class="rotulo-aba">Promoções</span></button>
                 <button class="aba-btn" data-aba="config"><span class="icone" data-icone="engrenagem"></span><span class="rotulo-aba">Config.</span></button>
             </nav>
 
@@ -245,6 +246,44 @@
                 <div class="painel-card">
                     <h4 class="titulo-card">Cupons Cadastrados</h4>
                     <ul id="lista-cupons"><li class="carregando">Carregando...</li></ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA: Promoções (pizza de tamanho e sabores fixos, preço "de/por") -->
+        <section id="aba-promocoes" class="aba-conteudo" style="display:none;">
+            <h3>Promoções</h3>
+            <p class="dica">Escolha os sabores que vão entrar na promoção, o tamanho e o preço "de/por". Ela aparece pro cliente no cardápio, igual à lista de Tamanhos, com os sabores já limitados aos que você marcar aqui.</p>
+
+            <div class="grid-2">
+                <div class="painel-card">
+                    <h4 class="titulo-card">Criar Promoção</h4>
+                    <label>Nome da Promoção: <input type="text" id="promo-nome" placeholder="Ex: Promoção da Casa"></label>
+
+                    <label>Tamanho:
+                        <select id="promo-fatias">
+                            <option value="4">4 fatias</option>
+                            <option value="6">6 fatias</option>
+                            <option value="8">8 fatias</option>
+                            <option value="12" selected>12 fatias</option>
+                            <option value="14">14 fatias</option>
+                        </select>
+                    </label>
+
+                    <p class="rotulo-grupo-selecao">👉 Marque até 3 sabores que vão entrar nessa promoção:</p>
+                    <div id="promo-container-sabores" class="secao-selecao"><p class="carregando">Carregando sabores...</p></div>
+
+                    <div class="linha-form-2">
+                        <label>Preço "De" (R$): <input type="number" id="promo-preco-de" step="0.01" placeholder="Ex: 50.00"></label>
+                        <label>Preço "Por" (R$): <input type="number" id="promo-preco-por" step="0.01" placeholder="Ex: 35.00"></label>
+                    </div>
+
+                    <button id="btn-criar-promocao">Criar Promoção</button>
+                </div>
+
+                <div class="painel-card">
+                    <h4 class="titulo-card">Promoções Cadastradas</h4>
+                    <ul id="lista-promocoes"><li class="carregando">Carregando...</li></ul>
                 </div>
             </div>
         </section>

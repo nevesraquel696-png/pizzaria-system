@@ -73,6 +73,25 @@ button {
     box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
+.etiqueta-preco-promo {
+    display: inline-block;
+    background: var(--cor-dourado);
+    font-family: var(--fonte-mao);
+    font-size: 22px;
+    font-weight: 700;
+    color: #16324a;
+    padding: 2px 12px;
+    border-radius: 3px;
+    transform: rotate(-2deg);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.etiqueta-preco-promo s {
+    font-size: 15px;
+    opacity: 0.7;
+    margin-right: 4px;
+}
+
 /* Rótulo tipo placa de estação, usado como "eyebrow" acima dos títulos de seção */
 .rotulo-estacao {
     display: inline-block;

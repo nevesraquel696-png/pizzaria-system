@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-lancar-pedido').addEventListener('click', lancarPedidoAdmin);
     document.getElementById('btn-ativar-som').addEventListener('click', ativarSom);
     document.getElementById('btn-criar-cupom').addEventListener('click', criarCupom);
+    document.getElementById('btn-criar-promocao').addEventListener('click', criarPromocao);
 
     document.querySelectorAll('.aba-btn').forEach(btn => {
         btn.addEventListener('click', () => trocarAba(btn.dataset.aba));
@@ -155,6 +156,7 @@ async function iniciarPainel() {
         tentarCarregar(carregarConfiguracoes, 'configurações'),
         tentarCarregar(carregarImagensTamanho, 'imagens'),
         tentarCarregar(carregarCupons, 'cupons'),
+        tentarCarregar(carregarPromocoes, 'promoções'),
         tentarCarregar(carregarPedidos, 'pedidos'),
         tentarCarregar(async () => {
             renderizarCardapio(await apiFetch('/produtos'));
@@ -163,6 +165,7 @@ async function iniciarPainel() {
 
     renderizarTabelaPrecos();
     renderizarBebidasAdmin();
+    renderizarSaboresPromocao();
     document.getElementById('adm-borda').innerHTML =
         '<option value="">Sem borda</option>' +
         PRODUTOS_ADMIN.bordas.map(b => `<option value="${b.id}" data-preco="${b.preco_base}">${b.nome} (+R$ ${Number(b.preco_base).toFixed(2)})</option>`).join('');
@@ -406,6 +409,112 @@ async function excluirCupom(id) {
     }
 }
 
+// ---------- Promoções ----------
+// Lista de sabores marcáveis no formulário de criação (todas as categorias,
+// já que uma promoção pode combinar sabores de categorias diferentes).
+function renderizarSaboresPromocao() {
+    const container = document.getElementById('promo-container-sabores');
+    if (!PRODUTOS_ADMIN.sabores || PRODUTOS_ADMIN.sabores.length === 0) {
+        container.innerHTML = '<p class="erro">Nenhum sabor cadastrado no cardápio ainda.</p>';
+        return;
+    }
+
+    const nomesCategoria = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
+    container.innerHTML = '<div class="grade-selecao-itens">' + PRODUTOS_ADMIN.sabores.map(s => `
+        <label class="opcao-selecao-item"><input type="checkbox" name="promo-sabores" value="${s.id}"> ${escapeHtml(s.nome)} <small>(${nomesCategoria[s.categoria] || s.categoria})</small></label>
+    `).join('') + '</div>';
+
+    container.onchange = () => {
+        const marcados = container.querySelectorAll('input[name="promo-sabores"]:checked');
+        if (marcados.length > 3) {
+            event.target.checked = false;
+            alert('Máximo de 3 sabores por promoção.');
+        }
+    };
+}
+
+async function carregarPromocoes() {
+    const promocoes = await apiFetch('/promocoes/todas');
+    renderizarPromocoes(promocoes);
+}
+
+function renderizarPromocoes(promocoes) {
+    const lista = document.getElementById('lista-promocoes');
+    if (promocoes.length === 0) {
+        lista.innerHTML = '<li class="carregando">Nenhuma promoção cadastrada ainda.</li>';
+        return;
+    }
+
+    lista.innerHTML = promocoes.map(p => {
+        const nomesSabores = p.sabor_ids
+            .map(id => PRODUTOS_ADMIN.sabores.find(s => s.id === id)?.nome)
+            .filter(Boolean)
+            .join(', ');
+        return `
+            <li class="item-cupom">
+                <div>
+                    <strong>${escapeHtml(p.nome)}</strong> - ${p.fatias} fatias
+                    <div class="descricao-produto">${escapeHtml(nomesSabores)}</div>
+                    <div class="descricao-produto">De R$ ${Number(p.preco_de).toFixed(2)} por R$ ${Number(p.preco_por).toFixed(2)}</div>
+                </div>
+                <div class="acoes-item-cupom">
+                    <label class="opcao-checkbox-inline">
+                        <input type="checkbox" ${p.ativo ? 'checked' : ''} onchange="alternarPromocaoAtiva(${p.id})">
+                        Ativa
+                    </label>
+                    <button class="btn-excluir" onclick="excluirPromocao(${p.id})">Excluir</button>
+                </div>
+            </li>
+        `;
+    }).join('');
+}
+
+async function criarPromocao() {
+    const nome = document.getElementById('promo-nome').value.trim();
+    const fatias = Number(document.getElementById('promo-fatias').value);
+    const preco_de = Number(document.getElementById('promo-preco-de').value);
+    const preco_por = Number(document.getElementById('promo-preco-por').value);
+    const sabor_ids = [...document.querySelectorAll('input[name="promo-sabores"]:checked')].map(el => Number(el.value));
+
+    if (!nome) return alert('Informe o nome da promoção.');
+    if (sabor_ids.length === 0) return alert('Marque ao menos 1 sabor para a promoção.');
+    if (!(preco_de >= 0) || !(preco_por >= 0)) return alert('Informe os preços "de" e "por".');
+
+    try {
+        await apiFetch('/promocoes', {
+            method: 'POST',
+            body: JSON.stringify({ nome, fatias, sabor_ids, preco_de, preco_por })
+        });
+        mostrarToast('Promoção criada com sucesso!');
+        document.getElementById('promo-nome').value = '';
+        document.getElementById('promo-preco-de').value = '';
+        document.getElementById('promo-preco-por').value = '';
+        document.querySelectorAll('input[name="promo-sabores"]:checked').forEach(el => el.checked = false);
+        carregarPromocoes();
+    } catch (err) {
+        alert('Erro ao criar promoção: ' + err.message);
+    }
+}
+
+async function alternarPromocaoAtiva(id) {
+    try {
+        await apiFetch(`/promocoes/${id}/ativa`, { method: 'PATCH' });
+        carregarPromocoes();
+    } catch (err) {
+        alert('Erro ao atualizar promoção: ' + err.message);
+    }
+}
+
+async function excluirPromocao(id) {
+    if (!confirm('Excluir essa promoção? Ela deixa de aparecer no cardápio do cliente.')) return;
+    try {
+        await apiFetch(`/promocoes/${id}`, { method: 'DELETE' });
+        carregarPromocoes();
+    } catch (err) {
+        alert('Erro ao excluir promoção: ' + err.message);
+    }
+}
+
 // ---------- Pedidos ----------
 async function carregarPedidos() {
     try {
@@ -422,7 +531,8 @@ function descreverItem(item) {
     if (item.tipo_item === 'pizza') {
         const nomesCategoria = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
         const sabores = Array.isArray(item.sabores) ? item.sabores : (item.sabores ? JSON.parse(item.sabores) : []);
-        return `${item.quantidade}x Pizza ${nomesCategoria[item.pizza_categoria] || ''} (${item.fatias} fatias) - ${escapeHtml(sabores.join(', '))}${item.borda ? ' + borda ' + escapeHtml(item.borda) : ''}`;
+        const rotuloPromocao = item.pizza_categoria === 'promocao' && item.nome_item ? `[${escapeHtml(item.nome_item)}] ` : '';
+        return `${rotuloPromocao}${item.quantidade}x Pizza ${nomesCategoria[item.pizza_categoria] || ''} (${item.fatias} fatias) - ${escapeHtml(sabores.join(', '))}${item.borda ? ' + borda ' + escapeHtml(item.borda) : ''}`;
     }
     const nome = item.nome_item ? escapeHtml(item.nome_item) : (item.tipo_item === 'bebida' ? 'Bebida (pedido antigo)' : 'Item (pedido antigo)');
     return `${item.quantidade}x ${nome} (R$ ${Number(item.preco_unitario).toFixed(2)} cada)`;
@@ -433,7 +543,6 @@ const STATUS_PEDIDO = {
     pendente: { texto: 'Pendente', classe: 'status-pendente' },
     preparo: { texto: 'Em Preparo', classe: 'status-preparo' },
     saiu_entrega: { texto: 'Saiu p/ Entrega', classe: 'status-saiu' },
-    retirado: { texto: 'Retirado p/ Entregador', classe: 'status-retirado' },
     entregue: { texto: 'Entregue', classe: 'status-entregue' },
 };
 
@@ -472,7 +581,6 @@ function renderizarPedidos(pedidos) {
                         <option value="pendente" ${p.status === 'pendente' ? 'selected' : ''}>Pendente</option>
                         <option value="preparo" ${p.status === 'preparo' ? 'selected' : ''}>Em Preparo</option>
                         <option value="saiu_entrega" ${p.status === 'saiu_entrega' ? 'selected' : ''}>Saiu para Entrega</option>
-                        <option value="retirado" ${p.status === 'retirado' ? 'selected' : ''}>Retirado pelo Entregador</option>
                         <option value="entregue" ${p.status === 'entregue' ? 'selected' : ''}>Já foi Entregue</option>
                     </select>
                 </label>
