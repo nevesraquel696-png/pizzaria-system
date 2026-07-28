@@ -266,6 +266,7 @@ function renderizarBebidas() {
             <div class="linha-produto-imagem">${iconeOuImagemProduto(b, ICONES.bebida)}</div>
             <div class="linha-produto-info"><div class="linha-produto-nome">${b.nome}</div></div>
             <span class="card-preco">R$ ${Number(b.preco_base).toFixed(2)}</span>
+             <div class="linha-produto-desc">CLIQUE AQUI 👉</div>
             <button class="btn-add-rapido" data-bebida-id="${b.id}" aria-label="Adicionar ${escapeHtml(b.nome)}"><span class="icone">${ICONES.mais}</span></button>
         </div>
     `).join('');
@@ -287,6 +288,7 @@ function renderizarOutros() {
             <div class="linha-produto-imagem">${iconeOuImagemProduto(o, ICONES.ferramentas)}</div>
             <div class="linha-produto-info"><div class="linha-produto-nome">${o.nome}</div></div>
             <span class="card-preco">R$ ${Number(o.preco_base).toFixed(2)}</span>
+            <div class="linha-produto-desc">CLIQUE AQUI 👉</div>
             <button class="btn-add-rapido" data-outro-id="${o.id}" aria-label="Adicionar ${escapeHtml(o.nome)}"><span class="icone">${ICONES.mais}</span></button>
         </div>
     `).join('');
