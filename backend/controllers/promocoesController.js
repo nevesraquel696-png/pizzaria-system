@@ -12,7 +12,7 @@ async function validarDados(body) {
     if (!nome || !nome.trim()) return 'Informe o nome da promoção.';
     if (!FATIAS_VALIDAS.includes(Number(fatias))) return 'Tamanho (fatias) inválido.';
     if (!Array.isArray(sabor_ids) || sabor_ids.length === 0) return 'Selecione ao menos um sabor para a promoção.';
-    if (sabor_ids.length > 3) return 'Selecione no máximo 3 sabores.';
+    if (sabor_ids.length > 12) return 'Selecione no máximo 12 sabores.';
     if (!(Number(preco_de) >= 0) || !(Number(preco_por) >= 0)) return 'Informe preços válidos.';
 
     const produtos = await Produto.buscarPorIds(sabor_ids);

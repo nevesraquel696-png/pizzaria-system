@@ -426,9 +426,9 @@ function renderizarSaboresPromocao() {
 
     container.onchange = () => {
         const marcados = container.querySelectorAll('input[name="promo-sabores"]:checked');
-        if (marcados.length > 3) {
+        if (marcados.length > 12) {
             event.target.checked = false;
-            alert('Máximo de 3 sabores por promoção.');
+            alert('Máximo de 12 sabores por promoção.');
         }
     };
 }
