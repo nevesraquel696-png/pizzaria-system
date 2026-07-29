@@ -28,7 +28,11 @@ CREATE TABLE configuracoes (
     chave_pix VARCHAR(255) DEFAULT NULL,
     whatsapp_numero VARCHAR(20) DEFAULT NULL,
     promocao_ativa BOOLEAN DEFAULT FALSE,
-    promocao_texto VARCHAR(255) DEFAULT NULL
+    promocao_texto VARCHAR(255) DEFAULT NULL,
+    logo_base64 LONGTEXT DEFAULT NULL,
+    sino_base64 LONGTEXT DEFAULT NULL,
+    cor_primaria VARCHAR(7) DEFAULT NULL,
+    cor_destaque VARCHAR(7) DEFAULT NULL
 );
 INSERT INTO configuracoes (horario_abertura, horario_fechamento) VALUES ('17:30:00', '23:30:00');
 
