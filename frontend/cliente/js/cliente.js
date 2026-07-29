@@ -158,7 +158,11 @@ function categoriaPadrao() {
 function renderizarCardapio() {
     const main = document.getElementById('secoes-cardapio');
     main.innerHTML = `
-        
+        <section class="secao-categoria" id="secao-promocoes">
+            <h2><span class="icone icone-titulo-secao">${ICONES.fogo}</span> Promoções</h2>
+            <p class="dica-passo">clique abaixo e escolha uma promoção</p>
+            <div class="lista-linhas" id="lista-promocoes"></div>
+        </section>
         <section class="secao-categoria" id="secao-tamanhos">
             <h2><span class="icone icone-titulo-secao">${ICONES.pizza}</span> Tamanhos</h2>
             <p class="dica-passo">Clique aqui e escolha o tamanho da sua pizza</p>
@@ -171,7 +175,7 @@ function renderizarCardapio() {
         </section>
         <section class="secao-categoria" id="secao-outros">
             <h2><span class="icone icone-titulo-secao">${ICONES.ferramentas}</span> Outros</h2>
-            <p class="dica-passo"> Clique aqui e escolha um item extra para adicionar ao carrinho</p>
+            <p class="dica-passo"> Clique aqui e escolha um item extra </p>
             <div class="lista-linhas" id="lista-outros"></div>
         </section>
     `;
