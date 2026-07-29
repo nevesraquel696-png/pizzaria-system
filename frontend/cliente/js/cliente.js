@@ -158,24 +158,20 @@ function categoriaPadrao() {
 function renderizarCardapio() {
     const main = document.getElementById('secoes-cardapio');
     main.innerHTML = `
-        <section class="secao-categoria" id="secao-promocoes">
-            <h2><span class="icone icone-titulo-secao">${ICONES.fogo}</span> Promoções</h2>
-            <p class="dica-passo">👉 Clique aqui e escolha uma promoção - os sabores já vêm limitados aos dessa promoção</p>
-            <div class="lista-linhas" id="lista-promocoes"></div>
-        </section>
+        
         <section class="secao-categoria" id="secao-tamanhos">
             <h2><span class="icone icone-titulo-secao">${ICONES.pizza}</span> Tamanhos</h2>
-            <p class="dica-passo">👉 Clique aqui e escolha o tamanho da sua pizza</p>
+            <p class="dica-passo">Clique aqui e escolha o tamanho da sua pizza</p>
             <div class="lista-linhas" id="lista-tamanhos"></div>
         </section>
         <section class="secao-categoria" id="secao-bebidas">
             <h2><span class="icone icone-titulo-secao">${ICONES.bebida}</span> Bebidas</h2>
-            <p class="dica-passo">👉 Clique aqui e escolha uma bebida para adicionar ao carrinho</p>
+            <p class="dica-passo"> Clique aqui e escolha uma bebida</p>
             <div class="lista-linhas" id="lista-bebidas"></div>
         </section>
         <section class="secao-categoria" id="secao-outros">
             <h2><span class="icone icone-titulo-secao">${ICONES.ferramentas}</span> Outros</h2>
-            <p class="dica-passo">👉 Clique aqui e escolha um item extra para adicionar ao carrinho</p>
+            <p class="dica-passo"> Clique aqui e escolha um item extra para adicionar ao carrinho</p>
             <div class="lista-linhas" id="lista-outros"></div>
         </section>
     `;
