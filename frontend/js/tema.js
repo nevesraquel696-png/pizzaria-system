@@ -4,35 +4,24 @@
 // página simplesmente continua com os padrões (logo.png, sino.mp3 e as
 // cores originais do theme.css) - nunca quebra por causa disso.
 
-function hexParaRgb(hex) {
-    const limpo = hex.replace('#', '');
-    const bigint = parseInt(limpo, 16);
-    return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
-}
-
-// Escurece uma cor hex - usado pra gerar automaticamente a variante
-// "-escuro" (hover de botão, título etc.) a partir da cor escolhida no
-// admin, sem precisar pedir duas cores pra cada tom.
-function escurecerHex(hex, fator = 0.28) {
-    const { r, g, b } = hexParaRgb(hex);
-    const ajustar = (c) => Math.max(0, Math.round(c * (1 - fator)));
-    const paraHex = (c) => c.toString(16).padStart(2, '0');
-    return `#${paraHex(ajustar(r))}${paraHex(ajustar(g))}${paraHex(ajustar(b))}`;
-}
-
 async function aplicarTemaPersonalizado() {
     try {
         const config = await apiFetch('/config');
         const raiz = document.documentElement.style;
 
-        if (config.cor_primaria) {
-            raiz.setProperty('--cor-verde', config.cor_primaria);
-            raiz.setProperty('--cor-verde-escuro', escurecerHex(config.cor_primaria));
+        if (config.cores_json) {
+            try {
+                const cores = JSON.parse(config.cores_json);
+                Object.entries(cores).forEach(([variavel, valor]) => {
+                    if (/^--cor-[a-z-]+$/.test(variavel) && /^#[0-9A-Fa-f]{6}$/.test(valor)) {
+                        raiz.setProperty(variavel, valor);
+                    }
+                });
+            } catch (err) {
+                console.warn('cores_json inválido:', err);
+            }
         }
-        if (config.cor_destaque) {
-            raiz.setProperty('--cor-vermelho', config.cor_destaque);
-            raiz.setProperty('--cor-vermelho-escuro', escurecerHex(config.cor_destaque));
-        }
+
         if (config.logo_base64) {
             document.querySelectorAll('.logo-app').forEach(img => { img.src = config.logo_base64; });
         }

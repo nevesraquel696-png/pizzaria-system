@@ -11,6 +11,18 @@ exports.obter = async (req, res) => {
 
 const HEX_VALIDO = /^#[0-9A-Fa-f]{6}$/;
 
+// Toda cor do tema que pode ser sobrescrita pelo admin. Uma lista fechada
+// evita que qualquer texto arbitrário vire propriedade CSS no navegador
+// de quem acessa o site.
+const VARIAVEIS_COR_PERMITIDAS = [
+    '--cor-verde', '--cor-verde-escuro',
+    '--cor-vermelho', '--cor-vermelho-escuro',
+    '--cor-terracota', '--cor-dourado',
+    '--cor-creme', '--cor-papel',
+    '--cor-texto', '--cor-branco',
+    '--cor-marcador', '--cor-superficie', '--cor-borda-suave'
+];
+
 // Mesma lógica de tamanho aproximado usada pra fotos: base64 é ~33% maior
 // que o arquivo original, então o limite aqui já é generoso o bastante.
 function tamanhoAproximadoBytes(base64) {
@@ -18,7 +30,7 @@ function tamanhoAproximadoBytes(base64) {
 }
 
 exports.atualizar = async (req, res) => {
-    const { logo_base64, sino_base64, cor_primaria, cor_destaque } = req.body;
+    const { logo_base64, sino_base64, cores_json } = req.body;
 
     if (logo_base64) {
         if (!logo_base64.startsWith('data:image/')) {
@@ -38,11 +50,24 @@ exports.atualizar = async (req, res) => {
         }
     }
 
-    if (cor_primaria && !HEX_VALIDO.test(cor_primaria)) {
-        return res.status(400).json({ erro: 'Cor principal inválida.' });
-    }
-    if (cor_destaque && !HEX_VALIDO.test(cor_destaque)) {
-        return res.status(400).json({ erro: 'Cor de destaque inválida.' });
+    if (cores_json) {
+        let cores;
+        try {
+            cores = JSON.parse(cores_json);
+        } catch (err) {
+            return res.status(400).json({ erro: 'Cores em formato inválido.' });
+        }
+        if (typeof cores !== 'object' || cores === null || Array.isArray(cores)) {
+            return res.status(400).json({ erro: 'Cores em formato inválido.' });
+        }
+        for (const [chave, valor] of Object.entries(cores)) {
+            if (!VARIAVEIS_COR_PERMITIDAS.includes(chave)) {
+                return res.status(400).json({ erro: `Cor desconhecida: ${chave}` });
+            }
+            if (!HEX_VALIDO.test(valor)) {
+                return res.status(400).json({ erro: `Cor inválida para ${chave}.` });
+            }
+        }
     }
 
     try {

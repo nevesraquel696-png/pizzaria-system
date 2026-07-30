@@ -299,3 +299,20 @@ table#tabela-precos input { width: 78px; padding: 5px; text-align: center; borde
 
     .card-login { padding: 26px 20px; }
 }
+
+.grade-cores label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.9rem;
+}
+.grade-cores input[type="color"] {
+    width: 44px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--cor-borda-suave);
+    border-radius: 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+}

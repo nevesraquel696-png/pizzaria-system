@@ -31,8 +31,7 @@ CREATE TABLE configuracoes (
     promocao_texto VARCHAR(255) DEFAULT NULL,
     logo_base64 LONGTEXT DEFAULT NULL,
     sino_base64 LONGTEXT DEFAULT NULL,
-    cor_primaria VARCHAR(7) DEFAULT NULL,
-    cor_destaque VARCHAR(7) DEFAULT NULL
+    cores_json LONGTEXT DEFAULT NULL
 );
 INSERT INTO configuracoes (horario_abertura, horario_fechamento) VALUES ('17:30:00', '23:30:00');
 

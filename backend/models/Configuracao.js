@@ -21,18 +21,17 @@ const Configuracao = {
             promocao_texto: campos.promocao_texto ?? atual.promocao_texto,
             logo_base64: campos.logo_base64 !== undefined ? campos.logo_base64 : atual.logo_base64,
             sino_base64: campos.sino_base64 !== undefined ? campos.sino_base64 : atual.sino_base64,
-            cor_primaria: campos.cor_primaria !== undefined ? campos.cor_primaria : atual.cor_primaria,
-            cor_destaque: campos.cor_destaque !== undefined ? campos.cor_destaque : atual.cor_destaque
+            cores_json: campos.cores_json !== undefined ? campos.cores_json : atual.cores_json
         };
 
         await db.query(
             `UPDATE configuracoes SET horario_abertura = ?, horario_fechamento = ?,
              taxa_entrega = ?, chave_pix = ?, whatsapp_numero = ?,
              promocao_ativa = ?, promocao_texto = ?, logo_base64 = ?, sino_base64 = ?,
-             cor_primaria = ?, cor_destaque = ? WHERE id = ?`,
+             cores_json = ? WHERE id = ?`,
             [dados.horario_abertura, dados.horario_fechamento, dados.taxa_entrega, dados.chave_pix, dados.whatsapp_numero,
              dados.promocao_ativa, dados.promocao_texto, dados.logo_base64, dados.sino_base64,
-             dados.cor_primaria, dados.cor_destaque, atual.id]
+             dados.cores_json, atual.id]
         );
     }
 };

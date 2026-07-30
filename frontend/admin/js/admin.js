@@ -233,8 +233,12 @@ async function carregarConfiguracoes() {
 
     document.getElementById('preview-logo').src = config.logo_base64 || '../imagens/logo.png';
     document.getElementById('preview-sino').src = config.sino_base64 || '../sounds/sino.mp3';
-    document.getElementById('config-cor-primaria').value = config.cor_primaria || '#0A6C40';
-    document.getElementById('config-cor-destaque').value = config.cor_destaque || '#A5273A';
+
+    const cores = config.cores_json ? JSON.parse(config.cores_json) : {};
+    document.querySelectorAll('.cor-tema').forEach(input => {
+        const variavel = input.dataset.var;
+        if (cores[variavel]) input.value = cores[variavel];
+    });
 }
 
 async function salvarConfiguracoes() {
@@ -245,13 +249,17 @@ async function salvarConfiguracoes() {
     const whatsapp_numero = document.getElementById('config-whatsapp').value.trim();
     const promocao_ativa = document.getElementById('config-promocao-ativa').checked;
     const promocao_texto = document.getElementById('config-promocao-texto').value.trim();
-    const cor_primaria = document.getElementById('config-cor-primaria').value;
-    const cor_destaque = document.getElementById('config-cor-destaque').value;
+
+    const cores = {};
+    document.querySelectorAll('.cor-tema').forEach(input => {
+        cores[input.dataset.var] = input.value;
+    });
+    const cores_json = JSON.stringify(cores);
 
     try {
         await apiFetch('/config', {
             method: 'PUT',
-            body: JSON.stringify({ horario_abertura, horario_fechamento, taxa_entrega, chave_pix, whatsapp_numero, promocao_ativa, promocao_texto, cor_primaria, cor_destaque })
+            body: JSON.stringify({ horario_abertura, horario_fechamento, taxa_entrega, chave_pix, whatsapp_numero, promocao_ativa, promocao_texto, cores_json })
         });
         mostrarToast('Configurações atualizadas com sucesso!');
     } catch (err) {
@@ -315,6 +323,30 @@ async function removerSino() {
         carregarConfiguracoes();
     } catch (err) {
         alert('Erro ao restaurar som: ' + err.message);
+    }
+}
+
+const CORES_PADRAO = {
+    '--cor-verde': '#0A6C40', '--cor-verde-escuro': '#084F30',
+    '--cor-vermelho': '#A5273A', '--cor-vermelho-escuro': '#7D1D2C',
+    '--cor-terracota': '#C97B4A', '--cor-dourado': '#D9A441',
+    '--cor-creme': '#F2E4C6', '--cor-papel': '#EFE3C3',
+    '--cor-texto': '#2E2A26', '--cor-branco': '#FFFFFF',
+    '--cor-marcador': '#BFE3EF', '--cor-superficie': '#FFFFFF',
+    '--cor-borda-suave': '#E5DCC3'
+};
+
+async function restaurarCoresPadrao() {
+    if (!confirm('Restaurar todas as cores para o padrão original?')) return;
+    document.querySelectorAll('.cor-tema').forEach(input => {
+        input.value = CORES_PADRAO[input.dataset.var];
+    });
+    try {
+        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ cores_json: null }) });
+        mostrarToast('Cores restauradas!');
+        carregarConfiguracoes();
+    } catch (err) {
+        alert('Erro ao restaurar cores: ' + err.message);
     }
 }
 
