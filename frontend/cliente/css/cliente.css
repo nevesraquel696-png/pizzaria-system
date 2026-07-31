@@ -855,3 +855,35 @@ body {
     font-size: 11px;
     opacity: 0.6;
 }
+
+.btn-fale-conosco {
+    position: fixed;
+    bottom: 62px;
+    left: 16px;
+    z-index: 40;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--cor-verde);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    text-decoration: none;
+    transition: bottom 0.2s ease;
+}
+
+.btn-fale-conosco .icone {
+    width: 26px;
+    height: 26px;
+}
+
+.btn-fale-conosco:hover {
+    background: var(--cor-verde-escuro);
+}
+
+/* Quando a barra do carrinho aparece, o botão sobe pra ficar em cima dela */
+.barra-carrinho:not(.oculto) ~ .btn-fale-conosco {
+    bottom: 122px;
+}

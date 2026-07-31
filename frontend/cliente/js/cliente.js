@@ -868,11 +868,17 @@ function preencherRodape(config) {
     document.getElementById('rodape-ano').textContent = new Date().getFullYear();
 
     const horarioEl = document.getElementById('rodape-horario');
-    horarioEl.textContent = `🕒 Funcionamos das ${config.horario_abertura?.slice(0,5)} às ${config.horario_fechamento?.slice(0,5)}`;
+    horarioEl.textContent = ` Funcionamos das ${config.horario_abertura?.slice(0,5)} às ${config.horario_fechamento?.slice(0,5)}`;
 
     const whatsappEl = document.getElementById('rodape-whatsapp');
     if (config.whatsapp_numero) {
         whatsappEl.href = `https://wa.me/55${config.whatsapp_numero.replace(/\D/g, '')}`;
         whatsappEl.classList.remove('oculto');
+    }
+
+    const btnFaleConosco = document.getElementById('btn-fale-conosco');
+    if (config.whatsapp_numero) {
+        btnFaleConosco.href = `https://wa.me/55${config.whatsapp_numero.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Vim pelo site e queria tirar uma dúvida 🍕')}`;
+        btnFaleConosco.classList.remove('oculto');
     }
 }
