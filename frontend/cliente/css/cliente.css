@@ -7,7 +7,7 @@ body {
 /* ---------- Topo ---------- */
 .topo-loja {
     background:
-        radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+        radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
         linear-gradient(135deg, var(--cor-verde-escuro), var(--cor-verde));
     background-size: 4px 4px, 100% 100%;
     padding: 16px;
@@ -792,8 +792,10 @@ body {
     color: var(--cor-vermelho);
     box-shadow: inset 0 3px 0 var(--cor-dourado);
 }
+
 .rodape-site {
-    padding: 24px 20px 100px; /* 100px embaixo pra não ficar atrás da nav-inferior fixa */
+    padding: 24px 20px 20px;
+    /* 100px embaixo pra não ficar atrás da nav-inferior fixa */
     background: var(--cor-verde-escuro);
     color: #fff;
     text-align: center;
@@ -806,18 +808,50 @@ body {
     gap: 10px;
     margin-bottom: 16px;
     padding-bottom: 16px;
-    border-bottom: 1px solid rgba(255,255,255,0.15);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
-.rodape-marca img { width: 40px; height: 40px; }
-.rodape-marca div { display: flex; flex-direction: column; text-align: left; }
-.rodape-marca strong { font-family: var(--fonte-display); font-size: 16px; }
-.rodape-marca span { font-size: 11px; opacity: 0.75; }
 
-.rodape-info p { margin: 6px 0; font-size: 13px; opacity: 0.9; }
+.rodape-marca img {
+    width: 40px;
+    height: 40px;
+}
+
+.rodape-marca div {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.rodape-marca strong {
+    font-family: var(--fonte-display);
+    font-size: 16px;
+}
+
+.rodape-marca span {
+    font-size: 11px;
+    opacity: 0.75;
+}
+
+.rodape-info p {
+    margin: 6px 0;
+    font-size: 13px;
+    opacity: 0.9;
+}
+
 .rodape-link {
-    display: inline-block; margin-top: 8px; color: #fff; font-weight: 600;
-    font-size: 13px; text-decoration: none; background: rgba(255,255,255,0.12);
-    padding: 6px 14px; border-radius: 20px;
+    display: inline-block;
+    margin-top: 8px;
+    color: #fff;
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.12);
+    padding: 6px 14px;
+    border-radius: 20px;
 }
 
-.rodape-copyright { margin-top: 18px; font-size: 11px; opacity: 0.6; }
+.rodape-copyright {
+    margin-top: 18px;
+    font-size: 11px;
+    opacity: 0.6;
+}
