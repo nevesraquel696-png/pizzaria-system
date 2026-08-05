@@ -1,30 +1,36 @@
-// Aplica as cores e o logotipo personalizados pelo admin (aba Aparência),
-// se houver algum configurado. Roda em toda tela (cliente/admin/cozinha) -
-// sem nada configurado, a página só segue com a paleta e o logo padrão
-// definidos em frontend/css/theme.css e frontend/imagens/logo.png.
-const CHAVES_TEMA = ['verde', 'verde-escuro', 'vermelho', 'vermelho-escuro', 'terracota', 'dourado', 'creme', 'texto'];
+// Aplica a personalização feita pelo admin (logo, cores, som de notificação)
+// em qualquer página que incluir este script. Busca em /config (endpoint
+// público) e, se o admin não personalizou nada, os campos vêm nulos e a
+// página simplesmente continua com os padrões (logo.png, sino.mp3 e as
+// cores originais do theme.css) - nunca quebra por causa disso.
 
-async function aplicarTemaGlobal() {
+async function aplicarTemaPersonalizado() {
     try {
-        const resp = await fetch(`${API_URL}/config`);
-        const config = await resp.json();
+        const config = await apiFetch('/config');
+        const raiz = document.documentElement.style;
 
-        if (config.tema_cores) {
-            CHAVES_TEMA.forEach(chave => {
-                if (config.tema_cores[chave]) {
-                    document.documentElement.style.setProperty(`--cor-${chave}`, config.tema_cores[chave]);
-                }
-            });
+        if (config.cores_json) {
+            try {
+                const cores = JSON.parse(config.cores_json);
+                Object.entries(cores).forEach(([variavel, valor]) => {
+                    if (/^--cor-[a-z-]+$/.test(variavel) && /^#[0-9A-Fa-f]{6}$/.test(valor)) {
+                        raiz.setProperty(variavel, valor);
+                    }
+                });
+            } catch (err) {
+                console.warn('cores_json inválido:', err);
+            }
         }
 
         if (config.logo_base64) {
-            document.querySelectorAll('img[src*="logo.png"]').forEach(img => {
-                img.src = config.logo_base64;
-            });
+            document.querySelectorAll('.logo-app').forEach(img => { img.src = config.logo_base64; });
+        }
+        if (config.sino_base64) {
+            document.querySelectorAll('.sino-app').forEach(audio => { audio.src = config.sino_base64; });
         }
     } catch (err) {
-        // API fora do ar ou sem tema customizado ainda - segue com o padrão.
+        console.warn('Não foi possível carregar a personalização de aparência:', err);
     }
 }
 
-document.addEventListener('DOMContentLoaded', aplicarTemaGlobal);
+aplicarTemaPersonalizado();
