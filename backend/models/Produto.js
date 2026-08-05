@@ -11,18 +11,18 @@ const Produto = {
         return produtos;
     },
 
-    async criar({ nome, tipo, categoria, preco_base, descricao, imagem_base64 }) {
+    async criar({ nome, tipo, secao_id, preco_base, descricao, imagem_base64 }) {
         const [result] = await db.query(
-            'INSERT INTO produtos (nome, tipo, categoria, preco_base, descricao, imagem_base64) VALUES (?, ?, ?, ?, ?, ?)',
-            [nome, tipo, tipo === 'sabor_pizza' ? categoria : null, tipo === 'sabor_pizza' ? 0 : (preco_base || 0), descricao || null, imagem_base64 || null]
+            'INSERT INTO produtos (nome, tipo, secao_id, preco_base, descricao, imagem_base64) VALUES (?, ?, ?, ?, ?, ?)',
+            [nome, tipo, tipo === 'sabor_pizza' ? secao_id : null, tipo === 'sabor_pizza' ? 0 : (preco_base || 0), descricao || null, imagem_base64 || null]
         );
         return result.insertId;
     },
 
-    async atualizar(id, { nome, tipo, categoria, preco_base, descricao }) {
+    async atualizar(id, { nome, tipo, secao_id, preco_base, descricao }) {
         await db.query(
-            'UPDATE produtos SET nome = ?, tipo = ?, categoria = ?, preco_base = ?, descricao = ? WHERE id = ?',
-            [nome, tipo, tipo === 'sabor_pizza' ? categoria : null, tipo === 'sabor_pizza' ? 0 : (preco_base || 0), descricao || null, id]
+            'UPDATE produtos SET nome = ?, tipo = ?, secao_id = ?, preco_base = ?, descricao = ? WHERE id = ?',
+            [nome, tipo, tipo === 'sabor_pizza' ? secao_id : null, tipo === 'sabor_pizza' ? 0 : (preco_base || 0), descricao || null, id]
         );
     },
 

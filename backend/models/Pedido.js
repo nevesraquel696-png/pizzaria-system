@@ -122,6 +122,32 @@ const Pedido = {
         return linhas[0] || null;
     },
 
+    // Usado pelo card "Acompanhar meu pedido": exige nome E telefone batendo
+    // (não só o telefone) pra dificultar alguém rastrear o pedido de outra
+    // pessoa só adivinhando/sabendo o número. Pega sempre o pedido mais
+    // recente com esse nome+telefone.
+    async buscarParaRastreio(digitosTelefone, nome) {
+        const [pedidos] = await db.query(
+            `SELECT * FROM pedidos
+             WHERE REPLACE(REPLACE(REPLACE(REPLACE(telefone, ' ', ''), '-', ''), '(', ''), ')', '') = ?
+             AND LOWER(TRIM(cliente_nome)) = LOWER(TRIM(?))
+             ORDER BY criado_em DESC
+             LIMIT 1`,
+            [digitosTelefone, nome]
+        );
+        if (pedidos.length === 0) return null;
+
+        const [itens] = await db.query('SELECT * FROM itens_pedido WHERE pedido_id = ?', [pedidos[0].id]);
+        return { ...pedidos[0], itens };
+    },
+
+    // Só o status, pro polling da tela "Acompanhar meu pedido" (rota
+    // pública) - por isso devolve só esse campo, nada de dado pessoal.
+    async buscarStatusPublico(id) {
+        const [rows] = await db.query('SELECT status FROM pedidos WHERE id = ?', [id]);
+        return rows[0] ? rows[0].status : null;
+    },
+
     async buscarPorId(id) {
         const [pedidos] = await db.query('SELECT * FROM pedidos WHERE id = ?', [id]);
         if (pedidos.length === 0) return null;

@@ -4,6 +4,7 @@ const Configuracao = require('../models/Configuracao');
 const { PrecoPizza, FATIAS_VALIDAS } = require('../models/PrecoPizza');
 const Cupom = require('../models/Cupom');
 const Promocao = require('../models/Promocao');
+const SecaoCardapio = require('../models/SecaoCardapio');
 const validarCupom = require('../utils/validarCupom');
 const { obterDiaOperacional } = require('../utils/diaOperacional');
 
@@ -49,15 +50,20 @@ async function processarItens(itensRecebidos) {
 
     // 2) Busca tudo de uma vez: produtos por ID + tabela de preços inteira +
     // promoções envolvidas (se algum item referenciar uma)
-    const [produtosEncontrados, precosPizza, promocoesEncontradas] = await Promise.all([
+    const [produtosEncontrados, precosPizza, promocoesEncontradas, secoes] = await Promise.all([
         Produto.buscarPorIds([...todosOsIds]),
         PrecoPizza.listarTodos(),
-        Promocao.buscarPorIds([...new Set(itensRecebidos.filter(i => i.promocao_id).map(i => i.promocao_id))])
+        Promocao.buscarPorIds([...new Set(itensRecebidos.filter(i => i.promocao_id).map(i => i.promocao_id))]),
+        SecaoCardapio.listarTodas()
     ]);
     const produtosPorId = new Map(produtosEncontrados.map(p => [p.id, p]));
     const promocoesPorId = new Map(promocoesEncontradas.map(p => [p.id, p]));
-    const buscarPreco = (categoria, fatias) => {
-        const encontrado = precosPizza.find(p => p.categoria === categoria && Number(p.fatias) === Number(fatias));
+    // Nome da seção NO MOMENTO do pedido, gravado como texto no item (não o
+    // id) - assim o histórico continua legível mesmo que a seção seja
+    // renomeada ou apagada depois.
+    const nomeSecaoPorId = new Map(secoes.map(s => [s.id, s.nome]));
+    const buscarPreco = (secao_id, fatias) => {
+        const encontrado = precosPizza.find(p => p.secao_id === secao_id && Number(p.fatias) === Number(fatias));
         return encontrado ? Number(encontrado.preco) : null;
     };
 
@@ -116,7 +122,7 @@ async function processarItens(itensRecebidos) {
 
                 itensProcessados.push({
                     tipo_item: 'pizza',
-                    pizza_categoria: 'promocao',
+                    pizza_categoria: null,
                     fatias: Number(fatias),
                     sabores: saboresValidos.map(s => s.nome),
                     borda: nomeBorda,
@@ -128,29 +134,29 @@ async function processarItens(itensRecebidos) {
             }
 
             // Regra de cobrança pra combinação "mista": vale o preço da
-            // categoria mais cara entre as envolvidas na pizza. Nunca confiamos
-            // na categoria enviada pelo cliente - ela é sempre derivada aqui,
-            // a partir da categoria real de cada sabor (já validado no banco).
-            const categoriasEnvolvidas = [...new Set(saboresValidos.map(s => s.categoria))];
-            const precosPorCategoria = categoriasEnvolvidas.map(categoria => ({
-                categoria,
-                preco: buscarPreco(categoria, Number(fatias))
+            // seção mais cara entre as envolvidas na pizza. Nunca confiamos
+            // na seção enviada pelo cliente - ela é sempre derivada aqui,
+            // a partir da seção real de cada sabor (já validada no banco).
+            const secoesEnvolvidas = [...new Set(saboresValidos.map(s => s.secao_id))];
+            const precosPorSecao = secoesEnvolvidas.map(secao_id => ({
+                secao_id,
+                preco: buscarPreco(secao_id, Number(fatias))
             }));
-            if (precosPorCategoria.some(p => p.preco === null)) {
-                return erros.push(`${prefixo} preço não configurado para essa categoria/tamanho.`);
+            if (precosPorSecao.some(p => p.preco === null)) {
+                return erros.push(`${prefixo} preço não configurado para essa seção/tamanho.`);
             }
-            const categoriaMaisCara = precosPorCategoria.reduce((maior, atual) =>
+            const secaoMaisCara = precosPorSecao.reduce((maior, atual) =>
                 atual.preco > maior.preco ? atual : maior
             );
 
             itensProcessados.push({
                 tipo_item: 'pizza',
-                pizza_categoria: categoriaMaisCara.categoria,
+                pizza_categoria: nomeSecaoPorId.get(secaoMaisCara.secao_id) || null,
                 fatias: Number(fatias),
                 sabores: saboresValidos.map(s => s.nome),
                 borda: nomeBorda,
                 quantidade: item.quantidade || 1,
-                preco_unitario: categoriaMaisCara.preco + precoBorda
+                preco_unitario: secaoMaisCara.preco + precoBorda
             });
 
         } else if (item.tipo_item === 'bebida' || item.tipo_item === 'outros') {
@@ -299,6 +305,60 @@ exports.buscarClientePorTelefone = async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ erro: 'Erro ao buscar dados do cliente.' });
+    }
+};
+
+// Card "Acompanhar meu pedido": cliente informa nome + telefone (os dois
+// juntos, não só o telefone) e recebe o status do pedido mais recente com
+// esses dados. Só devolve o que o próprio cliente já sabe do pedido dele -
+// nada de expor dados de outros pedidos.
+exports.rastrearPedido = async (req, res) => {
+    const digitos = String(req.query.telefone || '').replace(/\D/g, '');
+    const nome = String(req.query.nome || '').trim();
+
+    if (digitos.length < 10 || digitos.length > 11) {
+        return res.status(400).json({ erro: 'Telefone inválido.' });
+    }
+    if (!nome) {
+        return res.status(400).json({ erro: 'Informe o nome usado no pedido.' });
+    }
+
+    try {
+        const pedido = await Pedido.buscarParaRastreio(digitos, nome);
+        if (!pedido) {
+            return res.status(404).json({ erro: 'Nenhum pedido encontrado com esse nome e telefone.' });
+        }
+
+        res.json({
+            id: pedido.id,
+            numero_pedido_dia: pedido.numero_pedido_dia,
+            status: pedido.status,
+            tipo_entrega: pedido.tipo_entrega,
+            criado_em: pedido.criado_em,
+            total: pedido.total,
+            itens: pedido.itens.map(item => ({
+                tipo_item: item.tipo_item,
+                nome_item: item.nome_item,
+                sabores: item.sabores ? JSON.parse(item.sabores) : null,
+                fatias: item.fatias,
+                quantidade: item.quantidade
+            }))
+        });
+    } catch (err) {
+        console.error('Erro ao rastrear pedido:', err.message);
+        res.status(500).json({ erro: 'Erro ao buscar o pedido.' });
+    }
+};
+
+// Polling da tela "Acompanhar meu pedido": só o status atual, pelo id que o
+// próprio cliente recebeu na busca por nome+telefone.
+exports.statusPublico = async (req, res) => {
+    try {
+        const status = await Pedido.buscarStatusPublico(req.params.id);
+        if (status === null) return res.status(404).json({ erro: 'Pedido não encontrado.' });
+        res.json({ status });
+    } catch (err) {
+        res.status(500).json({ erro: 'Erro ao buscar status do pedido.' });
     }
 };
 
