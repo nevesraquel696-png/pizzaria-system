@@ -34,6 +34,14 @@ if (origensPermitidas.length === 0) {
 }
 
 const app = express();
+// Render (e a maioria dos hosts) coloca a aplicação atrás de um proxy reverso,
+// que adiciona o cabeçalho X-Forwarded-For com o IP real do cliente. Sem
+// "trust proxy", o Express ignora esse cabeçalho por segurança - e o
+// express-rate-limit (usado abaixo em limitarGeral etc.) lança um erro ao
+// tentar identificar o IP do cliente, derrubando a requisição com 500 antes
+// mesmo de chegar nas rotas. O valor 1 diz pro Express confiar em um único
+// "salto" de proxy (o do Render), que é o caso aqui.
+app.set('trust proxy', 1);
 app.use(helmet()); // cabeçalhos de segurança padrão (X-Content-Type-Options, HSTS, etc.)
 app.use(compression()); // reduz o tamanho das respostas, ajuda em conexões mais lentas
 app.use(cors(configCors));
