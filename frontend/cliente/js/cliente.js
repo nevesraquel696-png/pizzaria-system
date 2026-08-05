@@ -262,18 +262,22 @@ function renderizarBebidas() {
 
     const lista = document.getElementById('lista-bebidas');
     lista.innerHTML = PRODUTOS.bebidas.map(b => `
-        <div class="linha-produto linha-produto-simples">
+        <div class="linha-produto linha-produto-simples linha-produto-clicavel" data-bebida-id="${b.id}" role="button" tabindex="0">
             <div class="linha-produto-imagem">${iconeOuImagemProduto(b, ICONES.bebida)}</div>
             <div class="linha-produto-info"><div class="linha-produto-nome">${b.nome}</div></div>
             <span class="card-preco">R$ ${Number(b.preco_base).toFixed(2)}</span>
-             <div class="linha-produto-desc">CLIQUE AQUI 👉</div>
-            <button class="btn-add-rapido" data-bebida-id="${b.id}" aria-label="Adicionar ${escapeHtml(b.nome)}"><span class="icone">${ICONES.mais}</span></button>
+            <span class="badge-qtd-rapida oculto" data-badge-bebida="${b.id}"></span>
+            <span class="icone icone-add-rapido">${ICONES.mais}</span>
         </div>
     `).join('');
 
-    lista.querySelectorAll('.btn-add-rapido').forEach(btn => {
-        btn.addEventListener('click', () => adicionarBebidaRapida(Number(btn.dataset.bebidaId)));
+    lista.querySelectorAll('.linha-produto-clicavel').forEach(card => {
+        card.addEventListener('click', () => adicionarBebidaRapida(Number(card.dataset.bebidaId), card));
+        card.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); adicionarBebidaRapida(Number(card.dataset.bebidaId), card); }
+        });
     });
+    atualizarBadgesRapidos();
 }
 
 // "Outros" - itens do cardápio que não são pizza, borda nem bebida
@@ -284,17 +288,36 @@ function renderizarOutros() {
 
     const lista = document.getElementById('lista-outros');
     lista.innerHTML = PRODUTOS.outros.map(o => `
-        <div class="linha-produto linha-produto-simples">
+        <div class="linha-produto linha-produto-simples linha-produto-clicavel" data-outro-id="${o.id}" role="button" tabindex="0">
             <div class="linha-produto-imagem">${iconeOuImagemProduto(o, ICONES.ferramentas)}</div>
             <div class="linha-produto-info"><div class="linha-produto-nome">${o.nome}</div></div>
             <span class="card-preco">R$ ${Number(o.preco_base).toFixed(2)}</span>
-            <div class="linha-produto-desc">CLIQUE AQUI 👉</div>
-            <button class="btn-add-rapido" data-outro-id="${o.id}" aria-label="Adicionar ${escapeHtml(o.nome)}"><span class="icone">${ICONES.mais}</span></button>
+            <span class="badge-qtd-rapida oculto" data-badge-outro="${o.id}"></span>
+            <span class="icone icone-add-rapido">${ICONES.mais}</span>
         </div>
     `).join('');
 
-    lista.querySelectorAll('.btn-add-rapido').forEach(btn => {
-        btn.addEventListener('click', () => adicionarOutroRapido(Number(btn.dataset.outroId)));
+    lista.querySelectorAll('.linha-produto-clicavel').forEach(card => {
+        card.addEventListener('click', () => adicionarOutroRapido(Number(card.dataset.outroId), card));
+        card.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); adicionarOutroRapido(Number(card.dataset.outroId), card); }
+        });
+    });
+    atualizarBadgesRapidos();
+}
+
+// Mostra, em cada card de bebida/outro, quantas unidades já estão no
+// carrinho agora - assim dá pra ver o efeito do clique sem abrir o carrinho.
+function atualizarBadgesRapidos() {
+    document.querySelectorAll('[data-badge-bebida]').forEach(badge => {
+        const item = CARRINHO.find(i => i.tipo_item === 'bebida' && i.produto_id === Number(badge.dataset.badgeBebida));
+        badge.textContent = item ? item.quantidade : '';
+        badge.classList.toggle('oculto', !item);
+    });
+    document.querySelectorAll('[data-badge-outro]').forEach(badge => {
+        const item = CARRINHO.find(i => i.tipo_item === 'outros' && i.produto_id === Number(badge.dataset.badgeOutro));
+        badge.textContent = item ? item.quantidade : '';
+        badge.classList.toggle('oculto', !item);
     });
 }
 
@@ -506,7 +529,7 @@ function adicionarAoCarrinho() {
     atualizarBarraCarrinho();
 }
 
-function adicionarBebidaRapida(produtoId) {
+function adicionarBebidaRapida(produtoId, cardEl) {
     const bebida = PRODUTOS.bebidas.find(b => b.id === produtoId);
     const existente = CARRINHO.find(i => i.tipo_item === 'bebida' && i.produto_id === produtoId);
     if (existente) {
@@ -521,9 +544,11 @@ function adicionarBebidaRapida(produtoId) {
         });
     }
     atualizarBarraCarrinho();
+    atualizarBadgesRapidos();
+    if (cardEl) piscarFeedbackAdicionado(cardEl);
 }
 
-function adicionarOutroRapido(produtoId) {
+function adicionarOutroRapido(produtoId, cardEl) {
     const produto = PRODUTOS.outros.find(o => o.id === produtoId);
     const existente = CARRINHO.find(i => i.tipo_item === 'outros' && i.produto_id === produtoId);
     if (existente) {
@@ -538,12 +563,39 @@ function adicionarOutroRapido(produtoId) {
         });
     }
     atualizarBarraCarrinho();
+    atualizarBadgesRapidos();
+    if (cardEl) piscarFeedbackAdicionado(cardEl);
+}
+
+// Pisca o card rapidinho ao adicionar - é o único feedback que a pessoa tem
+// agora que o clique é no card inteiro (não tem mais botão "+" separado).
+function piscarFeedbackAdicionado(cardEl) {
+    cardEl.classList.remove('card-adicionado');
+    // força reiniciar a animação mesmo em cliques rápidos e seguidos
+    void cardEl.offsetWidth;
+    cardEl.classList.add('card-adicionado');
 }
 
 function removerDoCarrinho(index) {
     CARRINHO.splice(index, 1);
     atualizarBarraCarrinho();
     renderizarCarrinho();
+    atualizarBadgesRapidos();
+}
+
+// Usado pelo +/- de cada linha do carrinho. Chegando a 0, remove a linha -
+// assim a pessoa ajusta a quantidade sem precisar remover tudo e adicionar
+// de novo do zero.
+function alterarQuantidadeCarrinho(index, delta) {
+    const item = CARRINHO[index];
+    if (!item) return;
+    item.quantidade += delta;
+    if (item.quantidade <= 0) {
+        CARRINHO.splice(index, 1);
+    }
+    atualizarBarraCarrinho();
+    renderizarCarrinho();
+    atualizarBadgesRapidos();
 }
 
 function calcularTaxaEntrega() {
@@ -602,11 +654,16 @@ function renderizarCarrinho() {
     } else {
         container.innerHTML = CARRINHO.map((item, i) => `
             <div class="linha-item-carrinho">
-                <div>
-                    <strong>${item.quantidade}x</strong> ${item._nome}
+                <div class="linha-item-info">
+                    <strong>${escapeHtml(item._nome)}</strong>
                     <div class="preco-item">R$ ${(item._preco * item.quantidade).toFixed(2)}</div>
                 </div>
-                <button class="btn-remover" onclick="removerDoCarrinho(${i})">Remover</button>
+                <div class="stepper-carrinho">
+                    <button type="button" class="btn-qtd" onclick="alterarQuantidadeCarrinho(${i}, -1)" aria-label="Diminuir quantidade">−</button>
+                    <span>${item.quantidade}</span>
+                    <button type="button" class="btn-qtd" onclick="alterarQuantidadeCarrinho(${i}, 1)" aria-label="Aumentar quantidade">+</button>
+                </div>
+                <button type="button" class="btn-remover-item" onclick="removerDoCarrinho(${i})" aria-label="Remover item"><span class="icone">${ICONES.lixeira}</span></button>
             </div>
         `).join('');
     }
@@ -855,6 +912,11 @@ function configurarEventos() {
             if (secao) secao.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
+
+    document.getElementById('nav-rastreio').addEventListener('click', abrirRastreioPedido);
+    document.getElementById('fechar-sheet-rastreio').addEventListener('click', fecharRastreioPedido);
+    document.getElementById('btn-rastrear-pedido').addEventListener('click', buscarPedidoRastreio);
+    document.getElementById('btn-nova-busca-rastreio').addEventListener('click', reiniciarBuscaRastreio);
 }
 
 function filtrarBusca() {
@@ -868,17 +930,118 @@ function preencherRodape(config) {
     document.getElementById('rodape-ano').textContent = new Date().getFullYear();
 
     const horarioEl = document.getElementById('rodape-horario');
-    horarioEl.textContent = ` Funcionamos das ${config.horario_abertura?.slice(0,5)} às ${config.horario_fechamento?.slice(0,5)}`;
+    horarioEl.textContent = `🕒 Funcionamos das ${config.horario_abertura?.slice(0,5)} às ${config.horario_fechamento?.slice(0,5)}`;
 
     const whatsappEl = document.getElementById('rodape-whatsapp');
     if (config.whatsapp_numero) {
         whatsappEl.href = `https://wa.me/55${config.whatsapp_numero.replace(/\D/g, '')}`;
         whatsappEl.classList.remove('oculto');
     }
+}
 
-    const btnFaleConosco = document.getElementById('btn-fale-conosco');
-    if (config.whatsapp_numero) {
-        btnFaleConosco.href = `https://wa.me/55${config.whatsapp_numero.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Vim pelo site e queria tirar uma dúvida 🍕')}`;
-        btnFaleConosco.classList.remove('oculto');
+// ---------- Acompanhar meu pedido ----------
+let intervaloRastreioPedido = null;
+
+const ETAPAS_STATUS = ['pendente', 'preparo', 'saiu_entrega', 'entregue'];
+
+function abrirRastreioPedido() {
+    document.getElementById('sheet-fundo-rastreio').classList.remove('oculto');
+}
+
+function fecharRastreioPedido() {
+    document.getElementById('sheet-fundo-rastreio').classList.add('oculto');
+    pararPollingRastreio();
+}
+
+function reiniciarBuscaRastreio() {
+    pararPollingRastreio();
+    document.getElementById('rastreio-resultado').classList.add('oculto');
+    document.getElementById('rastreio-formulario').classList.remove('oculto');
+    document.getElementById('rastreio-erro').classList.add('oculto');
+}
+
+function pararPollingRastreio() {
+    if (intervaloRastreioPedido) {
+        clearInterval(intervaloRastreioPedido);
+        intervaloRastreioPedido = null;
     }
+}
+
+async function buscarPedidoRastreio() {
+    const nome = document.getElementById('rastreio-nome').value.trim();
+    const telefone = document.getElementById('rastreio-telefone').value.trim();
+    const erroEl = document.getElementById('rastreio-erro');
+    erroEl.classList.add('oculto');
+
+    if (!nome || !telefone) {
+        erroEl.textContent = 'Preencha o nome e o telefone usados no pedido.';
+        erroEl.classList.remove('oculto');
+        return;
+    }
+
+    const botao = document.getElementById('btn-rastrear-pedido');
+    botao.disabled = true;
+    botao.textContent = 'Buscando...';
+
+    try {
+        const pedido = await apiFetch(`/pedidos/rastrear?nome=${encodeURIComponent(nome)}&telefone=${encodeURIComponent(telefone)}`);
+        exibirResultadoRastreio(pedido);
+        iniciarPollingRastreio(pedido.id);
+    } catch (err) {
+        erroEl.textContent = err.message || 'Nenhum pedido encontrado com esse nome e telefone.';
+        erroEl.classList.remove('oculto');
+    } finally {
+        botao.disabled = false;
+        botao.textContent = 'Ver status';
+    }
+}
+
+function exibirResultadoRastreio(pedido) {
+    document.getElementById('rastreio-formulario').classList.add('oculto');
+    document.getElementById('rastreio-resultado').classList.remove('oculto');
+    document.getElementById('rastreio-numero').textContent = String(pedido.numero_pedido_dia).padStart(4, '0');
+
+    // Os rótulos mudam um pouco pra quem vai retirar (não faz sentido dizer
+    // "saiu para entrega" de um pedido que a pessoa vai buscar na loja).
+    const paraRetirada = pedido.tipo_entrega === 'retirada';
+    document.getElementById('rastreio-label-entrega').textContent = paraRetirada ? 'Pronto para retirar' : 'Saiu para entrega';
+    document.getElementById('rastreio-label-final').textContent = paraRetirada ? 'Retirado' : 'Entregue';
+
+    const itensEl = document.getElementById('rastreio-itens');
+    itensEl.innerHTML = pedido.itens.map(item => {
+        if (item.tipo_item === 'pizza') {
+            const sabores = (item.sabores || []).join(', ');
+            return `<p>${item.quantidade}x Pizza${item.nome_item ? ' ' + escapeHtml(item.nome_item) : ''} (${item.fatias} fatias) - ${escapeHtml(sabores)}</p>`;
+        }
+        return `<p>${item.quantidade}x ${escapeHtml(item.nome_item || '')}</p>`;
+    }).join('');
+    document.getElementById('rastreio-total').textContent = `Total: R$ ${Number(pedido.total).toFixed(2).replace('.', ',')}`;
+
+    atualizarEtapaStatus(pedido.status);
+}
+
+function atualizarEtapaStatus(status) {
+    const indiceAtual = ETAPAS_STATUS.indexOf(status);
+    document.querySelectorAll('#linha-status .etapa-status').forEach(etapa => {
+        const indiceEtapa = ETAPAS_STATUS.indexOf(etapa.dataset.status);
+        etapa.classList.toggle('concluida', indiceEtapa < indiceAtual);
+        etapa.classList.toggle('atual', indiceEtapa === indiceAtual);
+    });
+}
+
+// Atualiza sozinho enquanto a ficha estiver aberta, sem precisar recarregar
+// a página. Para automaticamente quando o pedido chega no status final.
+function iniciarPollingRastreio(pedidoId) {
+    pararPollingRastreio();
+    intervaloRastreioPedido = setInterval(async () => {
+        try {
+            const { status } = await apiFetch(`/pedidos/${pedidoId}/status`);
+            atualizarEtapaStatus(status);
+            if (status === 'entregue') pararPollingRastreio();
+        } catch (err) {
+            // Se der erro numa atualização (rede instável, etc.), só tenta de
+            // novo na próxima rodada - não vale a pena incomodar o cliente
+            // com um erro por causa de uma consulta de atualização automática.
+        }
+    }, 20000);
 }

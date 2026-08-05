@@ -1,6 +1,7 @@
 let socket = null;
 let PRODUTOS_ADMIN = { sabores: [], bordas: [], bebidas: [] };
 let PRECOS_ADMIN = [];
+let SECOES_ADMIN = []; // seções do cardápio (ex: Tradicional/Especial/Doce/Promoção), criadas livremente pelo admin
 
 // Preenche todo elemento <span class="icone" data-icone="NOME"> com o SVG
 // correspondente definido em icones.js. Usado pra ícones fixos no HTML;
@@ -230,15 +231,6 @@ async function carregarConfiguracoes() {
     document.getElementById('config-whatsapp').value = config.whatsapp_numero || '';
     document.getElementById('config-promocao-ativa').checked = !!config.promocao_ativa;
     document.getElementById('config-promocao-texto').value = config.promocao_texto || '';
-
-    document.getElementById('preview-logo').src = config.logo_base64 || '../imagens/logo.png';
-    document.getElementById('preview-sino').src = config.sino_base64 || '../sounds/sino.mp3';
-
-    const cores = config.cores_json ? JSON.parse(config.cores_json) : {};
-    document.querySelectorAll('.cor-tema').forEach(input => {
-        const variavel = input.dataset.var;
-        if (cores[variavel]) input.value = cores[variavel];
-    });
 }
 
 async function salvarConfiguracoes() {
@@ -250,103 +242,14 @@ async function salvarConfiguracoes() {
     const promocao_ativa = document.getElementById('config-promocao-ativa').checked;
     const promocao_texto = document.getElementById('config-promocao-texto').value.trim();
 
-    const cores = {};
-    document.querySelectorAll('.cor-tema').forEach(input => {
-        cores[input.dataset.var] = input.value;
-    });
-    const cores_json = JSON.stringify(cores);
-
     try {
         await apiFetch('/config', {
             method: 'PUT',
-            body: JSON.stringify({ horario_abertura, horario_fechamento, taxa_entrega, chave_pix, whatsapp_numero, promocao_ativa, promocao_texto, cores_json })
+            body: JSON.stringify({ horario_abertura, horario_fechamento, taxa_entrega, chave_pix, whatsapp_numero, promocao_ativa, promocao_texto })
         });
         mostrarToast('Configurações atualizadas com sucesso!');
     } catch (err) {
         alert('Erro ao salvar configurações: ' + err.message);
-    }
-}
-
-// ---------- Aparência (logo, som de notificação e cores) ----------
-async function enviarLogo() {
-    const input = document.getElementById('arquivo-logo');
-    const arquivo = input.files[0];
-    if (!arquivo) return alert('Escolha um arquivo primeiro.');
-
-    if (arquivo.size > 2 * 1024 * 1024) {
-        return alert('Logo muito grande. Escolha uma de até 2MB.');
-    }
-
-    try {
-        const logo_base64 = await lerArquivoComoBase64(arquivo);
-        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ logo_base64 }) });
-        mostrarToast('Logo atualizada!');
-        carregarConfiguracoes();
-    } catch (err) {
-        alert('Erro ao enviar logo: ' + err.message);
-    }
-}
-
-async function removerLogo() {
-    if (!confirm('Restaurar a logo padrão?')) return;
-    try {
-        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ logo_base64: null }) });
-        carregarConfiguracoes();
-    } catch (err) {
-        alert('Erro ao restaurar logo: ' + err.message);
-    }
-}
-
-async function enviarSino() {
-    const input = document.getElementById('arquivo-sino');
-    const arquivo = input.files[0];
-    if (!arquivo) return alert('Escolha um arquivo primeiro.');
-
-    if (arquivo.size > 3.5 * 1024 * 1024) {
-        return alert('Arquivo de som muito grande. Escolha um de até 3.5MB.');
-    }
-
-    try {
-        const sino_base64 = await lerArquivoComoBase64(arquivo);
-        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ sino_base64 }) });
-        mostrarToast('Som de notificação atualizado!');
-        carregarConfiguracoes();
-    } catch (err) {
-        alert('Erro ao enviar som: ' + err.message);
-    }
-}
-
-async function removerSino() {
-    if (!confirm('Restaurar o som padrão?')) return;
-    try {
-        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ sino_base64: null }) });
-        carregarConfiguracoes();
-    } catch (err) {
-        alert('Erro ao restaurar som: ' + err.message);
-    }
-}
-
-const CORES_PADRAO = {
-    '--cor-verde': '#0A6C40', '--cor-verde-escuro': '#084F30',
-    '--cor-vermelho': '#A5273A', '--cor-vermelho-escuro': '#7D1D2C',
-    '--cor-terracota': '#C97B4A', '--cor-dourado': '#D9A441',
-    '--cor-creme': '#F2E4C6', '--cor-papel': '#EFE3C3',
-    '--cor-texto': '#2E2A26', '--cor-branco': '#FFFFFF',
-    '--cor-marcador': '#BFE3EF', '--cor-superficie': '#FFFFFF',
-    '--cor-borda-suave': '#E5DCC3'
-};
-
-async function restaurarCoresPadrao() {
-    if (!confirm('Restaurar todas as cores para o padrão original?')) return;
-    document.querySelectorAll('.cor-tema').forEach(input => {
-        input.value = CORES_PADRAO[input.dataset.var];
-    });
-    try {
-        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ cores_json: null }) });
-        mostrarToast('Cores restauradas!');
-        carregarConfiguracoes();
-    } catch (err) {
-        alert('Erro ao restaurar cores: ' + err.message);
     }
 }
 
