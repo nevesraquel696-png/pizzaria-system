@@ -86,13 +86,10 @@
                 <label>Nome do Cliente: <input type="text" id="adm-nome" required></label>
 
                 <div class="linha-form-2">
-                    <label>Categoria da Pizza:
+                    <label>Seção da Pizza:
+                        <!-- Opções preenchidas dinamicamente por preencherSelectsDeSecao(), a partir de /secoes -->
                         <select id="adm-categoria" required onchange="carregarSaboresAdmin()">
                             <option value="">Selecione...</option>
-                            <option value="tradicional">Tradicional</option>
-                            <option value="especial">Especial</option>
-                            <option value="doce">Doce</option>
-                            <option value="promocao">Promoção</option>
                         </select>
                     </label>
 
@@ -162,12 +159,10 @@
                                 <option value="outros">Outros</option>
                             </select>
                         </label>
-                        <label id="campo-categoria-produto">Categoria (só para sabor de pizza):
+                        <label id="campo-categoria-produto">Seção do Cardápio (só para sabor de pizza):
+                            <!-- Opções preenchidas dinamicamente por preencherSelectsDeSecao(), a partir de /secoes -->
                             <select id="prod-categoria">
-                                <option value="tradicional">Tradicional</option>
-                                <option value="especial">Especial</option>
-                                <option value="doce">Doce</option>
-                                <option value="promocao">Promoção</option>
+                                <option value="">Selecione...</option>
                             </select>
                         </label>
                         <label id="campo-descricao-produto">Descrição (ingredientes, só para sabor de pizza):
@@ -183,30 +178,23 @@
                 </div>
                 <div class="painel-card">
                     <h4 class="titulo-card">Itens Cadastrados</h4>
-                    <nav class="chips-categoria-admin" id="chips-categoria-admin">
-                        <button class="chip-admin ativo" data-filtro="tradicional">Tradicional</button>
-                        <button class="chip-admin" data-filtro="especial">Especial</button>
-                        <button class="chip-admin" data-filtro="doce">Doce</button>
-                        <button class="chip-admin" data-filtro="promocao">Promoção</button>
-                        <button class="chip-admin" data-filtro="borda">Bordas</button>
-                        <button class="chip-admin" data-filtro="bebida">Bebidas</button>
-                        <button class="chip-admin" data-filtro="outros">Outros</button>
-                    </nav>
+                    <!-- Preenchido dinamicamente por renderizarChipsCardapio(): um chip por seção existente + bordas/bebidas/outros -->
+                    <nav class="chips-categoria-admin" id="chips-categoria-admin"></nav>
                     <input type="text" id="busca-cardapio-admin" placeholder="Buscar por nome...">
                     <ul id="lista-produtos-cardapio"><li>Carregando...</li></ul>
                 </div>
             </div>
         </section>
 
-        <!-- ABA: Grade de preços por categoria/tamanho -->
+        <!-- ABA: Grade de preços por seção/tamanho -->
         <section id="aba-precos" class="aba-conteudo" style="display:none;">
-            <h3>Preços por Categoria e Tamanho</h3>
-            <p class="dica">Esses valores valem para todos os sabores da categoria, igual ao cardápio físico.</p>
+            <h3>Preços por Seção e Tamanho</h3>
+            <p class="dica">Esses valores valem para todos os sabores da seção, igual ao cardápio físico.</p>
             <div class="painel-card">
                 <div class="tabela-precos-scroll">
                     <table id="tabela-precos">
                         <thead>
-                            <tr><th>Categoria</th><th>4 fatias</th><th>6 fatias</th><th>8 fatias</th><th>12 fatias</th><th>14 fatias</th></tr>
+                            <tr><th>Seção</th><th>4 fatias</th><th>6 fatias</th><th>8 fatias</th><th>12 fatias</th><th>14 fatias</th></tr>
                         </thead>
                         <tbody id="corpo-tabela-precos"></tbody>
                     </table>

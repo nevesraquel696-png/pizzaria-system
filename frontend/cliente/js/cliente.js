@@ -3,22 +3,21 @@ let PRECOS_PIZZA = [];
 let PROMOCOES = []; // promoções ativas: pizza de tamanho/sabores fixos e preço "de/por"
 let CONFIG_LOJA = {};
 let IMAGENS_TAMANHO = {}; // { 4: 'data:image/...', 6: ..., ... } - base64 vindo do banco
-let CARRINHO = []; // itens acumulados: { tipo_item, pizza_categoria, fatias, sabor_ids, borda_id, quantidade, _nome, _preco }
-// { categoriaAtiva, fatias, selecionados } - contexto da ficha de produto aberta.
-// "categoriaAtiva" é só a aba visível no momento; "selecionados" é um Map
-// sabor_id -> categoria com TODOS os sabores escolhidos, de qualquer aba,
-// que é o que permite montar uma pizza com sabores de categorias diferentes
+let CARRINHO = []; // itens acumulados: { tipo_item, fatias, sabor_ids, borda_id, quantidade, _nome, _preco }
+// SECOES: seções do cardápio (ex: Tradicional/Especial/Doce/Promoção),
+// criadas livremente pelo admin - não é mais um ENUM fixo, vem de /secoes.
+let SECOES = [];
+// { secaoAtivaId, fatias, selecionados } - contexto da ficha de produto aberta.
+// "secaoAtivaId" é só a aba visível no momento; "selecionados" é um Map
+// sabor_id -> secao_id com TODOS os sabores escolhidos, de qualquer aba,
+// que é o que permite montar uma pizza com sabores de seções diferentes
 // (ex: 1 tradicional + 1 doce) sem perder a marcação ao trocar de aba.
 let SABOR_ATUAL = null;
 let CUPOM_APLICADO = null; // { codigo, tipo, valor, desconto } - null se nenhum cupom válido aplicado
 
-const NOMES_CATEGORIA = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
-const ICONES_CATEGORIA = { tradicional: 'pizza', especial: 'estrela', doce: 'gota', promocao: 'fogo' };
-const CATEGORIAS_ORDEM = ['tradicional', 'especial', 'doce', 'promocao'];
-
 document.addEventListener('DOMContentLoaded', async () => {
     aplicarIcones();
-    await Promise.all([carregarProdutos(), carregarPrecos(), carregarPromocoes(), carregarStatusLoja(), carregarImagensTamanho()]);
+    await Promise.all([carregarProdutos(), carregarPrecos(), carregarSecoes(), carregarPromocoes(), carregarStatusLoja(), carregarImagensTamanho()]);
     renderizarCardapio();
     configurarEventos();
 });
@@ -82,6 +81,14 @@ async function carregarPrecos() {
     }
 }
 
+async function carregarSecoes() {
+    try {
+        SECOES = await apiFetch('/secoes');
+    } catch (err) {
+        console.error('Erro ao carregar seções do cardápio:', err.message);
+    }
+}
+
 async function carregarPromocoes() {
     try {
         PROMOCOES = await apiFetch('/promocoes');
@@ -134,8 +141,8 @@ function renderizarFaixaPromocao(config) {
     }
 }
 
-function obterPreco(categoria, fatias) {
-    const item = PRECOS_PIZZA.find(p => p.categoria === categoria && Number(p.fatias) === Number(fatias));
+function obterPreco(secaoId, fatias) {
+    const item = PRECOS_PIZZA.find(p => p.secao_id === Number(secaoId) && Number(p.fatias) === Number(fatias));
     return item ? Number(item.preco) : null;
 }
 
@@ -146,13 +153,15 @@ function obterPreco(categoria, fatias) {
 // Bebidas e Outros sempre no final da página.
 const FATIAS_OPCOES = [4, 6, 8, 12, 14];
 
-function categoriasComSabores() {
-    return CATEGORIAS_ORDEM.filter(cat => PRODUTOS.sabores.some(s => s.categoria === cat));
+// Só as seções que têm pelo menos um sabor cadastrado, na ordem definida
+// pelo admin (SECOES já vem ordenada por "ordem" - ver SecaoCardapio.listarTodas).
+function secoesComSabores() {
+    return SECOES.filter(secao => PRODUTOS.sabores.some(s => s.secao_id === secao.id));
 }
 
-// Categoria usada como ponto de partida ao abrir a ficha do produto.
-function categoriaPadrao() {
-    return categoriasComSabores()[0] || CATEGORIAS_ORDEM[0];
+// Seção usada como ponto de partida ao abrir a ficha do produto.
+function secaoPadrao() {
+    return secoesComSabores()[0] || SECOES[0] || null;
 }
 
 function renderizarCardapio() {
@@ -225,15 +234,15 @@ function renderizarPromocoesCliente() {
 // cadastrado pra aquele tamanho) - a categoria exata é escolhida na ficha.
 function renderizarTamanhos() {
     const lista = document.getElementById('lista-tamanhos');
-    const categorias = categoriasComSabores();
+    const secoes = secoesComSabores();
 
-    if (categorias.length === 0) {
+    if (secoes.length === 0) {
         lista.innerHTML = '<p class="carregando">Nenhum sabor cadastrado ainda.</p>';
         return;
     }
 
     const linhas = FATIAS_OPCOES.map(fatias => {
-        const precos = categorias.map(cat => obterPreco(cat, fatias)).filter(p => p !== null);
+        const precos = secoes.map(s => obterPreco(s.id, fatias)).filter(p => p !== null);
         if (precos.length === 0) return '';
         const menorPreco = Math.min(...precos);
         return `
@@ -322,10 +331,11 @@ function atualizarBadgesRapidos() {
 }
 
 // ---------- Ficha do produto (sheet) ----------
-// A categoria (Tradicional/Especial/Doce/Promoção) é escolhida aqui dentro,
-// através das abas, não mais na tela inicial - só o tamanho vem de fora.
+// A seção (Tradicional/Especial/Doce/Promoção, ou qualquer nome que o admin
+// tiver criado) é escolhida aqui dentro, através das abas, não mais na tela
+// inicial - só o tamanho vem de fora.
 function abrirFichaProduto(fatias) {
-    SABOR_ATUAL = { categoriaAtiva: categoriaPadrao(), fatias, selecionados: new Map(), promocao: null };
+    SABOR_ATUAL = { secaoAtivaId: secaoPadrao()?.id ?? null, fatias, selecionados: new Map(), promocao: null };
 
     document.getElementById('qtd-valor').textContent = '1';
     renderizarAbasCategoriaSheet();
@@ -346,7 +356,7 @@ function abrirFichaPromocao(promocaoId) {
     const promocao = PROMOCOES.find(p => p.id === promocaoId);
     if (!promocao) return;
 
-    SABOR_ATUAL = { categoriaAtiva: null, fatias: promocao.fatias, selecionados: new Map(), promocao };
+    SABOR_ATUAL = { secaoAtivaId: null, fatias: promocao.fatias, selecionados: new Map(), promocao };
 
     document.getElementById('qtd-valor').textContent = '1';
     document.getElementById('sheet-categorias').innerHTML = '';
@@ -360,27 +370,28 @@ function abrirFichaPromocao(promocaoId) {
     document.getElementById('sheet-fundo-produto').classList.remove('oculto');
 }
 
-// Abas de categoria dentro da ficha - só mostra categorias com sabor cadastrado.
+// Abas de seção dentro da ficha - só mostra seções com sabor cadastrado.
 // Trocar de aba só muda o que fica visível pra marcar; os sabores já
 // escolhidos em outras abas continuam guardados em SABOR_ATUAL.selecionados,
-// então dá pra combinar sabores de categorias diferentes na mesma pizza.
+// então dá pra combinar sabores de seções diferentes na mesma pizza.
 function renderizarAbasCategoriaSheet() {
     const container = document.getElementById('sheet-categorias');
-    const categorias = categoriasComSabores();
+    const secoes = secoesComSabores();
 
-    container.innerHTML = categorias.map(cat => {
-        const qtdNaAba = [...SABOR_ATUAL.selecionados.values()].filter(c => c === cat).length;
+    container.innerHTML = secoes.map(secao => {
+        const qtdNaAba = [...SABOR_ATUAL.selecionados.values()].filter(id => id === secao.id).length;
         return `
-        <button type="button" class="pill-categoria-sheet${cat === SABOR_ATUAL.categoriaAtiva ? ' ativo' : ''}" data-categoria="${cat}">
-            ${NOMES_CATEGORIA[cat]}${qtdNaAba > 0 ? ` <span class="badge-contagem-sabor">${qtdNaAba}</span>` : ''}
+        <button type="button" class="pill-categoria-sheet${secao.id === SABOR_ATUAL.secaoAtivaId ? ' ativo' : ''}" data-secao-id="${secao.id}">
+            ${escapeHtml(secao.nome)}${qtdNaAba > 0 ? ` <span class="badge-contagem-sabor">${qtdNaAba}</span>` : ''}
         </button>
     `;
     }).join('');
 
     container.querySelectorAll('.pill-categoria-sheet').forEach(pill => {
         pill.addEventListener('click', () => {
-            if (pill.dataset.categoria === SABOR_ATUAL.categoriaAtiva) return;
-            SABOR_ATUAL.categoriaAtiva = pill.dataset.categoria;
+            const secaoId = Number(pill.dataset.secaoId);
+            if (secaoId === SABOR_ATUAL.secaoAtivaId) return;
+            SABOR_ATUAL.secaoAtivaId = secaoId;
             renderizarAbasCategoriaSheet();
             renderizarConteudoSheet();
         });
@@ -390,7 +401,7 @@ function renderizarAbasCategoriaSheet() {
 // Imagem, título, preço e lista de sabores - depende da categoria escolhida
 // nas abas acima, então é chamada de novo toda vez que ela muda.
 function renderizarConteudoSheet() {
-    const { categoriaAtiva, fatias, selecionados, promocao } = SABOR_ATUAL;
+    const { secaoAtivaId, fatias, selecionados, promocao } = SABOR_ATUAL;
 
     document.getElementById('sheet-imagem').innerHTML = iconeOuImagemTamanho(fatias);
     document.getElementById('sheet-titulo').textContent = promocao
@@ -399,10 +410,10 @@ function renderizarConteudoSheet() {
     atualizarPrecoSheet();
 
     // Em promoção, a lista de sabores já vem limitada aos que o admin
-    // marcou ao criar a promoção (podem ser de categorias diferentes).
+    // marcou ao criar a promoção (podem ser de seções diferentes).
     const sabores = promocao
         ? promocao.sabor_ids.map(id => PRODUTOS.sabores.find(s => s.id === id)).filter(Boolean)
-        : PRODUTOS.sabores.filter(s => s.categoria === categoriaAtiva);
+        : PRODUTOS.sabores.filter(s => s.secao_id === secaoAtivaId);
 
     const container = document.getElementById('sheet-sabores-extra');
     container.innerHTML = sabores.map(s => `
@@ -424,7 +435,7 @@ function renderizarConteudoSheet() {
                 return;
             }
             const sabor = sabores.find(s => s.id === id);
-            selecionados.set(id, sabor ? sabor.categoria : categoriaAtiva);
+            selecionados.set(id, sabor ? sabor.secao_id : secaoAtivaId);
         } else {
             selecionados.delete(id);
         }
@@ -433,11 +444,11 @@ function renderizarConteudoSheet() {
     };
 }
 
-// Preço da pizza = preço da categoria mais cara entre as dos sabores já
+// Preço da pizza = preço da seção mais cara entre as dos sabores já
 // escolhidos (regra pra combinações mistas). Enquanto nada foi marcado ainda,
 // mostra o preço "a partir de" da aba aberta no momento, só como prévia.
 function atualizarPrecoSheet() {
-    const { categoriaAtiva, fatias, selecionados, promocao } = SABOR_ATUAL;
+    const { secaoAtivaId, fatias, selecionados, promocao } = SABOR_ATUAL;
     const el = document.getElementById('sheet-preco');
 
     if (promocao) {
@@ -446,23 +457,23 @@ function atualizarPrecoSheet() {
     }
 
     if (selecionados.size === 0) {
-        const preco = obterPreco(categoriaAtiva, fatias);
+        const preco = obterPreco(secaoAtivaId, fatias);
         el.innerHTML = preco !== null
             ? `<span class="etiqueta-preco">a partir de R$ ${preco.toFixed(2)}</span>`
             : '<span class="erro">Preço não configurado.</span>';
         return;
     }
 
-    const categoriasEnvolvidas = [...new Set(selecionados.values())];
-    const precos = categoriasEnvolvidas.map(cat => obterPreco(cat, fatias));
+    const secoesEnvolvidas = [...new Set(selecionados.values())];
+    const precos = secoesEnvolvidas.map(id => obterPreco(id, fatias));
     if (precos.some(p => p === null)) {
         el.innerHTML = '<span class="erro">Preço não configurado.</span>';
         return;
     }
     const maiorPreco = Math.max(...precos);
-    const misturouCategorias = categoriasEnvolvidas.length > 1;
+    const misturouSecoes = secoesEnvolvidas.length > 1;
     el.innerHTML = `<span class="etiqueta-preco">R$ ${maiorPreco.toFixed(2)}</span>` +
-        (misturouCategorias ? ' <small class="aviso-preco-misto">(preço da categoria mais cara)</small>' : '');
+        (misturouSecoes ? ' <small class="aviso-preco-misto">(preço da seção mais cara)</small>' : '');
 }
 
 function fecharFichaProduto() {
@@ -484,11 +495,10 @@ function adicionarAoCarrinho() {
     const nomesSabores = saborIds.map(id => PRODUTOS.sabores.find(s => s.id === id)?.nome).join(', ');
 
     // Pizza de promoção: preço fixo "de/por" definido pelo admin, não usa
-    // a tabela de preços por categoria (o servidor confere tudo de novo).
+    // a tabela de preços por seção (o servidor confere tudo de novo).
     if (promocao) {
         CARRINHO.push({
             tipo_item: 'pizza',
-            pizza_categoria: 'promocao',
             promocao_id: promocao.id,
             fatias,
             sabor_ids: saborIds,
@@ -503,20 +513,19 @@ function adicionarAoCarrinho() {
         return;
     }
 
-    // Categoria de cobrança: a mais cara entre as dos sabores escolhidos.
-    // O servidor recalcula isso de novo a partir do banco na hora de confirmar
-    // o pedido - aqui é só pra mostrar preço e nome certos no carrinho.
-    const categoriasEnvolvidas = [...new Set(selecionados.values())];
-    const precosPorCategoria = categoriasEnvolvidas.map(cat => ({ cat, preco: obterPreco(cat, fatias) }));
-    if (precosPorCategoria.some(p => p.preco === null)) {
+    // Seção de cobrança: a mais cara entre as dos sabores escolhidos. O
+    // servidor recalcula isso de novo a partir do banco na hora de confirmar
+    // o pedido (nunca confia no que o cliente manda) - aqui é só pra mostrar
+    // o preço certo no carrinho antes de enviar.
+    const secoesEnvolvidas = [...new Set(selecionados.values())];
+    const precosPorSecao = secoesEnvolvidas.map(id => ({ id, preco: obterPreco(id, fatias) }));
+    if (precosPorSecao.some(p => p.preco === null)) {
         return alert('Preço não configurado para essa combinação.');
     }
-    const categoriaCobranca = precosPorCategoria.reduce((maior, atual) => atual.preco > maior.preco ? atual : maior).cat;
-    const precoPizza = precosPorCategoria.reduce((maior, atual) => atual.preco > maior.preco ? atual : maior).preco;
+    const precoPizza = precosPorSecao.reduce((maior, atual) => atual.preco > maior.preco ? atual : maior).preco;
 
     CARRINHO.push({
         tipo_item: 'pizza',
-        pizza_categoria: categoriaCobranca,
         fatias,
         sabor_ids: saborIds,
         borda_id: bordaId,
@@ -806,10 +815,11 @@ async function confirmarPedido() {
         troco_para: formaPagamento === 'dinheiro' ? Number(troco || 0) : 0,
         cupom_codigo: CUPOM_APLICADO ? CUPOM_APLICADO.codigo : null,
         itens: CARRINHO.map(item => {
+            // Não mandamos a seção: o servidor sempre deriva a seção (e o
+            // preço) a partir dos sabor_ids, nunca confia no que o cliente envia.
             if (item.tipo_item === 'pizza') {
                 return {
                     tipo_item: 'pizza',
-                    pizza_categoria: item.pizza_categoria,
                     promocao_id: item.promocao_id || null,
                     fatias: item.fatias,
                     sabor_ids: item.sabor_ids,
