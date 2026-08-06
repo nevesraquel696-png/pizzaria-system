@@ -292,6 +292,18 @@
         <section id="aba-config" class="aba-conteudo" style="display:none;">
 
             <div class="painel-card secao-config">
+                <h3 class="cabecalho-secao-config"><span class="icone-secao-config icone" data-icone="engrenagem"></span>Alterar Senha</h3>
+                <p class="dica">Troque a senha da sua conta a qualquer momento. Precisa informar a senha atual.</p>
+                <div class="linha-config" style="flex-wrap:wrap;">
+                    <label>Senha atual: <input type="password" id="senha-atual" autocomplete="current-password"></label>
+                    <label>Nova senha: <input type="password" id="senha-nova" autocomplete="new-password"></label>
+                    <label>Confirmar nova senha: <input type="password" id="senha-nova-confirmar" autocomplete="new-password"></label>
+                </div>
+                <button id="btn-alterar-senha">Alterar Senha</button>
+                <p id="senha-msg" class="erro" style="display:none;"></p>
+            </div>
+
+            <div class="painel-card secao-config">
                 <h3 class="cabecalho-secao-config"><span class="icone-secao-config icone" data-icone="imagem"></span>Aparência</h3>
                 <p class="dica">Personalize a logo, as cores e o som de notificação usados na loja, no admin e na cozinha. Deixe em branco / clique em "Restaurar padrão" para voltar ao visual original.</p>
 

@@ -17,6 +17,15 @@ const Usuario = {
             [nome, email, senha_hash, nivel || 'admin']
         );
         return result.insertId;
+    },
+
+    async buscarPorId(id) {
+        const [rows] = await db.query('SELECT * FROM usuarios WHERE id = ?', [id]);
+        return rows[0] || null;
+    },
+
+    async atualizarSenha(id, senha_hash) {
+        await db.query('UPDATE usuarios SET senha_hash = ? WHERE id = ?', [senha_hash, id]);
     }
 };
 
