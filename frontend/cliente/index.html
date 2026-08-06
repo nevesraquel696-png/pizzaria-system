@@ -10,7 +10,7 @@
 <body>
 
     <header class="topo-loja">
-        <img src="../imagens/logo.png" alt="Estação da Pizza">
+        <img src="../imagens/logo.png" alt="Estação da Pizza" class="logo-app">
         <div class="topo-info">
             <h1>Estação da Pizza</h1>
             <p class="tagline-topo">Desde 2008 · direto do forno</p>
@@ -77,8 +77,8 @@
             <div id="itens-carrinho"><p class="carregando">Carrinho vazio.</p></div>
 
             <div class="linha-cupom">
-                <input type="text" id="input-cupom" placeholder="Código do cupom (se tiver)" style="text-transform:uppercase;">
-                <button type="button" id="btn-aplicar-cupom">Aplicar</button>
+                <input type="text" id="input-cupom" placeholder="Digite aqui o código do cupom (se tiver)" style="text-transform:uppercase;">
+                <button type="button" id="btn-aplicar-cupom">Clique aqui para aplicar o cupom</button>
             </div>
             <p id="mensagem-cupom" class="mensagem-cupom oculto"></p>
 
@@ -88,11 +88,10 @@
 
             <hr>
 
-            <h3 class="titulo-secao-checkout">1. Seus dados</h3>
-            <label for="nome">Nome</label>
-            <input type="text" id="nome" placeholder="Seu nome">
+            <label for="nome">👉 Digite seu nome aqui:</label>
+            <input type="text" id="nome" placeholder="Digite seu nome aqui">
 
-            <label for="tipo-entrega">Como vai receber o pedido?</label>
+            <label for="tipo-entrega">👉 Clique aqui e selecione o método de entrega:</label>
             <select id="tipo-entrega" onchange="controlarCamposEntrega(this.value)">
                 <option value="local">Consumo no Local</option>
                 <option value="retirada">Retirada</option>
@@ -100,18 +99,17 @@
             </select>
 
             <div id="campos-entrega" class="oculto">
-                <label for="telefone">Telefone / WhatsApp</label>
-                <input type="text" id="telefone" placeholder="(00) 00000-0000">
+                <label for="telefone">👉 Digite seu Telefone / WhatsApp aqui:</label>
+                <input type="text" id="telefone" placeholder="Digite aqui: (00) 00000-0000">
                 <p id="mensagem-cliente-reconhecido" class="mensagem-cupom mensagem-cupom-sucesso oculto"></p>
-                <label for="endereco">Endereço completo</label>
-                <textarea id="endereco" placeholder="Rua, número, bairro e ponto de referência"></textarea>
+                <label for="endereco">👉 Digite seu Endereço Completo aqui:</label>
+                <textarea id="endereco" placeholder="Digite aqui: Rua, Número, Bairro e Ponto de Referência"></textarea>
             </div>
 
-            <label for="observacoes">Observações (opcional)</label>
+            <label for="observacoes">Observações (se quiser, digite aqui):</label>
             <input type="text" id="observacoes" placeholder="Ex: sem cebola, campainha quebrada...">
 
-            <h3 class="titulo-secao-checkout">2. Pagamento</h3>
-            <label for="forma-pagamento">Forma de pagamento</label>
+            <label for="forma-pagamento">👉 Clique aqui e escolha a Forma de Pagamento:</label>
             <select id="forma-pagamento" onchange="controlarTroco(this.value); controlarInfoPix(this.value)">
                 <option value="pix">Pix</option>
                 <option value="cartao">Cartão</option>
@@ -119,7 +117,7 @@
             </select>
 
             <div id="campo-troco" class="oculto">
-                <label for="troco">Troco para quanto?</label>
+                <label for="troco">👉 Digite aqui para quanto precisa de troco:</label>
                 <input type="number" id="troco" step="0.01" placeholder="Ex: 50.00">
             </div>
 
@@ -130,7 +128,7 @@
             </div>
 
             <p id="aviso-carrinho" class="erro oculto"></p>
-            <button id="btn-confirmar-pedido" class="botao-principal">Confirmar Pedido</button>
+            <button id="btn-confirmar-pedido" class="botao-principal">Clique aqui para Confirmar o Pedido</button>
         </div>
     </div>
 
@@ -150,47 +148,6 @@
         </div>
     </div>
 
-    <!-- Ficha "Acompanhar meu pedido" -->
-    <div class="sheet-fundo oculto" id="sheet-fundo-rastreio">
-        <div class="sheet" id="sheet-rastreio">
-            <button class="fechar-sheet" id="fechar-sheet-rastreio">×</button>
-            <span class="rotulo-estacao rotulo-sheet">Acompanhar pedido</span>
-            <h2>Onde está minha pizza?</h2>
-
-            <div id="rastreio-formulario">
-                <label for="rastreio-nome">Nome usado no pedido</label>
-                <input type="text" id="rastreio-nome" placeholder="Seu nome">
-                <label for="rastreio-telefone">Telefone usado no pedido</label>
-                <input type="tel" id="rastreio-telefone" placeholder="(00) 00000-0000">
-                <p id="rastreio-erro" class="erro-campo oculto"></p>
-                <button class="botao-principal" id="btn-rastrear-pedido">Ver status</button>
-            </div>
-
-            <div id="rastreio-resultado" class="oculto">
-                <p class="rastreio-numero">Pedido <strong>#<span id="rastreio-numero"></span></strong></p>
-
-                <div class="linha-status" id="linha-status">
-                    <div class="etapa-status" data-status="pendente">
-                        <span class="ponto"></span><span>Recebido</span>
-                    </div>
-                    <div class="etapa-status" data-status="preparo">
-                        <span class="ponto"></span><span>Em preparo</span>
-                    </div>
-                    <div class="etapa-status" data-status="saiu_entrega">
-                        <span class="ponto"></span><span id="rastreio-label-entrega">Saiu para entrega</span>
-                    </div>
-                    <div class="etapa-status" data-status="entregue">
-                        <span class="ponto"></span><span id="rastreio-label-final">Entregue</span>
-                    </div>
-                </div>
-
-                <div id="rastreio-itens" class="rastreio-itens"></div>
-                <p id="rastreio-total" class="rastreio-total"></p>
-                <button class="botao-principal btn-secundario" id="btn-nova-busca-rastreio">Buscar outro pedido</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Barra flutuante do carrinho -->
     <button class="barra-carrinho oculto" id="barra-carrinho">
         <span id="carrinho-resumo">0 itens</span>
@@ -201,7 +158,8 @@
     <nav class="nav-inferior">
         <button class="nav-item ativo" id="nav-inicio"><span class="icone" data-icone="casa"></span><span>Início</span></button>
         <button class="nav-item" id="nav-carrinho"><span class="icone" data-icone="carrinho"></span><span>Carrinho</span></button>
-        <button class="nav-item" id="nav-rastreio"><span class="icone" data-icone="caixa"></span><span>Pedido</span></button>
+
+        
     </nav>
     
     <footer class="rodape-site">
@@ -215,12 +173,12 @@
     <p class="rodape-copyright">© <span id="rodape-ano"></span> Estação da Pizza · Todos os direitos reservados</p>
 </footer>
 
-    <audio id="som-confirmacao" src="../sounds/sino.mp3" preload="auto"></audio>
+    <audio id="som-confirmacao" class="sino-app" src="../sounds/sino.mp3" preload="auto"></audio>
 
 
     <script src="../js/api.js"></script>
-    <script src="../js/tema.js"></script>
     <script src="../js/icones.js"></script>
+    <script src="../js/tema.js"></script>
     <script src="js/cliente.js"></script>
 </body>
 </html>

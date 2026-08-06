@@ -1,7 +1,6 @@
 let socket = null;
 let PRODUTOS_ADMIN = { sabores: [], bordas: [], bebidas: [] };
 let PRECOS_ADMIN = [];
-let SECOES_ADMIN = []; // seções do cardápio (ex: Tradicional/Especial/Doce/Promoção), criadas livremente pelo admin
 
 // Preenche todo elemento <span class="icone" data-icone="NOME"> com o SVG
 // correspondente definido em icones.js. Usado pra ícones fixos no HTML;
@@ -50,17 +49,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => trocarAba(btn.dataset.aba));
     });
 
-    // Delegação de evento: os chips de seção são gerados dinamicamente (a
-    // partir de /secoes) depois que o painel carrega, então não existem
-    // ainda no momento do DOMContentLoaded - por isso escutamos no
-    // container, que já existe no HTML, em vez de nos botões diretamente.
-    document.getElementById('chips-categoria-admin').addEventListener('click', (evento) => {
-        const chip = evento.target.closest('.chip-admin');
-        if (!chip) return;
-        document.querySelectorAll('.chip-admin').forEach(c => c.classList.remove('ativo'));
-        chip.classList.add('ativo');
-        FILTRO_CARDAPIO_ATUAL = chip.dataset.filtro;
-        aplicarFiltroCardapio();
+    document.querySelectorAll('.chip-admin').forEach(chip => {
+        chip.addEventListener('click', () => {
+            document.querySelectorAll('.chip-admin').forEach(c => c.classList.remove('ativo'));
+            chip.classList.add('ativo');
+            FILTRO_CARDAPIO_ATUAL = chip.dataset.filtro;
+            aplicarFiltroCardapio();
+        });
     });
     document.getElementById('busca-cardapio-admin').addEventListener('input', aplicarFiltroCardapio);
 
@@ -151,13 +146,6 @@ async function iniciarPainel() {
     tentarAutoativarSom();
     configurarImpressaoAutomatica();
 
-    // Seções do cardápio precisam vir ANTES do resto: o cardápio, a grade de
-    // preços, o formulário de pedido manual e a lista de sabores da promoção
-    // dependem todos de saber quais seções existem pra se montar direito.
-    await tentarCarregar(carregarSecoesAdmin, 'seções do cardápio');
-    renderizarChipsCardapio();
-    preencherSelectsDeSecao();
-
     // Antes cada informação era buscada em sequência (uma esperando a outra
     // terminar). Como são chamadas independentes, agora buscamos tudo ao
     // mesmo tempo - o painel carrega no tempo da requisição mais lenta,
@@ -242,6 +230,15 @@ async function carregarConfiguracoes() {
     document.getElementById('config-whatsapp').value = config.whatsapp_numero || '';
     document.getElementById('config-promocao-ativa').checked = !!config.promocao_ativa;
     document.getElementById('config-promocao-texto').value = config.promocao_texto || '';
+
+    document.getElementById('preview-logo').src = config.logo_base64 || '../imagens/logo.png';
+    document.getElementById('preview-sino').src = config.sino_base64 || '../sounds/sino.mp3';
+
+    const cores = config.cores_json ? JSON.parse(config.cores_json) : {};
+    document.querySelectorAll('.cor-tema').forEach(input => {
+        const variavel = input.dataset.var;
+        if (cores[variavel]) input.value = cores[variavel];
+    });
 }
 
 async function salvarConfiguracoes() {
@@ -253,14 +250,103 @@ async function salvarConfiguracoes() {
     const promocao_ativa = document.getElementById('config-promocao-ativa').checked;
     const promocao_texto = document.getElementById('config-promocao-texto').value.trim();
 
+    const cores = {};
+    document.querySelectorAll('.cor-tema').forEach(input => {
+        cores[input.dataset.var] = input.value;
+    });
+    const cores_json = JSON.stringify(cores);
+
     try {
         await apiFetch('/config', {
             method: 'PUT',
-            body: JSON.stringify({ horario_abertura, horario_fechamento, taxa_entrega, chave_pix, whatsapp_numero, promocao_ativa, promocao_texto })
+            body: JSON.stringify({ horario_abertura, horario_fechamento, taxa_entrega, chave_pix, whatsapp_numero, promocao_ativa, promocao_texto, cores_json })
         });
         mostrarToast('Configurações atualizadas com sucesso!');
     } catch (err) {
         alert('Erro ao salvar configurações: ' + err.message);
+    }
+}
+
+// ---------- Aparência (logo, som de notificação e cores) ----------
+async function enviarLogo() {
+    const input = document.getElementById('arquivo-logo');
+    const arquivo = input.files[0];
+    if (!arquivo) return alert('Escolha um arquivo primeiro.');
+
+    if (arquivo.size > 2 * 1024 * 1024) {
+        return alert('Logo muito grande. Escolha uma de até 2MB.');
+    }
+
+    try {
+        const logo_base64 = await lerArquivoComoBase64(arquivo);
+        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ logo_base64 }) });
+        mostrarToast('Logo atualizada!');
+        carregarConfiguracoes();
+    } catch (err) {
+        alert('Erro ao enviar logo: ' + err.message);
+    }
+}
+
+async function removerLogo() {
+    if (!confirm('Restaurar a logo padrão?')) return;
+    try {
+        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ logo_base64: null }) });
+        carregarConfiguracoes();
+    } catch (err) {
+        alert('Erro ao restaurar logo: ' + err.message);
+    }
+}
+
+async function enviarSino() {
+    const input = document.getElementById('arquivo-sino');
+    const arquivo = input.files[0];
+    if (!arquivo) return alert('Escolha um arquivo primeiro.');
+
+    if (arquivo.size > 3.5 * 1024 * 1024) {
+        return alert('Arquivo de som muito grande. Escolha um de até 3.5MB.');
+    }
+
+    try {
+        const sino_base64 = await lerArquivoComoBase64(arquivo);
+        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ sino_base64 }) });
+        mostrarToast('Som de notificação atualizado!');
+        carregarConfiguracoes();
+    } catch (err) {
+        alert('Erro ao enviar som: ' + err.message);
+    }
+}
+
+async function removerSino() {
+    if (!confirm('Restaurar o som padrão?')) return;
+    try {
+        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ sino_base64: null }) });
+        carregarConfiguracoes();
+    } catch (err) {
+        alert('Erro ao restaurar som: ' + err.message);
+    }
+}
+
+const CORES_PADRAO = {
+    '--cor-verde': '#0A6C40', '--cor-verde-escuro': '#084F30',
+    '--cor-vermelho': '#A5273A', '--cor-vermelho-escuro': '#7D1D2C',
+    '--cor-terracota': '#C97B4A', '--cor-dourado': '#D9A441',
+    '--cor-creme': '#F2E4C6', '--cor-papel': '#EFE3C3',
+    '--cor-texto': '#2E2A26', '--cor-branco': '#FFFFFF',
+    '--cor-marcador': '#BFE3EF', '--cor-superficie': '#FFFFFF',
+    '--cor-borda-suave': '#E5DCC3'
+};
+
+async function restaurarCoresPadrao() {
+    if (!confirm('Restaurar todas as cores para o padrão original?')) return;
+    document.querySelectorAll('.cor-tema').forEach(input => {
+        input.value = CORES_PADRAO[input.dataset.var];
+    });
+    try {
+        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ cores_json: null }) });
+        mostrarToast('Cores restauradas!');
+        carregarConfiguracoes();
+    } catch (err) {
+        alert('Erro ao restaurar cores: ' + err.message);
     }
 }
 
@@ -431,9 +517,9 @@ function renderizarSaboresPromocao() {
         return;
     }
 
-    const nomeSecaoPorId = new Map(SECOES_ADMIN.map(s => [s.id, s.nome]));
+    const nomesCategoria = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
     container.innerHTML = '<div class="grade-selecao-itens">' + PRODUTOS_ADMIN.sabores.map(s => `
-        <label class="opcao-selecao-item"><input type="checkbox" name="promo-sabores" value="${s.id}"> ${escapeHtml(s.nome)} <small>(${escapeHtml(nomeSecaoPorId.get(s.secao_id) || '')})</small></label>
+        <label class="opcao-selecao-item"><input type="checkbox" name="promo-sabores" value="${s.id}"> ${escapeHtml(s.nome)} <small>(${nomesCategoria[s.categoria] || s.categoria})</small></label>
     `).join('') + '</div>';
 
     container.onchange = () => {
@@ -541,15 +627,10 @@ async function carregarPedidos() {
 // comanda (enquanto não tem impressora, o atendente lê direto daqui).
 function descreverItem(item) {
     if (item.tipo_item === 'pizza') {
-        // pizza_categoria já vem do servidor como o NOME da seção (ex:
-        // "Tradicional", ou qualquer nome que o admin tiver criado) - não
-        // precisa mais traduzir de um ENUM fixo. Pizzas de promoção não têm
-        // seção (pizza_categoria vem null do servidor); usamos nome_item,
-        // que só vem preenchido nesses casos, pra saber que é promoção.
+        const nomesCategoria = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
         const sabores = Array.isArray(item.sabores) ? item.sabores : (item.sabores ? JSON.parse(item.sabores) : []);
-        const rotuloPromocao = item.nome_item ? `[${escapeHtml(item.nome_item)}] ` : '';
-        const nomeSecao = item.pizza_categoria ? `${escapeHtml(item.pizza_categoria)} ` : '';
-        return `${rotuloPromocao}${item.quantidade}x Pizza ${nomeSecao}(${item.fatias} fatias) - ${escapeHtml(sabores.join(', '))}${item.borda ? ' + borda ' + escapeHtml(item.borda) : ''}`;
+        const rotuloPromocao = item.pizza_categoria === 'promocao' && item.nome_item ? `[${escapeHtml(item.nome_item)}] ` : '';
+        return `${rotuloPromocao}${item.quantidade}x Pizza ${nomesCategoria[item.pizza_categoria] || ''} (${item.fatias} fatias) - ${escapeHtml(sabores.join(', '))}${item.borda ? ' + borda ' + escapeHtml(item.borda) : ''}`;
     }
     const nome = item.nome_item ? escapeHtml(item.nome_item) : (item.tipo_item === 'bebida' ? 'Bebida (pedido antigo)' : 'Item (pedido antigo)');
     return `${item.quantidade}x ${nome} (R$ ${Number(item.preco_unitario).toFixed(2)} cada)`;
@@ -732,23 +813,23 @@ async function carregarPrecosAdmin() {
     PRECOS_ADMIN = await apiFetch('/precos-pizza');
 }
 
-function obterPrecoAdmin(secaoId, fatias) {
-    const item = PRECOS_ADMIN.find(p => p.secao_id === Number(secaoId) && Number(p.fatias) === Number(fatias));
+function obterPrecoAdmin(categoria, fatias) {
+    const item = PRECOS_ADMIN.find(p => p.categoria === categoria && Number(p.fatias) === Number(fatias));
     return item ? Number(item.preco) : null;
 }
 
 function carregarSaboresAdmin() {
-    const secaoId = document.getElementById('adm-categoria').value;
+    const categoria = document.getElementById('adm-categoria').value;
     const container = document.getElementById('adm-container-sabores');
 
-    if (!secaoId) {
-        container.innerHTML = '<p class="carregando">Selecione a seção primeiro.</p>';
+    if (!categoria) {
+        container.innerHTML = '<p class="carregando">Selecione a categoria primeiro.</p>';
         return;
     }
 
-    const sabores = PRODUTOS_ADMIN.sabores.filter(s => s.secao_id === Number(secaoId));
+    const sabores = PRODUTOS_ADMIN.sabores.filter(s => s.categoria === categoria);
     if (sabores.length === 0) {
-        container.innerHTML = '<p class="erro">Nenhum sabor cadastrado nessa seção.</p>';
+        container.innerHTML = '<p class="erro">Nenhum sabor cadastrado nessa categoria.</p>';
         return;
     }
 
@@ -768,12 +849,12 @@ function carregarSaboresAdmin() {
 }
 
 function atualizarPrecoAdmin() {
-    const secaoId = document.getElementById('adm-categoria').value;
+    const categoria = document.getElementById('adm-categoria').value;
     const fatias = document.getElementById('adm-fatias').value;
     const info = document.getElementById('adm-preco-tamanho');
-    if (!secaoId || !fatias) { info.textContent = ''; return; }
+    if (!categoria || !fatias) { info.textContent = ''; return; }
 
-    const preco = obterPrecoAdmin(secaoId, fatias);
+    const preco = obterPrecoAdmin(categoria, fatias);
     info.textContent = preco !== null ? `Preço da pizza: R$ ${preco.toFixed(2)}` : 'Preço não configurado.';
 }
 
@@ -798,7 +879,7 @@ function controlarTrocoAdmin(valor) {
 
 async function lancarPedidoAdmin() {
     const nome = document.getElementById('adm-nome').value.trim();
-    const secaoId = document.getElementById('adm-categoria').value;
+    const categoria = document.getElementById('adm-categoria').value;
     const fatias = document.getElementById('adm-fatias').value;
     const saboresMarcados = [...document.querySelectorAll('input[name="adm-sabores"]:checked')];
     const bordaSelect = document.getElementById('adm-borda');
@@ -810,13 +891,10 @@ async function lancarPedidoAdmin() {
     const troco = document.getElementById('adm-troco').value;
 
     if (!nome) return alert('Digite o nome do cliente.');
-    if (!secaoId || !fatias) return alert('Escolha a seção e o tamanho da pizza.');
+    if (!categoria || !fatias) return alert('Escolha categoria e tamanho da pizza.');
     if (saboresMarcados.length === 0) return alert('Escolha ao menos um sabor.');
     if (tipoEntrega === 'entrega' && (!telefone || !endereco)) return alert('Telefone e endereço são obrigatórios para entrega.');
 
-    // Não mandamos a seção no item: o servidor SEMPRE deriva a seção (e o
-    // preço) a partir dos sabor_ids escolhidos, nunca confia no que o
-    // cliente/admin envia - então esse campo aqui não seria usado mesmo.
     const payload = {
         cliente_nome: nome,
         telefone: telefone || null,
@@ -827,6 +905,7 @@ async function lancarPedidoAdmin() {
         itens: [
             {
                 tipo_item: 'pizza',
+                pizza_categoria: categoria,
                 fatias: Number(fatias),
                 sabor_ids: saboresMarcados.map(s => Number(s.value)),
                 borda_id: bordaSelect.value ? Number(bordaSelect.value) : null,
@@ -840,52 +919,11 @@ async function lancarPedidoAdmin() {
         const resultado = await apiFetch('/pedidos/admin', { method: 'POST', body: JSON.stringify(payload) });
         alert(`Pedido #${resultado.pedidoId} lançado com sucesso! Total: R$ ${Number(resultado.total).toFixed(2)}`);
         document.getElementById('form-pedido-admin').reset();
-        document.getElementById('adm-container-sabores').innerHTML = '<p class="carregando">Selecione a seção primeiro.</p>';
+        document.getElementById('adm-container-sabores').innerHTML = '<p class="carregando">Selecione a categoria primeiro.</p>';
         carregarPedidos();
         trocarAba('pedidos');
     } catch (err) {
         alert('Erro ao lançar pedido: ' + err.message);
-    }
-}
-
-// ---------- Seções do cardápio ----------
-// Seções não são mais um ENUM fixo (tradicional/especial/doce/promocao) -
-// o admin cria/renomeia/apaga livremente, e o front busca a lista atual em
-// /secoes pra montar selects, chips e a grade de preços dinamicamente.
-async function carregarSecoesAdmin() {
-    SECOES_ADMIN = await apiFetch('/secoes');
-}
-
-// Preenche os dois <select> que dependem da lista de seções: o de cadastro
-// de produto (só usado quando tipo = sabor de pizza) e o de criação manual
-// de pedido.
-function preencherSelectsDeSecao() {
-    const opcoes = '<option value="">Selecione...</option>' +
-        SECOES_ADMIN.map(s => `<option value="${s.id}">${escapeHtml(s.nome)}</option>`).join('');
-    document.getElementById('prod-categoria').innerHTML = opcoes;
-    document.getElementById('adm-categoria').innerHTML = opcoes;
-}
-
-// Um chip por seção existente + os 3 tipos fixos que não são "sabor de
-// pizza" (borda/bebida/outros não têm seção, então não fazem parte de
-// /secoes). Prefixamos "secao-" no data-filtro pra diferenciar dos tipos
-// fixos na hora de filtrar em aplicarFiltroCardapio().
-function renderizarChipsCardapio() {
-    const container = document.getElementById('chips-categoria-admin');
-    const chipsSecoes = SECOES_ADMIN.map(s =>
-        `<button class="chip-admin" data-filtro="secao-${s.id}">${escapeHtml(s.nome)}</button>`
-    ).join('');
-    const chipsFixos = `
-        <button class="chip-admin" data-filtro="borda">Bordas</button>
-        <button class="chip-admin" data-filtro="bebida">Bebidas</button>
-        <button class="chip-admin" data-filtro="outros">Outros</button>
-    `;
-    container.innerHTML = chipsSecoes + chipsFixos;
-
-    const primeiroChip = container.querySelector('.chip-admin');
-    if (primeiroChip) {
-        primeiroChip.classList.add('ativo');
-        FILTRO_CARDAPIO_ATUAL = primeiroChip.dataset.filtro;
     }
 }
 
@@ -899,9 +937,7 @@ function alternarCampoCategoria() {
 }
 
 let CARDAPIO_ADMIN_TODOS = [];
-// Preenchido de verdade em renderizarChipsCardapio(), assim que as seções
-// carregam - o valor aqui é só um placeholder até lá.
-let FILTRO_CARDAPIO_ATUAL = '';
+let FILTRO_CARDAPIO_ATUAL = 'tradicional';
 
 function renderizarCardapio(produtos) {
     CARDAPIO_ADMIN_TODOS = produtos;
@@ -912,8 +948,8 @@ function aplicarFiltroCardapio() {
     const termo = document.getElementById('busca-cardapio-admin').value.trim().toLowerCase();
 
     const filtrados = CARDAPIO_ADMIN_TODOS.filter(p => {
-        const bateCategoria = FILTRO_CARDAPIO_ATUAL.startsWith('secao-')
-            ? p.tipo === 'sabor_pizza' && p.secao_id === Number(FILTRO_CARDAPIO_ATUAL.slice('secao-'.length))
+        const bateCategoria = ['tradicional', 'especial', 'doce', 'promocao'].includes(FILTRO_CARDAPIO_ATUAL)
+            ? p.tipo === 'sabor_pizza' && p.categoria === FILTRO_CARDAPIO_ATUAL
             : p.tipo === FILTRO_CARDAPIO_ATUAL;
         const bateBusca = !termo || p.nome.toLowerCase().includes(termo);
         return bateCategoria && bateBusca;
@@ -977,15 +1013,12 @@ async function trocarFotoProduto(id, input) {
 async function adicionarProduto() {
     const nome = document.getElementById('prod-nome').value.trim();
     const tipo = document.getElementById('prod-tipo').value;
-    const secaoIdSelecionado = document.getElementById('prod-categoria').value;
+    const categoria = document.getElementById('prod-categoria').value;
     const descricao = document.getElementById('prod-descricao').value.trim();
     const preco_base = document.getElementById('prod-preco').value;
     const arquivoImagem = document.getElementById('prod-imagem').files[0];
 
     if (!nome) return alert('Digite o nome do produto.');
-    if (tipo === 'sabor_pizza' && !secaoIdSelecionado) {
-        return alert('Escolha a seção do cardápio para esse sabor.');
-    }
     if (arquivoImagem && arquivoImagem.size > 5 * 1024 * 1024) {
         return alert('Imagem muito grande. Escolha uma de até 5MB.');
     }
@@ -994,14 +1027,7 @@ async function adicionarProduto() {
         const imagem_base64 = arquivoImagem ? await lerArquivoComoBase64(arquivoImagem) : null;
         await apiFetch('/produtos', {
             method: 'POST',
-            body: JSON.stringify({
-                nome,
-                tipo,
-                secao_id: secaoIdSelecionado ? Number(secaoIdSelecionado) : null,
-                descricao,
-                preco_base: Number(preco_base || 0),
-                imagem_base64
-            })
+            body: JSON.stringify({ nome, tipo, categoria, descricao, preco_base: Number(preco_base || 0), imagem_base64 })
         });
         document.getElementById('prod-nome').value = '';
         document.getElementById('prod-descricao').value = '';
@@ -1035,18 +1061,22 @@ async function excluirProduto(id) {
 }
 
 // ---------- Grade de preços ----------
-// As seções agora vêm de SECOES_ADMIN (dinâmicas), não de uma lista fixa -
-// cada linha da tabela é uma seção existente no momento.
 function renderizarTabelaPrecos() {
+    const categorias = [
+        { chave: 'tradicional', nome: 'Tradicional' },
+        { chave: 'especial', nome: 'Especial' },
+        { chave: 'doce', nome: 'Doce' },
+        { chave: 'promocao', nome: 'Promoção' }
+    ];
     const fatiasList = [4, 6, 8, 12, 14];
 
     const corpo = document.getElementById('corpo-tabela-precos');
-    corpo.innerHTML = SECOES_ADMIN.map(secao => `
+    corpo.innerHTML = categorias.map(cat => `
         <tr>
-            <td>${escapeHtml(secao.nome)}</td>
+            <td>${cat.nome}</td>
             ${fatiasList.map(f => {
-                const preco = obterPrecoAdmin(secao.id, f);
-                return `<td><input type="number" step="0.01" data-secao-id="${secao.id}" data-fatias="${f}" value="${preco !== null ? preco : 0}"></td>`;
+                const preco = obterPrecoAdmin(cat.chave, f);
+                return `<td><input type="number" step="0.01" data-categoria="${cat.chave}" data-fatias="${f}" value="${preco !== null ? preco : 0}"></td>`;
             }).join('')}
         </tr>
     `).join('');
@@ -1055,7 +1085,7 @@ function renderizarTabelaPrecos() {
 async function salvarPrecos() {
     const inputs = document.querySelectorAll('#corpo-tabela-precos input');
     const precos = [...inputs].map(input => ({
-        secao_id: Number(input.dataset.secaoId),
+        categoria: input.dataset.categoria,
         fatias: Number(input.dataset.fatias),
         preco: Number(input.value)
     }));

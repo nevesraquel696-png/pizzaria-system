@@ -17,7 +17,6 @@ const precosRoutes = require('./routes/precos');
 const imagensRoutes = require('./routes/imagens');
 const cuponsRoutes = require('./routes/cupons');
 const promocoesRoutes = require('./routes/promocoes');
-const secoesRoutes = require('./routes/secoes');
 
 // Em produção, defina FRONTEND_ORIGINS com a(s) URL(s) real(is) do site
 // (separadas por vírgula), ex: https://minhapizzaria.com,https://www.minhapizzaria.com
@@ -34,14 +33,6 @@ if (origensPermitidas.length === 0) {
 }
 
 const app = express();
-// Render (e a maioria dos hosts) coloca a aplicação atrás de um proxy reverso,
-// que adiciona o cabeçalho X-Forwarded-For com o IP real do cliente. Sem
-// "trust proxy", o Express ignora esse cabeçalho por segurança - e o
-// express-rate-limit (usado abaixo em limitarGeral etc.) lança um erro ao
-// tentar identificar o IP do cliente, derrubando a requisição com 500 antes
-// mesmo de chegar nas rotas. O valor 1 diz pro Express confiar em um único
-// "salto" de proxy (o do Render), que é o caso aqui.
-app.set('trust proxy', 1);
 app.use(helmet()); // cabeçalhos de segurança padrão (X-Content-Type-Options, HSTS, etc.)
 app.use(compression()); // reduz o tamanho das respostas, ajuda em conexões mais lentas
 app.use(cors(configCors));
@@ -72,7 +63,6 @@ app.use('/api/precos-pizza', precosRoutes);
 app.use('/api/imagens-tamanho', imagensRoutes);
 app.use('/api/cupons', cuponsRoutes);
 app.use('/api/promocoes', promocoesRoutes);
-app.use('/api/secoes-cardapio', secoesRoutes);
 
 app.get('/api/status', (req, res) => {
     res.json({ status: 'online' });

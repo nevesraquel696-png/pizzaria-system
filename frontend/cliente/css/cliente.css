@@ -285,15 +285,11 @@ body {
     padding: 10px 10px 10px 12px;
 }
 
-.linha-produto-clicavel {
-    cursor: pointer;
-    user-select: none;
-}
-
-.icone-add-rapido {
+.btn-add-rapido {
     flex-shrink: 0;
     background: var(--cor-verde-escuro);
     color: #fff;
+    border: none;
     border-radius: 50%;
     width: 32px;
     height: 32px;
@@ -302,34 +298,13 @@ body {
     justify-content: center;
 }
 
-.icone-add-rapido svg {
+.btn-add-rapido .icone {
     width: 15px;
     height: 15px;
 }
 
-.badge-qtd-rapida {
-    flex-shrink: 0;
-    background: var(--cor-vermelho);
-    color: #fff;
-    font-weight: 700;
-    font-size: 12px;
-    min-width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 4px;
-}
-
-@keyframes piscaAdicionado {
-    0% { box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 3px 10px rgba(0,0,0,0.05); }
-    30% { box-shadow: 0 0 0 3px rgba(10,108,64,0.35); border-color: var(--cor-verde-escuro); }
-    100% { box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 3px 10px rgba(0,0,0,0.05); }
-}
-
-.card-adicionado {
-    animation: piscaAdicionado 0.5s ease;
+.btn-add-rapido:active {
+    background: var(--cor-verde);
 }
 
 .carregando,
@@ -485,16 +460,6 @@ body {
     margin: 14px 0 5px;
 }
 
-.titulo-secao-checkout {
-    font-family: var(--fonte-display);
-    font-weight: 400;
-    font-size: 16px;
-    color: var(--cor-verde-escuro);
-    margin: 22px 0 4px;
-    padding-top: 14px;
-    border-top: 1px solid #f0ece0;
-}
-
 .sheet select,
 .sheet input,
 .sheet textarea {
@@ -600,61 +565,11 @@ body {
 
 .linha-item-carrinho {
     display: flex;
-    align-items: center;
+    justify-content: space-between;
+    align-items: flex-start;
     padding: 10px 0;
     border-bottom: 1px solid #f0f0f0;
     gap: 10px;
-}
-
-.linha-item-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.stepper-carrinho {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-}
-
-.btn-qtd {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    border: 1.5px solid #e2d4ae;
-    background: #fff;
-    font-size: 16px;
-    font-weight: 700;
-    line-height: 1;
-    color: var(--cor-verde-escuro);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.btn-qtd:active {
-    background: var(--cor-creme);
-}
-
-.stepper-carrinho span {
-    min-width: 16px;
-    text-align: center;
-    font-weight: 700;
-}
-
-.btn-remover-item {
-    flex-shrink: 0;
-    background: none;
-    border: none;
-    color: var(--cor-vermelho);
-    width: 26px;
-    height: 26px;
-}
-
-.btn-remover-item .icone {
-    width: 18px;
-    height: 18px;
 }
 
 .preco-item {
@@ -906,77 +821,3 @@ body {
 }
 
 .rodape-copyright { margin-top: 18px; font-size: 11px; opacity: 0.6; }
-/* ---------- Acompanhar meu pedido ---------- */
-.erro-campo {
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--cor-vermelho);
-    margin: 8px 0 0;
-}
-
-.rastreio-numero {
-    text-align: center;
-    font-size: 15px;
-    margin: 0 0 18px;
-}
-
-.linha-status {
-    display: flex;
-    justify-content: space-between;
-    gap: 4px;
-    margin: 0 0 20px;
-}
-
-.etapa-status {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 6px;
-    font-size: 10.5px;
-    font-weight: 600;
-    color: #b7ae9c;
-}
-
-.etapa-status .ponto {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #e8e1d1;
-    border: 2px solid #e8e1d1;
-}
-
-.etapa-status.concluida {
-    color: var(--cor-verde-escuro);
-}
-.etapa-status.concluida .ponto {
-    background: var(--cor-verde-escuro);
-    border-color: var(--cor-verde-escuro);
-}
-
-.etapa-status.atual {
-    color: var(--cor-vermelho);
-}
-.etapa-status.atual .ponto {
-    background: #fff;
-    border-color: var(--cor-vermelho);
-    box-shadow: 0 0 0 3px rgba(165, 39, 58, 0.18);
-}
-
-.rastreio-itens {
-    background: var(--cor-creme);
-    border-radius: 10px;
-    padding: 10px 14px;
-    margin-bottom: 10px;
-}
-.rastreio-itens p {
-    font-size: 13px;
-    margin: 6px 0;
-}
-
-.rastreio-total {
-    font-weight: 700;
-    text-align: right;
-    margin: 0 0 6px;
-}

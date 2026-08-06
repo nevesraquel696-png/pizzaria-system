@@ -1,4 +1,4 @@
-const { PrecoPizza, FATIAS_VALIDAS } = require('../models/PrecoPizza');
+const { PrecoPizza, CATEGORIAS_VALIDAS, FATIAS_VALIDAS } = require('../models/PrecoPizza');
 const cache = require('../utils/cache');
 
 exports.listar = async (req, res) => {
@@ -14,8 +14,8 @@ exports.listar = async (req, res) => {
     }
 };
 
-// Atualiza várias combinações seção/fatias de uma vez.
-// Body esperado: { precos: [{ secao_id, fatias, preco }, ...] }
+// Atualiza várias combinações categoria/fatias de uma vez.
+// Body esperado: { precos: [{ categoria, fatias, preco }, ...] }
 exports.atualizarEmLote = async (req, res) => {
     const { precos } = req.body;
     if (!Array.isArray(precos) || precos.length === 0) {
@@ -24,7 +24,7 @@ exports.atualizarEmLote = async (req, res) => {
 
     try {
         // Todas as atualizações em paralelo, em vez de uma esperando a outra
-        await Promise.all(precos.map(item => PrecoPizza.atualizarPreco(item.secao_id, item.fatias, item.preco)));
+        await Promise.all(precos.map(item => PrecoPizza.atualizarPreco(item.categoria, item.fatias, item.preco)));
         cache.invalidar('precos-pizza');
         res.json({ mensagem: 'Preços atualizados com sucesso.' });
     } catch (err) {
@@ -32,6 +32,6 @@ exports.atualizarEmLote = async (req, res) => {
     }
 };
 
-exports.fatiasValidas = (req, res) => {
-    res.json({ fatias: FATIAS_VALIDAS });
+exports.categoriasEFatiasValidas = (req, res) => {
+    res.json({ categorias: CATEGORIAS_VALIDAS, fatias: FATIAS_VALIDAS });
 };

@@ -5,7 +5,7 @@ const autenticar = require('../middleware/autenticacao');
 const { autorizarNiveis } = require('../middleware/autenticacao');
 
 router.get('/', precosController.listar); // público, o cliente precisa saber os preços
-router.get('/opcoes', precosController.fatiasValidas); // público
+router.get('/opcoes', precosController.categoriasEFatiasValidas); // público
 router.put('/', autenticar, autorizarNiveis('admin'), precosController.atualizarEmLote); // só admin edita
 
 module.exports = router;

@@ -12,7 +12,7 @@
     <!-- Tela de login -->
     <div id="tela-login" class="tela-login">
         <div class="card-login">
-            <img src="../imagens/logo.png" alt="Estação da Pizza" class="logo-login">
+            <img src="../imagens/logo.png" alt="Estação da Pizza" class="logo-login logo-app">
             <span class="rotulo-estacao">Acesso da equipe</span>
             <h2>Login Administrativo</h2>
             <input type="email" id="login-email" placeholder="Email">
@@ -26,7 +26,7 @@
     <div id="painel" class="painel-shell" style="display:none;">
         <header class="topbar">
             <div class="logo-topo">
-                <img src="../imagens/logo.png" alt="Estação da Pizza">
+                <img src="../imagens/logo.png" alt="Estação da Pizza" class="logo-app">
                 <h2>Painel Administrativo</h2>
             </div>
             <div class="acoes-cabecalho">
@@ -86,10 +86,13 @@
                 <label>Nome do Cliente: <input type="text" id="adm-nome" required></label>
 
                 <div class="linha-form-2">
-                    <label>Seção da Pizza:
-                        <!-- Opções preenchidas dinamicamente por preencherSelectsDeSecao(), a partir de /secoes -->
+                    <label>Categoria da Pizza:
                         <select id="adm-categoria" required onchange="carregarSaboresAdmin()">
                             <option value="">Selecione...</option>
+                            <option value="tradicional">Tradicional</option>
+                            <option value="especial">Especial</option>
+                            <option value="doce">Doce</option>
+                            <option value="promocao">Promoção</option>
                         </select>
                     </label>
 
@@ -159,10 +162,12 @@
                                 <option value="outros">Outros</option>
                             </select>
                         </label>
-                        <label id="campo-categoria-produto">Seção do Cardápio (só para sabor de pizza):
-                            <!-- Opções preenchidas dinamicamente por preencherSelectsDeSecao(), a partir de /secoes -->
+                        <label id="campo-categoria-produto">Categoria (só para sabor de pizza):
                             <select id="prod-categoria">
-                                <option value="">Selecione...</option>
+                                <option value="tradicional">Tradicional</option>
+                                <option value="especial">Especial</option>
+                                <option value="doce">Doce</option>
+                                <option value="promocao">Promoção</option>
                             </select>
                         </label>
                         <label id="campo-descricao-produto">Descrição (ingredientes, só para sabor de pizza):
@@ -178,23 +183,30 @@
                 </div>
                 <div class="painel-card">
                     <h4 class="titulo-card">Itens Cadastrados</h4>
-                    <!-- Preenchido dinamicamente por renderizarChipsCardapio(): um chip por seção existente + bordas/bebidas/outros -->
-                    <nav class="chips-categoria-admin" id="chips-categoria-admin"></nav>
+                    <nav class="chips-categoria-admin" id="chips-categoria-admin">
+                        <button class="chip-admin ativo" data-filtro="tradicional">Tradicional</button>
+                        <button class="chip-admin" data-filtro="especial">Especial</button>
+                        <button class="chip-admin" data-filtro="doce">Doce</button>
+                        <button class="chip-admin" data-filtro="promocao">Promoção</button>
+                        <button class="chip-admin" data-filtro="borda">Bordas</button>
+                        <button class="chip-admin" data-filtro="bebida">Bebidas</button>
+                        <button class="chip-admin" data-filtro="outros">Outros</button>
+                    </nav>
                     <input type="text" id="busca-cardapio-admin" placeholder="Buscar por nome...">
                     <ul id="lista-produtos-cardapio"><li>Carregando...</li></ul>
                 </div>
             </div>
         </section>
 
-        <!-- ABA: Grade de preços por seção/tamanho -->
+        <!-- ABA: Grade de preços por categoria/tamanho -->
         <section id="aba-precos" class="aba-conteudo" style="display:none;">
-            <h3>Preços por Seção e Tamanho</h3>
-            <p class="dica">Esses valores valem para todos os sabores da seção, igual ao cardápio físico.</p>
+            <h3>Preços por Categoria e Tamanho</h3>
+            <p class="dica">Esses valores valem para todos os sabores da categoria, igual ao cardápio físico.</p>
             <div class="painel-card">
                 <div class="tabela-precos-scroll">
                     <table id="tabela-precos">
                         <thead>
-                            <tr><th>Seção</th><th>4 fatias</th><th>6 fatias</th><th>8 fatias</th><th>12 fatias</th><th>14 fatias</th></tr>
+                            <tr><th>Categoria</th><th>4 fatias</th><th>6 fatias</th><th>8 fatias</th><th>12 fatias</th><th>14 fatias</th></tr>
                         </thead>
                         <tbody id="corpo-tabela-precos"></tbody>
                     </table>
@@ -280,6 +292,76 @@
         <section id="aba-config" class="aba-conteudo" style="display:none;">
 
             <div class="painel-card secao-config">
+                <h3 class="cabecalho-secao-config"><span class="icone-secao-config icone" data-icone="imagem"></span>Aparência</h3>
+                <p class="dica">Personalize a logo, as cores e o som de notificação usados na loja, no admin e na cozinha. Deixe em branco / clique em "Restaurar padrão" para voltar ao visual original.</p>
+
+                <div class="linha-config" style="align-items:flex-start; flex-wrap:wrap; gap:24px;">
+                    <div>
+                        <label>Logo</label>
+                        <div class="preview-imagem-categoria" style="width:84px; height:84px;">
+                            <img id="preview-logo" src="../imagens/logo.png" alt="Logo atual" style="max-width:100%; max-height:100%; object-fit:contain;">
+                        </div>
+                        <input type="file" accept="image/*" id="arquivo-logo">
+                        <div class="acoes-imagem-categoria">
+                            <button onclick="enviarLogo()">Enviar</button>
+                            <button onclick="removerLogo()" class="btn-secundario-admin">Restaurar padrão</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label>Som de notificação (novo pedido)</label>
+                        <audio id="preview-sino" controls src="../sounds/sino.mp3" style="display:block; margin:6px 0; max-width:220px;"></audio>
+                        <input type="file" accept="audio/*" id="arquivo-sino">
+                        <div class="acoes-imagem-categoria">
+                            <button onclick="enviarSino()">Enviar</button>
+                            <button onclick="removerSino()" class="btn-secundario-admin">Restaurar padrão</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grade-cores" style="margin-top:18px;">
+                    <div class="grupo-cores">
+                        <h4 class="titulo-grupo-cores">Cores da marca</h4>
+                        <p class="dica">Verde e vermelho aparecem em botões, títulos e links. As versões "escuro" entram automaticamente no hover.</p>
+                        <div class="grade-cores-itens">
+                            <label>Verde <input type="color" class="cor-tema" data-var="--cor-verde" value="#0A6C40"></label>
+                            <label>Verde escuro (hover) <input type="color" class="cor-tema" data-var="--cor-verde-escuro" value="#084F30"></label>
+                            <label>Vermelho <input type="color" class="cor-tema" data-var="--cor-vermelho" value="#A5273A"></label>
+                            <label>Vermelho escuro (hover) <input type="color" class="cor-tema" data-var="--cor-vermelho-escuro" value="#7D1D2C"></label>
+                            <label>Dourado (promoções) <input type="color" class="cor-tema" data-var="--cor-dourado" value="#D9A441"></label>
+                            <label>Terracota (detalhes) <input type="color" class="cor-tema" data-var="--cor-terracota" value="#C97B4A"></label>
+                        </div>
+                    </div>
+
+                    <div class="grupo-cores">
+                        <h4 class="titulo-grupo-cores">Fundo e seções</h4>
+                        <p class="dica">Definem o fundo da página, dos cards de produto e as bordas entre eles.</p>
+                        <div class="grade-cores-itens">
+                            <label>Fundo da página <input type="color" class="cor-tema" data-var="--cor-creme" value="#F2E4C6"></label>
+                            <label>Fundo das seções <input type="color" class="cor-tema" data-var="--cor-papel" value="#EFE3C3"></label>
+                            <label>Fundo dos cards <input type="color" class="cor-tema" data-var="--cor-superficie" value="#FFFFFF"></label>
+                            <label>Borda entre elementos <input type="color" class="cor-tema" data-var="--cor-borda-suave" value="#E5DCC3"></label>
+                        </div>
+                    </div>
+
+                    <div class="grupo-cores">
+                        <h4 class="titulo-grupo-cores">Texto</h4>
+                        <p class="dica">Cor do texto em geral, texto sobre fundo escuro e o destaque atrás do preço.</p>
+                        <div class="grade-cores-itens">
+                            <label>Texto principal <input type="color" class="cor-tema" data-var="--cor-texto" value="#2E2A26"></label>
+                            <label>Texto sobre fundo escuro <input type="color" class="cor-tema" data-var="--cor-branco" value="#FFFFFF"></label>
+                            <label>Marca-texto (etiqueta de preço) <input type="color" class="cor-tema" data-var="--cor-marcador" value="#BFE3EF"></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="acoes-imagem-categoria" style="margin-top:10px;">
+                    <button type="button" onclick="restaurarCoresPadrao()" class="btn-secundario-admin">Restaurar cores padrão</button>
+                </div>
+                <p class="dica">As cores são salvas junto com o botão "Salvar Configurações" abaixo.</p>
+            </div>
+
+
+            <div class="painel-card secao-config">
                 <h3 class="cabecalho-secao-config"><span class="icone-secao-config icone" data-icone="relogio"></span>Horário de Funcionamento</h3>
                 <div class="linha-config">
                     <label>Abre: <input type="time" id="abertura" value="17:30"></label>
@@ -328,12 +410,12 @@
         </div>
     </div>
 
-    <audio id="som-sino" src="../sounds/sino.mp3" preload="auto"></audio>
+    <audio id="som-sino" class="sino-app" src="../sounds/sino.mp3" preload="auto"></audio>
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="../js/api.js"></script>
-    <script src="../js/tema.js"></script>
     <script src="../js/icones.js"></script>
+    <script src="../js/tema.js"></script>
     <script src="js/imprimir.js"></script>
     <script src="js/admin.js"></script>
 </body>

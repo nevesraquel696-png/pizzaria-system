@@ -19,17 +19,17 @@ exports.listar = async (req, res) => {
 };
 
 exports.criar = async (req, res) => {
-    const { nome, tipo, secao_id, preco_base, descricao, imagem_base64 } = req.body;
+    const { nome, tipo, categoria, preco_base, descricao, imagem_base64 } = req.body;
     if (!nome || !tipo) return res.status(400).json({ erro: 'Nome e tipo são obrigatórios.' });
-    if (tipo === 'sabor_pizza' && !secao_id) {
-        return res.status(400).json({ erro: 'Sabores de pizza precisam de uma seção do cardápio.' });
+    if (tipo === 'sabor_pizza' && !categoria) {
+        return res.status(400).json({ erro: 'Sabores de pizza precisam de uma categoria.' });
     }
     if (imagem_base64 && !validarTamanhoImagem(imagem_base64)) {
         return res.status(400).json({ erro: 'Imagem muito grande (máximo ~5MB).' });
     }
 
     try {
-        const id = await Produto.criar({ nome, tipo, secao_id, preco_base: preco_base || 0, descricao, imagem_base64 });
+        const id = await Produto.criar({ nome, tipo, categoria, preco_base: preco_base || 0, descricao, imagem_base64 });
         invalidarCacheProdutos();
         res.status(201).json({ mensagem: 'Produto cadastrado com sucesso.', id });
     } catch (err) {
