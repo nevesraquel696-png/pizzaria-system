@@ -46,4 +46,15 @@ const limitarBuscaCliente = rateLimit({
     message: { erro: 'Muitas consultas em pouco tempo. Aguarde alguns minutos.' }
 });
 
-module.exports = { limitarLogin, limitarCriacaoPedido, limitarGeral, limitarBuscaCliente };
+// Verificação da senha (PIN) de 4 números do cliente: limite apertado por
+// IP como primeira camada - a proteção principal (bloqueio por telefone
+// depois de tentativas erradas) fica no próprio model ClientePin.
+const limitarVerificarPin = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 15,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { erro: 'Muitas tentativas em pouco tempo. Aguarde alguns minutos.' }
+});
+
+module.exports = { limitarLogin, limitarCriacaoPedido, limitarGeral, limitarBuscaCliente, limitarVerificarPin };

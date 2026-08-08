@@ -4,6 +4,7 @@ const Configuracao = require('../models/Configuracao');
 const { PrecoPizza, FATIAS_VALIDAS } = require('../models/PrecoPizza');
 const Cupom = require('../models/Cupom');
 const Promocao = require('../models/Promocao');
+const ClientePin = require('../models/ClientePin');
 const validarCupom = require('../utils/validarCupom');
 const { obterDiaOperacional } = require('../utils/diaOperacional');
 
@@ -227,6 +228,23 @@ async function processarECriarPedido(req, mensagemSucesso) {
         await Cupom.incrementarUso(cupomAplicado.id);
     }
 
+    // Senha opcional: só cria se o cliente escolheu uma (campo criar_pin,
+    // 4 dígitos) e esse telefone ainda não tem senha. Nunca obrigatório -
+    // quem não quiser continua pedindo do mesmo jeito de sempre.
+    if (req.body.criar_pin && req.body.telefone) {
+        const digitosTelefone = String(req.body.telefone).replace(/\D/g, '');
+        const pin = String(req.body.criar_pin).trim();
+        if (/^\d{4}$/.test(pin) && digitosTelefone.length >= 10) {
+            try {
+                await ClientePin.criar(digitosTelefone, pin);
+            } catch (err) {
+                console.error('Erro ao criar senha do cliente:', err.message);
+                // Não falha o pedido por causa disso - a senha é um extra, o
+                // pedido em si já foi salvo e é o que importa de verdade.
+            }
+        }
+    }
+
     const io = req.app.get('io');
     io.emit('novoPedido', {
         pedidoId,
@@ -289,16 +307,56 @@ exports.buscarClientePorTelefone = async (req, res) => {
     }
 
     try {
+        // Se esse telefone tem senha cadastrada, NÃO devolve nome/endereço
+        // direto - só depois de confirmar a senha em /verificar-pin. Quem
+        // nunca criou senha continua exatamente como antes (sem quebrar
+        // nada pra quem já pediu antes dessa funcionalidade existir).
+        const temSenha = await ClientePin.existe(digitos);
+        if (temSenha) {
+            return res.json({ requer_pin: true });
+        }
+
         const cliente = await Pedido.buscarDadosClientePorTelefone(digitos);
         if (!cliente) return res.status(404).json({ erro: 'Nenhum pedido anterior encontrado com esse telefone.' });
 
         res.json({
+            requer_pin: false,
             cliente_nome: cliente.cliente_nome,
             endereco: cliente.endereco,
             tipo_entrega: cliente.tipo_entrega
         });
     } catch (err) {
         res.status(500).json({ erro: 'Erro ao buscar dados do cliente.' });
+    }
+};
+
+// Confirma a senha de 4 números pra liberar nome/endereço salvos desse
+// telefone. Bloqueio por tentativas erradas é controlado no próprio
+// ClientePin.verificar (por telefone, não por IP - ver comentário lá).
+exports.verificarPinCliente = async (req, res) => {
+    const digitos = String(req.params.telefone || '').replace(/\D/g, '');
+    const pin = String(req.body.pin || '').trim();
+
+    if (digitos.length < 10 || digitos.length > 11) {
+        return res.status(400).json({ erro: 'Telefone inválido.' });
+    }
+    if (!/^\d{4}$/.test(pin)) {
+        return res.status(400).json({ erro: 'Senha deve ter 4 números.' });
+    }
+
+    try {
+        const confere = await ClientePin.verificar(digitos, pin);
+        if (!confere) return res.status(401).json({ erro: 'Senha incorreta.' });
+
+        const cliente = await Pedido.buscarDadosClientePorTelefone(digitos);
+        res.json({
+            cliente_nome: cliente?.cliente_nome || null,
+            endereco: cliente?.endereco || null,
+            tipo_entrega: cliente?.tipo_entrega || null
+        });
+    } catch (err) {
+        // Mensagem de bloqueio por tentativas (vem do model) - 429 = "espere um pouco"
+        res.status(429).json({ erro: err.message });
     }
 };
 

@@ -7,7 +7,7 @@ body {
 /* ---------- Topo ---------- */
 .topo-loja {
     background:
-        radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+        radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
         linear-gradient(135deg, var(--cor-verde-escuro), var(--cor-verde));
     background-size: 4px 4px, 100% 100%;
     padding: 16px;
@@ -285,11 +285,15 @@ body {
     padding: 10px 10px 10px 12px;
 }
 
-.btn-add-rapido {
+.linha-produto-clicavel {
+    cursor: pointer;
+    user-select: none;
+}
+
+.icone-add-rapido {
     flex-shrink: 0;
     background: var(--cor-verde-escuro);
     color: #fff;
-    border: none;
     border-radius: 50%;
     width: 32px;
     height: 32px;
@@ -298,13 +302,34 @@ body {
     justify-content: center;
 }
 
-.btn-add-rapido .icone {
+.icone-add-rapido svg {
     width: 15px;
     height: 15px;
 }
 
-.btn-add-rapido:active {
-    background: var(--cor-verde);
+.badge-qtd-rapida {
+    flex-shrink: 0;
+    background: var(--cor-vermelho);
+    color: #fff;
+    font-weight: 700;
+    font-size: 12px;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 4px;
+}
+
+@keyframes piscaAdicionado {
+    0% { box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 3px 10px rgba(0,0,0,0.05); }
+    30% { box-shadow: 0 0 0 3px rgba(10,108,64,0.35); border-color: var(--cor-verde-escuro); }
+    100% { box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 3px 10px rgba(0,0,0,0.05); }
+}
+
+.card-adicionado {
+    animation: piscaAdicionado 0.5s ease;
 }
 
 .carregando,
@@ -792,8 +817,10 @@ body {
     color: var(--cor-vermelho);
     box-shadow: inset 0 3px 0 var(--cor-dourado);
 }
+
 .rodape-site {
-    padding: 24px 20px 100px; /* 100px embaixo pra não ficar atrás da nav-inferior fixa */
+    padding: 24px 20px 20px;
+    /* 100px embaixo pra não ficar atrás da nav-inferior fixa */
     background: var(--cor-verde-escuro);
     color: #fff;
     text-align: center;
@@ -806,18 +833,145 @@ body {
     gap: 10px;
     margin-bottom: 16px;
     padding-bottom: 16px;
-    border-bottom: 1px solid rgba(255,255,255,0.15);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
-.rodape-marca img { width: 40px; height: 40px; }
-.rodape-marca div { display: flex; flex-direction: column; text-align: left; }
-.rodape-marca strong { font-family: var(--fonte-display); font-size: 16px; }
-.rodape-marca span { font-size: 11px; opacity: 0.75; }
 
-.rodape-info p { margin: 6px 0; font-size: 13px; opacity: 0.9; }
+.rodape-marca img {
+    width: 40px;
+    height: 40px;
+}
+
+.rodape-marca div {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.rodape-marca strong {
+    font-family: var(--fonte-display);
+    font-size: 16px;
+}
+
+.rodape-marca span {
+    font-size: 11px;
+    opacity: 0.75;
+}
+
+.rodape-info p {
+    margin: 6px 0;
+    font-size: 13px;
+    opacity: 0.9;
+}
+
 .rodape-link {
-    display: inline-block; margin-top: 8px; color: #fff; font-weight: 600;
-    font-size: 13px; text-decoration: none; background: rgba(255,255,255,0.12);
-    padding: 6px 14px; border-radius: 20px;
+    display: inline-block;
+    margin-top: 8px;
+    color: #fff;
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.12);
+    padding: 6px 14px;
+    border-radius: 20px;
 }
 
-.rodape-copyright { margin-top: 18px; font-size: 11px; opacity: 0.6; }
+.rodape-copyright {
+    margin-top: 18px;
+    font-size: 11px;
+    opacity: 0.6;
+}
+
+.btn-fale-conosco {
+    position: fixed;
+    bottom: 62px;
+    left: 16px;
+    z-index: 40;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--cor-verde);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    text-decoration: none;
+    transition: bottom 0.2s ease;
+}
+
+.btn-fale-conosco .icone {
+    width: 26px;
+    height: 26px;
+}
+
+.btn-fale-conosco:hover {
+    background: var(--cor-verde-escuro);
+}
+
+/* Quando a barra do carrinho aparece, o botão sobe pra ficar em cima dela */
+.barra-carrinho:not(.oculto) ~ .btn-fale-conosco {
+    bottom: 122px;
+}
+/* ---------- Senha (PIN) de proteção dos dados do cliente ---------- */
+.bloco-pin {
+    background: var(--cor-creme);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 10px 0 16px;
+}
+
+.texto-pin {
+    font-size: 12.5px;
+    margin: 0 0 8px;
+    color: #4a4636;
+}
+
+.linha-pin {
+    display: flex;
+    gap: 8px;
+}
+
+.linha-pin input {
+    margin: 0 !important;
+    max-width: 90px;
+    text-align: center;
+    letter-spacing: 4px;
+    font-weight: 700;
+}
+
+.linha-pin button {
+    flex-shrink: 0;
+    background: var(--cor-verde-escuro);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0 16px;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.opcao-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12.5px;
+    font-weight: 500 !important;
+    margin: 0 !important;
+    cursor: pointer;
+}
+
+.opcao-checkbox input {
+    margin: 2px 0 0 !important;
+    width: auto !important;
+}
+
+#campo-criar-pin {
+    margin-top: 10px;
+}
+
+.erro-campo {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--cor-vermelho);
+    margin: 8px 0 0;
+}

@@ -262,18 +262,22 @@ function renderizarBebidas() {
 
     const lista = document.getElementById('lista-bebidas');
     lista.innerHTML = PRODUTOS.bebidas.map(b => `
-        <div class="linha-produto linha-produto-simples">
+        <div class="linha-produto linha-produto-simples linha-produto-clicavel" data-bebida-id="${b.id}" role="button" tabindex="0">
             <div class="linha-produto-imagem">${iconeOuImagemProduto(b, ICONES.bebida)}</div>
             <div class="linha-produto-info"><div class="linha-produto-nome">${b.nome}</div></div>
             <span class="card-preco">R$ ${Number(b.preco_base).toFixed(2)}</span>
-             <div class="linha-produto-desc">CLIQUE AQUI 👉</div>
-            <button class="btn-add-rapido" data-bebida-id="${b.id}" aria-label="Adicionar ${escapeHtml(b.nome)}"><span class="icone">${ICONES.mais}</span></button>
+            <span class="badge-qtd-rapida oculto" data-badge-bebida="${b.id}"></span>
+            <span class="icone icone-add-rapido">${ICONES.mais}</span>
         </div>
     `).join('');
 
-    lista.querySelectorAll('.btn-add-rapido').forEach(btn => {
-        btn.addEventListener('click', () => adicionarBebidaRapida(Number(btn.dataset.bebidaId)));
+    lista.querySelectorAll('.linha-produto-clicavel').forEach(card => {
+        card.addEventListener('click', () => adicionarBebidaRapida(Number(card.dataset.bebidaId), card));
+        card.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); adicionarBebidaRapida(Number(card.dataset.bebidaId), card); }
+        });
     });
+    atualizarBadgesRapidos();
 }
 
 // "Outros" - itens do cardápio que não são pizza, borda nem bebida
@@ -284,17 +288,36 @@ function renderizarOutros() {
 
     const lista = document.getElementById('lista-outros');
     lista.innerHTML = PRODUTOS.outros.map(o => `
-        <div class="linha-produto linha-produto-simples">
+        <div class="linha-produto linha-produto-simples linha-produto-clicavel" data-outro-id="${o.id}" role="button" tabindex="0">
             <div class="linha-produto-imagem">${iconeOuImagemProduto(o, ICONES.ferramentas)}</div>
             <div class="linha-produto-info"><div class="linha-produto-nome">${o.nome}</div></div>
             <span class="card-preco">R$ ${Number(o.preco_base).toFixed(2)}</span>
-            <div class="linha-produto-desc">CLIQUE AQUI 👉</div>
-            <button class="btn-add-rapido" data-outro-id="${o.id}" aria-label="Adicionar ${escapeHtml(o.nome)}"><span class="icone">${ICONES.mais}</span></button>
+            <span class="badge-qtd-rapida oculto" data-badge-outro="${o.id}"></span>
+            <span class="icone icone-add-rapido">${ICONES.mais}</span>
         </div>
     `).join('');
 
-    lista.querySelectorAll('.btn-add-rapido').forEach(btn => {
-        btn.addEventListener('click', () => adicionarOutroRapido(Number(btn.dataset.outroId)));
+    lista.querySelectorAll('.linha-produto-clicavel').forEach(card => {
+        card.addEventListener('click', () => adicionarOutroRapido(Number(card.dataset.outroId), card));
+        card.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); adicionarOutroRapido(Number(card.dataset.outroId), card); }
+        });
+    });
+    atualizarBadgesRapidos();
+}
+
+// Mostra, em cada card de bebida/outro, quantas unidades já estão no
+// carrinho agora - assim dá pra ver o efeito do clique sem abrir o carrinho.
+function atualizarBadgesRapidos() {
+    document.querySelectorAll('[data-badge-bebida]').forEach(badge => {
+        const item = CARRINHO.find(i => i.tipo_item === 'bebida' && i.produto_id === Number(badge.dataset.badgeBebida));
+        badge.textContent = item ? item.quantidade : '';
+        badge.classList.toggle('oculto', !item);
+    });
+    document.querySelectorAll('[data-badge-outro]').forEach(badge => {
+        const item = CARRINHO.find(i => i.tipo_item === 'outros' && i.produto_id === Number(badge.dataset.badgeOutro));
+        badge.textContent = item ? item.quantidade : '';
+        badge.classList.toggle('oculto', !item);
     });
 }
 
@@ -506,7 +529,7 @@ function adicionarAoCarrinho() {
     atualizarBarraCarrinho();
 }
 
-function adicionarBebidaRapida(produtoId) {
+function adicionarBebidaRapida(produtoId, cardEl) {
     const bebida = PRODUTOS.bebidas.find(b => b.id === produtoId);
     const existente = CARRINHO.find(i => i.tipo_item === 'bebida' && i.produto_id === produtoId);
     if (existente) {
@@ -521,9 +544,11 @@ function adicionarBebidaRapida(produtoId) {
         });
     }
     atualizarBarraCarrinho();
+    atualizarBadgesRapidos();
+    if (cardEl) piscarFeedbackAdicionado(cardEl);
 }
 
-function adicionarOutroRapido(produtoId) {
+function adicionarOutroRapido(produtoId, cardEl) {
     const produto = PRODUTOS.outros.find(o => o.id === produtoId);
     const existente = CARRINHO.find(i => i.tipo_item === 'outros' && i.produto_id === produtoId);
     if (existente) {
@@ -538,12 +563,23 @@ function adicionarOutroRapido(produtoId) {
         });
     }
     atualizarBarraCarrinho();
+    atualizarBadgesRapidos();
+    if (cardEl) piscarFeedbackAdicionado(cardEl);
+}
+
+// Pisca o card rapidinho ao adicionar - é o único feedback que a pessoa tem
+// agora que o clique é no card inteiro (não tem mais botão "+" separado).
+function piscarFeedbackAdicionado(cardEl) {
+    cardEl.classList.remove('card-adicionado');
+    void cardEl.offsetWidth; // força reiniciar a animação em cliques rápidos e seguidos
+    cardEl.classList.add('card-adicionado');
 }
 
 function removerDoCarrinho(index) {
     CARRINHO.splice(index, 1);
     atualizarBarraCarrinho();
     renderizarCarrinho();
+    atualizarBadgesRapidos();
 }
 
 function calcularTaxaEntrega() {
@@ -684,25 +720,81 @@ async function buscarDadosClienteSalvos() {
     const campoTelefone = document.getElementById('telefone');
     const digitos = campoTelefone.value.replace(/\D/g, '');
     const mensagem = document.getElementById('mensagem-cliente-reconhecido');
+    const blocoVerificarPin = document.getElementById('bloco-verificar-pin');
+    const blocoCriarPin = document.getElementById('bloco-criar-pin');
     mensagem.classList.add('oculto');
+    blocoVerificarPin.classList.add('oculto');
+    blocoCriarPin.classList.add('oculto');
 
     if (digitos.length < 10) return; // telefone ainda incompleto
 
     try {
         const dados = await apiFetch(`/pedidos/cliente/${digitos}`);
 
-        const campoNome = document.getElementById('nome');
-        const campoEndereco = document.getElementById('endereco');
+        if (dados.requer_pin) {
+            // Esse telefone tem senha - não preenche nada até confirmar.
+            blocoVerificarPin.classList.remove('oculto');
+            blocoVerificarPin.dataset.telefone = digitos;
+            return;
+        }
+
+        preencherDadosClienteRecebidos(dados);
+
+        // Sem senha cadastrada ainda pra esse telefone - oferece criar uma,
+        // pra proteger nome/endereço na próxima vez.
+        blocoCriarPin.classList.remove('oculto');
+    } catch (err) {
+        // 404 (telefone novo, sem pedido anterior) é o caso normal - só
+        // oferece criar senha (não tem dado nenhum pra preencher ainda).
+        document.getElementById('bloco-criar-pin').classList.remove('oculto');
+    }
+}
+
+function preencherDadosClienteRecebidos(dados) {
+    const campoNome = document.getElementById('nome');
+    const campoEndereco = document.getElementById('endereco');
+    const mensagem = document.getElementById('mensagem-cliente-reconhecido');
+
+    if (dados.cliente_nome) {
         if (!campoNome.value.trim()) campoNome.value = dados.cliente_nome;
         if (!campoEndereco.value.trim()) campoEndereco.value = dados.endereco || '';
 
         const primeiroNome = dados.cliente_nome.split(' ')[0];
         mensagem.textContent = `Bem-vindo(a) de volta, ${primeiroNome}! Preenchemos seus dados do último pedido.`;
         mensagem.classList.remove('oculto');
+    }
+}
+
+async function verificarPinCliente() {
+    const blocoVerificarPin = document.getElementById('bloco-verificar-pin');
+    const digitos = blocoVerificarPin.dataset.telefone;
+    const pin = document.getElementById('input-verificar-pin').value.trim();
+    const erroEl = document.getElementById('erro-verificar-pin');
+    erroEl.classList.add('oculto');
+
+    if (!/^\d{4}$/.test(pin)) {
+        erroEl.textContent = 'Digite os 4 números da senha.';
+        erroEl.classList.remove('oculto');
+        return;
+    }
+
+    const botao = document.getElementById('btn-verificar-pin');
+    botao.disabled = true;
+    botao.textContent = 'Verificando...';
+
+    try {
+        const dados = await apiFetch(`/pedidos/cliente/${digitos}/verificar-pin`, {
+            method: 'POST',
+            body: JSON.stringify({ pin })
+        });
+        preencherDadosClienteRecebidos(dados);
+        blocoVerificarPin.classList.add('oculto');
     } catch (err) {
-        // 404 (telefone novo, sem pedido anterior) é o caso normal - não avisa nada.
-        // Erros de rede/limite também ficam quietos aqui: é só uma comodidade,
-        // não deve travar o cliente terminando de preencher o pedido na mão.
+        erroEl.textContent = err.message || 'Senha incorreta.';
+        erroEl.classList.remove('oculto');
+    } finally {
+        botao.disabled = false;
+        botao.textContent = 'Desbloquear';
     }
 }
 
@@ -739,6 +831,9 @@ async function confirmarPedido() {
         return mostrarAvisoCarrinho('Telefone e endereço são obrigatórios para entrega.');
     }
 
+    const criarPinMarcado = document.getElementById('checkbox-criar-pin').checked;
+    const criarPinValor = document.getElementById('input-criar-pin').value.trim();
+
     const payload = {
         cliente_nome: nome,
         telefone: telefone || null,
@@ -748,6 +843,7 @@ async function confirmarPedido() {
         forma_pagamento: formaPagamento,
         troco_para: formaPagamento === 'dinheiro' ? Number(troco || 0) : 0,
         cupom_codigo: CUPOM_APLICADO ? CUPOM_APLICADO.codigo : null,
+        criar_pin: (criarPinMarcado && /^\d{4}$/.test(criarPinValor)) ? criarPinValor : null,
         itens: CARRINHO.map(item => {
             if (item.tipo_item === 'pizza') {
                 return {
@@ -834,6 +930,10 @@ function configurarEventos() {
     document.getElementById('fechar-sheet-carrinho').addEventListener('click', fecharCarrinho);
     document.getElementById('btn-confirmar-pedido').addEventListener('click', confirmarPedido);
     document.getElementById('telefone').addEventListener('blur', buscarDadosClienteSalvos);
+    document.getElementById('btn-verificar-pin').addEventListener('click', verificarPinCliente);
+    document.getElementById('checkbox-criar-pin').addEventListener('change', (ev) => {
+        document.getElementById('campo-criar-pin').classList.toggle('oculto', !ev.target.checked);
+    });
     document.getElementById('btn-aplicar-cupom').addEventListener('click', aplicarCupom);
 
     document.getElementById('btn-copiar-pix').addEventListener('click', copiarChavePix);
@@ -868,11 +968,17 @@ function preencherRodape(config) {
     document.getElementById('rodape-ano').textContent = new Date().getFullYear();
 
     const horarioEl = document.getElementById('rodape-horario');
-    horarioEl.textContent = `🕒 Funcionamos das ${config.horario_abertura?.slice(0,5)} às ${config.horario_fechamento?.slice(0,5)}`;
+    horarioEl.textContent = ` Funcionamos das ${config.horario_abertura?.slice(0,5)} às ${config.horario_fechamento?.slice(0,5)}`;
 
     const whatsappEl = document.getElementById('rodape-whatsapp');
     if (config.whatsapp_numero) {
         whatsappEl.href = `https://wa.me/55${config.whatsapp_numero.replace(/\D/g, '')}`;
         whatsappEl.classList.remove('oculto');
+    }
+
+    const btnFaleConosco = document.getElementById('btn-fale-conosco');
+    if (config.whatsapp_numero) {
+        btnFaleConosco.href = `https://wa.me/55${config.whatsapp_numero.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Vim pelo site e queria tirar uma dúvida 🍕')}`;
+        btnFaleConosco.classList.remove('oculto');
     }
 }

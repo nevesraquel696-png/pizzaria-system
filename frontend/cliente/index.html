@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="../css/theme.css">
     <link rel="stylesheet" href="css/cliente.css">
 </head>
+
 <body>
 
     <header class="topo-loja">
@@ -15,7 +17,8 @@
             <h1>Estação da Pizza</h1>
             <p class="tagline-topo">Desde 2008 · direto do forno</p>
         </div>
-        <button class="icone-busca" id="btn-busca" aria-label="Buscar"><span class="icone" data-icone="busca"></span></button>
+        <button class="icone-busca" id="btn-busca" aria-label="Buscar"><span class="icone"
+                data-icone="busca"></span></button>
     </header>
 
     <div class="faixa-status" id="faixa-status">Carregando horário...</div>
@@ -74,16 +77,21 @@
             <span class="rotulo-estacao rotulo-sheet">Revise antes de enviar</span>
             <h2>Seu Carrinho</h2>
 
-            <div id="itens-carrinho"><p class="carregando">Carrinho vazio.</p></div>
+            <div id="itens-carrinho">
+                <p class="carregando">Carrinho vazio.</p>
+            </div>
 
             <div class="linha-cupom">
-                <input type="text" id="input-cupom" placeholder="Digite aqui o código do cupom (se tiver)" style="text-transform:uppercase;">
+                <input type="text" id="input-cupom" placeholder="Digite aqui o código do cupom (se tiver)"
+                    style="text-transform:uppercase;">
                 <button type="button" id="btn-aplicar-cupom">Clique aqui para aplicar o cupom</button>
             </div>
             <p id="mensagem-cupom" class="mensagem-cupom oculto"></p>
 
-            <p class="linha-taxa-entrega oculto" id="linha-taxa-entrega">Taxa de entrega <span id="valor-taxa-entrega">R$ 0,00</span></p>
-            <p class="linha-desconto oculto" id="linha-desconto">Desconto (<span id="codigo-cupom-aplicado"></span>) <span id="valor-desconto">-R$ 0,00</span></p>
+            <p class="linha-taxa-entrega oculto" id="linha-taxa-entrega">Taxa de entrega <span
+                    id="valor-taxa-entrega">R$ 0,00</span></p>
+            <p class="linha-desconto oculto" id="linha-desconto">Desconto (<span id="codigo-cupom-aplicado"></span>)
+                <span id="valor-desconto">-R$ 0,00</span></p>
             <p class="linha-total">Total <span class="etiqueta-preco" id="carrinho-total">R$ 0,00</span></p>
 
             <hr>
@@ -102,8 +110,30 @@
                 <label for="telefone">👉 Digite seu Telefone / WhatsApp aqui:</label>
                 <input type="text" id="telefone" placeholder="Digite aqui: (00) 00000-0000">
                 <p id="mensagem-cliente-reconhecido" class="mensagem-cupom mensagem-cupom-sucesso oculto"></p>
+
+                <!-- Aparece quando esse telefone já tem senha cadastrada -->
+                <div id="bloco-verificar-pin" class="bloco-pin oculto">
+                    <p class="texto-pin">🔒 Você já tem dados salvos com esse telefone. Digite sua senha de 4 números pra recuperar:</p>
+                    <div class="linha-pin">
+                        <input type="password" id="input-verificar-pin" inputmode="numeric" maxlength="4" placeholder="0000">
+                        <button type="button" id="btn-verificar-pin">Desbloquear</button>
+                    </div>
+                    <p id="erro-verificar-pin" class="erro-campo oculto"></p>
+                </div>
+
                 <label for="endereco">👉 Digite seu Endereço Completo aqui:</label>
                 <textarea id="endereco" placeholder="Digite aqui: Rua, Número, Bairro e Ponto de Referência"></textarea>
+
+                <!-- Opcional: oferece criar uma senha pra proteger os dados na próxima vez -->
+                <div id="bloco-criar-pin" class="bloco-pin oculto">
+                    <label class="opcao-checkbox">
+                        <input type="checkbox" id="checkbox-criar-pin">
+                        Criar uma senha de 4 números pra proteger meus dados na próxima vez (opcional)
+                    </label>
+                    <div id="campo-criar-pin" class="oculto linha-pin">
+                        <input type="password" id="input-criar-pin" inputmode="numeric" maxlength="4" placeholder="0000">
+                    </div>
+                </div>
             </div>
 
             <label for="observacoes">Observações (se quiser, digite aqui):</label>
@@ -123,8 +153,10 @@
 
             <div id="info-pix" class="caixa-pix oculto">
                 <p><strong>Chave Pix:</strong> <span id="texto-chave-pix">-</span></p>
-                <button type="button" id="btn-copiar-pix" class="botao-secundario-pix"><span class="icone" data-icone="copiar"></span> Copiar Chave Pix</button>
-                <p class="aviso-pix">⚠️ Sua pizza só vai para produção depois de enviarmos o comprovante do Pix pelo WhatsApp da pizzaria.</p>
+                <button type="button" id="btn-copiar-pix" class="botao-secundario-pix"><span class="icone"
+                        data-icone="copiar"></span> Copiar Chave Pix</button>
+                <p class="aviso-pix">⚠️ Sua pizza só vai para produção depois de enviarmos o comprovante do Pix pelo
+                    WhatsApp da pizzaria.</p>
             </div>
 
             <p id="aviso-carrinho" class="erro oculto"></p>
@@ -154,24 +186,31 @@
         <span>Ver Carrinho →</span>
     </button>
 
+    <!-- Botão flutuante Fale Conosco -->
+    <a href="#" target="_blank" class="btn-fale-conosco oculto" id="btn-fale-conosco" title="Fale conosco no WhatsApp">
+        <span class="icone" data-icone="whatsapp"></span>
+    </a>
+
     <!-- Navegação inferior -->
     <nav class="nav-inferior">
-        <button class="nav-item ativo" id="nav-inicio"><span class="icone" data-icone="casa"></span><span>Início</span></button>
-        <button class="nav-item" id="nav-carrinho"><span class="icone" data-icone="carrinho"></span><span>Carrinho</span></button>
+        <button class="nav-item ativo" id="nav-inicio"><span class="icone"
+                data-icone="casa"></span><span>Início</span></button>
+        <button class="nav-item" id="nav-carrinho"><span class="icone"
+                data-icone="carrinho"></span><span>Carrinho</span></button>
 
-        
+
     </nav>
-    
+
     <footer class="rodape-site">
 
-    <div class="rodape-info">
-        <p id="rodape-horario">🕒 Carregando horário...</p>
-        <p id="rodape-endereco">📍 Rua Ageu de Castro, 123 - Alto são vicente</p>
-        <a id="rodape-whatsapp" href="#" target="_blank" class="rodape-link oculto">💬 Falar no WhatsApp</a>
-    </div>
+        <div class="rodape-info">
+            <p id="rodape-horario">🕒 Carregando horário...</p>
+            <p id="rodape-endereco">📍 Rua Ageu de Castro, 123 - Alto são vicente</p>
+            <a id="rodape-whatsapp" href="#" target="_blank" class="rodape-link oculto">💬 Falar no WhatsApp</a>
+        </div>
 
-    <p class="rodape-copyright">© <span id="rodape-ano"></span> Estação da Pizza · Todos os direitos reservados</p>
-</footer>
+        <p class="rodape-copyright">© <span id="rodape-ano"></span> Estação da Pizza · Todos os direitos reservados</p>
+    </footer>
 
     <audio id="som-confirmacao" class="sino-app" src="../sounds/sino.mp3" preload="auto"></audio>
 
@@ -181,4 +220,5 @@
     <script src="../js/tema.js"></script>
     <script src="js/cliente.js"></script>
 </body>
+
 </html>

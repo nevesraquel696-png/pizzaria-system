@@ -39,7 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-logout').addEventListener('click', logout);
     document.getElementById('btn-tema-escuro').addEventListener('click', alternarTemaEscuro);
     document.getElementById('btn-salvar-config').addEventListener('click', salvarConfiguracoes);
-    document.getElementById('btn-alterar-senha').addEventListener('click', alterarSenha);
     document.getElementById('btn-salvar-precos').addEventListener('click', salvarPrecos);
     document.getElementById('btn-lancar-pedido').addEventListener('click', lancarPedidoAdmin);
     document.getElementById('btn-ativar-som').addEventListener('click', ativarSom);
@@ -129,40 +128,6 @@ async function login() {
     } catch (err) {
         erroEl.textContent = err.message;
         erroEl.style.display = 'block';
-    }
-}
-
-// ---------- Alterar senha (só funciona logado - rota exige token) ----------
-async function alterarSenha() {
-    const senha_atual = document.getElementById('senha-atual').value;
-    const senha_nova = document.getElementById('senha-nova').value;
-    const senha_confirmar = document.getElementById('senha-nova-confirmar').value;
-    const msgEl = document.getElementById('senha-msg');
-    msgEl.style.display = 'none';
-
-    if (!senha_atual || !senha_nova || !senha_confirmar) {
-        msgEl.textContent = 'Preencha todos os campos.';
-        msgEl.style.display = 'block';
-        return;
-    }
-    if (senha_nova !== senha_confirmar) {
-        msgEl.textContent = 'A confirmação não bate com a nova senha.';
-        msgEl.style.display = 'block';
-        return;
-    }
-
-    try {
-        await apiFetch('/auth/alterar-senha', {
-            method: 'PUT',
-            body: JSON.stringify({ senha_atual, senha_nova })
-        });
-        document.getElementById('senha-atual').value = '';
-        document.getElementById('senha-nova').value = '';
-        document.getElementById('senha-nova-confirmar').value = '';
-        mostrarToast('Senha alterada com sucesso!');
-    } catch (err) {
-        msgEl.textContent = err.message;
-        msgEl.style.display = 'block';
     }
 }
 
