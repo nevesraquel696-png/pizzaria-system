@@ -975,3 +975,78 @@ body {
     color: var(--cor-vermelho);
     margin: 8px 0 0;
 }
+
+/* ---------- Identifique-se ---------- */
+.texto-identificacao {
+    font-size: 13px;
+    color: #6b6455;
+    margin: 0 0 16px;
+}
+
+/* ---------- Acompanhar meu pedido ---------- */
+.rastreio-numero {
+    text-align: center;
+    font-size: 15px;
+    margin: 0 0 18px;
+}
+
+.linha-status {
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+    margin: 0 0 20px;
+}
+
+.etapa-status {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #b7ae9c;
+}
+
+.etapa-status .ponto {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #e8e1d1;
+    border: 2px solid #e8e1d1;
+}
+
+.etapa-status.concluida {
+    color: var(--cor-verde-escuro);
+}
+.etapa-status.concluida .ponto {
+    background: var(--cor-verde-escuro);
+    border-color: var(--cor-verde-escuro);
+}
+
+.etapa-status.atual {
+    color: var(--cor-vermelho);
+}
+.etapa-status.atual .ponto {
+    background: #fff;
+    border-color: var(--cor-vermelho);
+    box-shadow: 0 0 0 3px rgba(165, 39, 58, 0.18);
+}
+
+.rastreio-itens {
+    background: var(--cor-creme);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+}
+.rastreio-itens p {
+    font-size: 13px;
+    margin: 6px 0;
+}
+
+.rastreio-total {
+    font-weight: 700;
+    text-align: right;
+    margin: 0 0 6px;
+}

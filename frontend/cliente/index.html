@@ -71,6 +71,35 @@
     </div>
 
     <!-- Carrinho / Checkout -->
+    <!-- Identificação: aparece na primeira vez que o cliente abre o carrinho -->
+    <div class="sheet-fundo oculto" id="sheet-fundo-identificacao">
+        <div class="sheet" id="sheet-identificacao">
+            <button class="fechar-sheet" id="fechar-sheet-identificacao">×</button>
+            <span class="rotulo-estacao rotulo-sheet">Identifique-se</span>
+            <h2>Antes de continuar</h2>
+            <p class="texto-identificacao">Assim a gente já deixa seus dados prontos e você consegue acompanhar seu pedido depois.</p>
+
+            <label for="identificacao-nome">Seu nome</label>
+            <input type="text" id="identificacao-nome" placeholder="Seu nome">
+
+            <label for="identificacao-telefone">Telefone / WhatsApp</label>
+            <input type="text" id="identificacao-telefone" placeholder="(00) 00000-0000">
+
+            <!-- Aparece quando esse telefone já tem senha cadastrada -->
+            <div id="bloco-verificar-pin" class="bloco-pin oculto">
+                <p class="texto-pin">🔒 Você já tem dados salvos com esse telefone. Digite sua senha de 4 números pra recuperar:</p>
+                <div class="linha-pin">
+                    <input type="password" id="input-verificar-pin" inputmode="numeric" maxlength="4" placeholder="0000">
+                    <button type="button" id="btn-verificar-pin">Desbloquear</button>
+                </div>
+                <p id="erro-verificar-pin" class="erro-campo oculto"></p>
+            </div>
+
+            <p id="erro-identificacao" class="erro-campo oculto"></p>
+            <button type="button" class="botao-principal" id="btn-continuar-identificacao">Continuar</button>
+        </div>
+    </div>
+
     <div class="sheet-fundo oculto" id="sheet-fundo-carrinho">
         <div class="sheet" id="sheet-carrinho">
             <button class="fechar-sheet" id="fechar-sheet-carrinho">×</button>
@@ -107,22 +136,11 @@
             </select>
 
             <div id="campos-entrega" class="oculto">
-                <label for="telefone">👉 Digite seu Telefone / WhatsApp aqui:</label>
-                <input type="text" id="telefone" placeholder="Digite aqui: (00) 00000-0000">
-                <p id="mensagem-cliente-reconhecido" class="mensagem-cupom mensagem-cupom-sucesso oculto"></p>
+                <label for="telefone">Telefone / WhatsApp</label>
+                <input type="text" id="telefone" placeholder="(00) 00000-0000">
 
-                <!-- Aparece quando esse telefone já tem senha cadastrada -->
-                <div id="bloco-verificar-pin" class="bloco-pin oculto">
-                    <p class="texto-pin">🔒 Você já tem dados salvos com esse telefone. Digite sua senha de 4 números pra recuperar:</p>
-                    <div class="linha-pin">
-                        <input type="password" id="input-verificar-pin" inputmode="numeric" maxlength="4" placeholder="0000">
-                        <button type="button" id="btn-verificar-pin">Desbloquear</button>
-                    </div>
-                    <p id="erro-verificar-pin" class="erro-campo oculto"></p>
-                </div>
-
-                <label for="endereco">👉 Digite seu Endereço Completo aqui:</label>
-                <textarea id="endereco" placeholder="Digite aqui: Rua, Número, Bairro e Ponto de Referência"></textarea>
+                <label for="endereco">Endereço completo</label>
+                <textarea id="endereco" placeholder="Rua, número, bairro e ponto de referência"></textarea>
 
                 <!-- Opcional: oferece criar uma senha pra proteger os dados na próxima vez -->
                 <div id="bloco-criar-pin" class="bloco-pin oculto">
@@ -181,6 +199,47 @@
     </div>
 
     <!-- Barra flutuante do carrinho -->
+    <!-- Ficha "Acompanhar meu pedido" -->
+    <div class="sheet-fundo oculto" id="sheet-fundo-rastreio">
+        <div class="sheet" id="sheet-rastreio">
+            <button class="fechar-sheet" id="fechar-sheet-rastreio">×</button>
+            <span class="rotulo-estacao rotulo-sheet">Acompanhar pedido</span>
+            <h2>Onde está minha pizza?</h2>
+
+            <div id="rastreio-formulario">
+                <label for="rastreio-nome">Nome usado no pedido</label>
+                <input type="text" id="rastreio-nome" placeholder="Seu nome">
+                <label for="rastreio-telefone">Telefone usado no pedido</label>
+                <input type="tel" id="rastreio-telefone" placeholder="(00) 00000-0000">
+                <p id="rastreio-erro" class="erro-campo oculto"></p>
+                <button class="botao-principal" id="btn-rastrear-pedido">Ver status</button>
+            </div>
+
+            <div id="rastreio-resultado" class="oculto">
+                <p class="rastreio-numero">Pedido <strong>#<span id="rastreio-numero"></span></strong></p>
+
+                <div class="linha-status" id="linha-status">
+                    <div class="etapa-status" data-status="pendente">
+                        <span class="ponto"></span><span>Recebido</span>
+                    </div>
+                    <div class="etapa-status" data-status="preparo">
+                        <span class="ponto"></span><span>Em preparo</span>
+                    </div>
+                    <div class="etapa-status" data-status="saiu_entrega">
+                        <span class="ponto"></span><span id="rastreio-label-entrega">Saiu para entrega</span>
+                    </div>
+                    <div class="etapa-status" data-status="entregue">
+                        <span class="ponto"></span><span id="rastreio-label-final">Entregue</span>
+                    </div>
+                </div>
+
+                <div id="rastreio-itens" class="rastreio-itens"></div>
+                <p id="rastreio-total" class="rastreio-total"></p>
+                <button class="botao-principal btn-secundario" id="btn-nova-busca-rastreio">Buscar outro pedido</button>
+            </div>
+        </div>
+    </div>
+
     <button class="barra-carrinho oculto" id="barra-carrinho">
         <span id="carrinho-resumo">0 itens</span>
         <span>Ver Carrinho →</span>
@@ -197,6 +256,8 @@
                 data-icone="casa"></span><span>Início</span></button>
         <button class="nav-item" id="nav-carrinho"><span class="icone"
                 data-icone="carrinho"></span><span>Carrinho</span></button>
+        <button class="nav-item" id="nav-rastreio"><span class="icone"
+                data-icone="caixa"></span><span>Pedido</span></button>
 
 
     </nav>

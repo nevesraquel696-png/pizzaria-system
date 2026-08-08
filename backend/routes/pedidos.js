@@ -4,7 +4,7 @@ const pedidosController = require('../controllers/pedidosController');
 const autenticar = require('../middleware/autenticacao');
 const { autorizarNiveis } = require('../middleware/autenticacao');
 const verificarHorarioFuncionamento = require('../middleware/horarioFuncionamento');
-const { limitarBuscaCliente, limitarVerificarPin } = require('../middleware/limitadores');
+const { limitarBuscaCliente, limitarVerificarPin, limitarStatusPedido } = require('../middleware/limitadores');
 
 // Público: cliente cria o pedido (bloqueado fora do horário de funcionamento)
 router.post('/', verificarHorarioFuncionamento, pedidosController.criarPedido);
@@ -16,6 +16,15 @@ router.get('/cliente/:telefone', limitarBuscaCliente, pedidosController.buscarCl
 // Público: confirma a senha de 4 números pra liberar nome/endereço salvos
 // (ver clientes_pin) - rate limit próprio + bloqueio por telefone no model.
 router.post('/cliente/:telefone/verificar-pin', limitarVerificarPin, pedidosController.verificarPinCliente);
+
+// Público: card "Acompanhar meu pedido" - nome + telefone juntos, mesmo
+// limitador apertado da busca de cliente (mesma sensibilidade: expõe dado
+// pessoal pra quem souber nome+telefone).
+router.get('/rastrear', limitarBuscaCliente, pedidosController.rastrearPedido);
+
+// Público: polling leve do status (só pendente/preparo/saiu_entrega/entregue,
+// sem dado pessoal), usado pela mesma tela pra atualizar sozinha.
+router.get('/:id/status', limitarStatusPedido, pedidosController.statusPublico);
 
 // Admin: cria pedido manualmente pelo painel
 router.post('/admin', autenticar, autorizarNiveis('admin'), pedidosController.criarPedidoAdmin);

@@ -622,6 +622,14 @@ function atualizarBarraCarrinho() {
 
 // ---------- Carrinho / checkout ----------
 function abrirCarrinho() {
+    if (!IDENTIFICACAO_CLIENTE) {
+        abrirIdentificacao();
+        return;
+    }
+    abrirCarrinhoReal();
+}
+
+function abrirCarrinhoReal() {
     renderizarCarrinho();
     controlarInfoPix(document.getElementById('forma-pagamento').value);
     document.getElementById('sheet-fundo-carrinho').classList.remove('oculto');
@@ -711,63 +719,69 @@ function controlarCamposEntrega(valor) {
     renderizarCarrinho(); // a taxa de entrega muda o total, precisa recalcular na hora
 }
 
-// Ao terminar de digitar o telefone, busca se esse número já fez pedido
-// antes e pré-preenche nome/endereço - só quando esses campos ainda
-// estiverem vazios, pra nunca sobrescrever algo que o cliente já digitou
-// na mão. Silenciosamente não faz nada se não achar (telefone novo é o
-// caso mais comum, não é um erro).
-async function buscarDadosClienteSalvos() {
-    const campoTelefone = document.getElementById('telefone');
-    const digitos = campoTelefone.value.replace(/\D/g, '');
-    const mensagem = document.getElementById('mensagem-cliente-reconhecido');
-    const blocoVerificarPin = document.getElementById('bloco-verificar-pin');
-    const blocoCriarPin = document.getElementById('bloco-criar-pin');
-    mensagem.classList.add('oculto');
-    blocoVerificarPin.classList.add('oculto');
-    blocoCriarPin.classList.add('oculto');
+// ---------- Identificação (aparece ao abrir o carrinho pela 1ª vez) ----------
+let IDENTIFICACAO_CLIENTE = null; // { nome, telefone } depois que o cliente se identifica
+let TELEFONE_JA_TEM_PIN = false;  // esconde a oferta de "criar senha" se já existe uma
 
-    if (digitos.length < 10) return; // telefone ainda incompleto
+function abrirIdentificacao() {
+    document.getElementById('erro-identificacao').classList.add('oculto');
+    document.getElementById('bloco-verificar-pin').classList.add('oculto');
+    document.getElementById('erro-verificar-pin').classList.add('oculto');
+    document.getElementById('sheet-fundo-identificacao').classList.remove('oculto');
+}
+
+function fecharIdentificacao() {
+    document.getElementById('sheet-fundo-identificacao').classList.add('oculto');
+}
+
+async function continuarIdentificacao() {
+    const nome = document.getElementById('identificacao-nome').value.trim();
+    const telefone = document.getElementById('identificacao-telefone').value.trim();
+    const digitos = telefone.replace(/\D/g, '');
+    const erroEl = document.getElementById('erro-identificacao');
+    erroEl.classList.add('oculto');
+
+    if (!nome) {
+        erroEl.textContent = 'Digite seu nome.';
+        erroEl.classList.remove('oculto');
+        return;
+    }
+    if (digitos.length < 10 || digitos.length > 11) {
+        erroEl.textContent = 'Digite um telefone válido, com DDD.';
+        erroEl.classList.remove('oculto');
+        return;
+    }
+
+    const botao = document.getElementById('btn-continuar-identificacao');
+    botao.disabled = true;
+    botao.textContent = 'Verificando...';
 
     try {
         const dados = await apiFetch(`/pedidos/cliente/${digitos}`);
 
         if (dados.requer_pin) {
             // Esse telefone tem senha - não preenche nada até confirmar.
-            blocoVerificarPin.classList.remove('oculto');
-            blocoVerificarPin.dataset.telefone = digitos;
+            TELEFONE_JA_TEM_PIN = true;
+            const bloco = document.getElementById('bloco-verificar-pin');
+            bloco.classList.remove('oculto');
+            bloco.dataset.telefone = digitos;
             return;
         }
 
-        preencherDadosClienteRecebidos(dados);
-
-        // Sem senha cadastrada ainda pra esse telefone - oferece criar uma,
-        // pra proteger nome/endereço na próxima vez.
-        blocoCriarPin.classList.remove('oculto');
+        finalizarIdentificacao(nome, telefone, dados.endereco);
     } catch (err) {
-        // 404 (telefone novo, sem pedido anterior) é o caso normal - só
-        // oferece criar senha (não tem dado nenhum pra preencher ainda).
-        document.getElementById('bloco-criar-pin').classList.remove('oculto');
+        // 404 (telefone novo, sem pedido anterior) é o caso normal - segue
+        // só com nome+telefone mesmo, sem endereço salvo pra preencher.
+        finalizarIdentificacao(nome, telefone, null);
+    } finally {
+        botao.disabled = false;
+        botao.textContent = 'Continuar';
     }
 }
 
-function preencherDadosClienteRecebidos(dados) {
-    const campoNome = document.getElementById('nome');
-    const campoEndereco = document.getElementById('endereco');
-    const mensagem = document.getElementById('mensagem-cliente-reconhecido');
-
-    if (dados.cliente_nome) {
-        if (!campoNome.value.trim()) campoNome.value = dados.cliente_nome;
-        if (!campoEndereco.value.trim()) campoEndereco.value = dados.endereco || '';
-
-        const primeiroNome = dados.cliente_nome.split(' ')[0];
-        mensagem.textContent = `Bem-vindo(a) de volta, ${primeiroNome}! Preenchemos seus dados do último pedido.`;
-        mensagem.classList.remove('oculto');
-    }
-}
-
-async function verificarPinCliente() {
-    const blocoVerificarPin = document.getElementById('bloco-verificar-pin');
-    const digitos = blocoVerificarPin.dataset.telefone;
+async function verificarPinIdentificacao() {
+    const bloco = document.getElementById('bloco-verificar-pin');
+    const digitos = bloco.dataset.telefone;
     const pin = document.getElementById('input-verificar-pin').value.trim();
     const erroEl = document.getElementById('erro-verificar-pin');
     erroEl.classList.add('oculto');
@@ -787,8 +801,9 @@ async function verificarPinCliente() {
             method: 'POST',
             body: JSON.stringify({ pin })
         });
-        preencherDadosClienteRecebidos(dados);
-        blocoVerificarPin.classList.add('oculto');
+        const nome = document.getElementById('identificacao-nome').value.trim();
+        const telefone = document.getElementById('identificacao-telefone').value.trim();
+        finalizarIdentificacao(nome, telefone, dados.endereco);
     } catch (err) {
         erroEl.textContent = err.message || 'Senha incorreta.';
         erroEl.classList.remove('oculto');
@@ -796,6 +811,22 @@ async function verificarPinCliente() {
         botao.disabled = false;
         botao.textContent = 'Desbloquear';
     }
+}
+
+// Preenche TUDO no checkout de uma vez (nome, telefone e endereço, quando
+// tiver) e abre o carrinho de verdade - é o "já vai preencher tudo" que foi
+// pedido: o cliente só digita nome+telefone uma vez, aqui.
+function finalizarIdentificacao(nome, telefone, endereco) {
+    IDENTIFICACAO_CLIENTE = { nome, telefone };
+
+    document.getElementById('nome').value = nome;
+    document.getElementById('telefone').value = telefone;
+    if (endereco) document.getElementById('endereco').value = endereco;
+
+    document.getElementById('bloco-criar-pin').classList.toggle('oculto', TELEFONE_JA_TEM_PIN);
+
+    fecharIdentificacao();
+    abrirCarrinhoReal();
 }
 
 function controlarTroco(valor) {
@@ -929,12 +960,18 @@ function configurarEventos() {
     document.getElementById('barra-carrinho').addEventListener('click', abrirCarrinho);
     document.getElementById('fechar-sheet-carrinho').addEventListener('click', fecharCarrinho);
     document.getElementById('btn-confirmar-pedido').addEventListener('click', confirmarPedido);
-    document.getElementById('telefone').addEventListener('blur', buscarDadosClienteSalvos);
-    document.getElementById('btn-verificar-pin').addEventListener('click', verificarPinCliente);
+    document.getElementById('fechar-sheet-identificacao').addEventListener('click', fecharIdentificacao);
+    document.getElementById('btn-continuar-identificacao').addEventListener('click', continuarIdentificacao);
+    document.getElementById('btn-verificar-pin').addEventListener('click', verificarPinIdentificacao);
     document.getElementById('checkbox-criar-pin').addEventListener('change', (ev) => {
         document.getElementById('campo-criar-pin').classList.toggle('oculto', !ev.target.checked);
     });
     document.getElementById('btn-aplicar-cupom').addEventListener('click', aplicarCupom);
+
+    document.getElementById('nav-rastreio').addEventListener('click', abrirRastreioPedido);
+    document.getElementById('fechar-sheet-rastreio').addEventListener('click', fecharRastreioPedido);
+    document.getElementById('btn-rastrear-pedido').addEventListener('click', buscarPedidoRastreio);
+    document.getElementById('btn-nova-busca-rastreio').addEventListener('click', reiniciarBuscaRastreio);
 
     document.getElementById('btn-copiar-pix').addEventListener('click', copiarChavePix);
     document.getElementById('btn-fechar-sucesso').addEventListener('click', () => window.location.reload());
@@ -981,4 +1018,115 @@ function preencherRodape(config) {
         btnFaleConosco.href = `https://wa.me/55${config.whatsapp_numero.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Vim pelo site e queria tirar uma dúvida 🍕')}`;
         btnFaleConosco.classList.remove('oculto');
     }
+}
+
+// ---------- Acompanhar meu pedido ----------
+let intervaloRastreioPedido = null;
+const ETAPAS_STATUS = ['pendente', 'preparo', 'saiu_entrega', 'entregue'];
+
+function abrirRastreioPedido() {
+    // Se o cliente já se identificou pelo carrinho, aproveita nome/telefone
+    // - assim não precisa digitar de novo só pra ver o status.
+    if (IDENTIFICACAO_CLIENTE) {
+        document.getElementById('rastreio-nome').value = IDENTIFICACAO_CLIENTE.nome;
+        document.getElementById('rastreio-telefone').value = IDENTIFICACAO_CLIENTE.telefone;
+    }
+    document.getElementById('sheet-fundo-rastreio').classList.remove('oculto');
+}
+
+function fecharRastreioPedido() {
+    document.getElementById('sheet-fundo-rastreio').classList.add('oculto');
+    pararPollingRastreio();
+}
+
+function reiniciarBuscaRastreio() {
+    pararPollingRastreio();
+    document.getElementById('rastreio-resultado').classList.add('oculto');
+    document.getElementById('rastreio-formulario').classList.remove('oculto');
+    document.getElementById('rastreio-erro').classList.add('oculto');
+}
+
+function pararPollingRastreio() {
+    if (intervaloRastreioPedido) {
+        clearInterval(intervaloRastreioPedido);
+        intervaloRastreioPedido = null;
+    }
+}
+
+async function buscarPedidoRastreio() {
+    const nome = document.getElementById('rastreio-nome').value.trim();
+    const telefone = document.getElementById('rastreio-telefone').value.trim();
+    const erroEl = document.getElementById('rastreio-erro');
+    erroEl.classList.add('oculto');
+
+    if (!nome || !telefone) {
+        erroEl.textContent = 'Preencha o nome e o telefone usados no pedido.';
+        erroEl.classList.remove('oculto');
+        return;
+    }
+
+    const botao = document.getElementById('btn-rastrear-pedido');
+    botao.disabled = true;
+    botao.textContent = 'Buscando...';
+
+    try {
+        const pedido = await apiFetch(`/pedidos/rastrear?nome=${encodeURIComponent(nome)}&telefone=${encodeURIComponent(telefone)}`);
+        exibirResultadoRastreio(pedido);
+        iniciarPollingRastreio(pedido.id);
+    } catch (err) {
+        erroEl.textContent = err.message || 'Nenhum pedido encontrado com esse nome e telefone.';
+        erroEl.classList.remove('oculto');
+    } finally {
+        botao.disabled = false;
+        botao.textContent = 'Ver status';
+    }
+}
+
+function exibirResultadoRastreio(pedido) {
+    document.getElementById('rastreio-formulario').classList.add('oculto');
+    document.getElementById('rastreio-resultado').classList.remove('oculto');
+    document.getElementById('rastreio-numero').textContent = String(pedido.numero_pedido_dia).padStart(4, '0');
+
+    // Os rótulos mudam um pouco pra quem vai retirar (não faz sentido dizer
+    // "saiu para entrega" de um pedido que a pessoa vai buscar na loja).
+    const paraRetirada = pedido.tipo_entrega === 'retirada';
+    document.getElementById('rastreio-label-entrega').textContent = paraRetirada ? 'Pronto para retirar' : 'Saiu para entrega';
+    document.getElementById('rastreio-label-final').textContent = paraRetirada ? 'Retirado' : 'Entregue';
+
+    const itensEl = document.getElementById('rastreio-itens');
+    itensEl.innerHTML = pedido.itens.map(item => {
+        if (item.tipo_item === 'pizza') {
+            const sabores = (item.sabores || []).join(', ');
+            return `<p>${item.quantidade}x Pizza${item.nome_item ? ' ' + escapeHtml(item.nome_item) : ''} (${item.fatias} fatias) - ${escapeHtml(sabores)}</p>`;
+        }
+        return `<p>${item.quantidade}x ${escapeHtml(item.nome_item || '')}</p>`;
+    }).join('');
+    document.getElementById('rastreio-total').textContent = `Total: R$ ${Number(pedido.total).toFixed(2).replace('.', ',')}`;
+
+    atualizarEtapaStatus(pedido.status);
+}
+
+function atualizarEtapaStatus(status) {
+    const indiceAtual = ETAPAS_STATUS.indexOf(status);
+    document.querySelectorAll('#linha-status .etapa-status').forEach(etapa => {
+        const indiceEtapa = ETAPAS_STATUS.indexOf(etapa.dataset.status);
+        etapa.classList.toggle('concluida', indiceEtapa < indiceAtual);
+        etapa.classList.toggle('atual', indiceEtapa === indiceAtual);
+    });
+}
+
+// Atualiza sozinho enquanto a ficha estiver aberta, sem precisar recarregar
+// a página. Para automaticamente quando o pedido chega no status final.
+function iniciarPollingRastreio(pedidoId) {
+    pararPollingRastreio();
+    intervaloRastreioPedido = setInterval(async () => {
+        try {
+            const { status } = await apiFetch(`/pedidos/${pedidoId}/status`);
+            atualizarEtapaStatus(status);
+            if (status === 'entregue') pararPollingRastreio();
+        } catch (err) {
+            // Erro de rede pontual - só tenta de novo na próxima rodada, sem
+            // incomodar o cliente com um aviso por causa de uma atualização.
+        }
+    }, 20000);
 }

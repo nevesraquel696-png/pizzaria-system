@@ -57,4 +57,16 @@ const limitarVerificarPin = rateLimit({
     message: { erro: 'Muitas tentativas em pouco tempo. Aguarde alguns minutos.' }
 });
 
-module.exports = { limitarLogin, limitarCriacaoPedido, limitarGeral, limitarBuscaCliente, limitarVerificarPin };
+// Consulta de status por id (rota pública, usada pra atualizar a tela
+// "Acompanhar meu pedido" sozinha, sem precisar recarregar). Só devolve o
+// status (pendente/preparo/saiu_entrega/entregue) - nenhum dado pessoal -
+// então o limite pode ser bem mais folgado que o de buscar nome+telefone.
+const limitarStatusPedido = rateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { erro: 'Muitas consultas em pouco tempo. Aguarde alguns minutos.' }
+});
+
+module.exports = { limitarLogin, limitarCriacaoPedido, limitarGeral, limitarBuscaCliente, limitarVerificarPin, limitarStatusPedido };

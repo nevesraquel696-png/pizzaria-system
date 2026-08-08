@@ -360,6 +360,60 @@ exports.verificarPinCliente = async (req, res) => {
     }
 };
 
+// Card "Acompanhar meu pedido": cliente informa nome + telefone (os dois
+// juntos, não só o telefone) e recebe o status do pedido mais recente com
+// esses dados. Só devolve o que o próprio cliente já sabe do pedido dele -
+// nada de expor dados de outros pedidos.
+exports.rastrearPedido = async (req, res) => {
+    const digitos = String(req.query.telefone || '').replace(/\D/g, '');
+    const nome = String(req.query.nome || '').trim();
+
+    if (digitos.length < 10 || digitos.length > 11) {
+        return res.status(400).json({ erro: 'Telefone inválido.' });
+    }
+    if (!nome) {
+        return res.status(400).json({ erro: 'Informe o nome usado no pedido.' });
+    }
+
+    try {
+        const pedido = await Pedido.buscarParaRastreio(digitos, nome);
+        if (!pedido) {
+            return res.status(404).json({ erro: 'Nenhum pedido encontrado com esse nome e telefone.' });
+        }
+
+        res.json({
+            id: pedido.id,
+            numero_pedido_dia: pedido.numero_pedido_dia,
+            status: pedido.status,
+            tipo_entrega: pedido.tipo_entrega,
+            criado_em: pedido.criado_em,
+            total: pedido.total,
+            itens: pedido.itens.map(item => ({
+                tipo_item: item.tipo_item,
+                nome_item: item.nome_item,
+                sabores: item.sabores ? JSON.parse(item.sabores) : null,
+                fatias: item.fatias,
+                quantidade: item.quantidade
+            }))
+        });
+    } catch (err) {
+        console.error('Erro ao rastrear pedido:', err.message);
+        res.status(500).json({ erro: 'Erro ao buscar o pedido.' });
+    }
+};
+
+// Polling da tela "Acompanhar meu pedido": só o status atual, pelo id que o
+// próprio cliente recebeu na busca por nome+telefone.
+exports.statusPublico = async (req, res) => {
+    try {
+        const status = await Pedido.buscarStatusPublico(req.params.id);
+        if (status === null) return res.status(404).json({ erro: 'Pedido não encontrado.' });
+        res.json({ status });
+    } catch (err) {
+        res.status(500).json({ erro: 'Erro ao buscar status do pedido.' });
+    }
+};
+
 exports.listarPedidos = async (req, res) => {
     try {
         const config = await Configuracao.obter();
