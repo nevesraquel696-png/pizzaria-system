@@ -71,35 +71,6 @@
     </div>
 
     <!-- Carrinho / Checkout -->
-    <!-- Identificação: aparece na primeira vez que o cliente abre o carrinho -->
-    <div class="sheet-fundo oculto" id="sheet-fundo-identificacao">
-        <div class="sheet" id="sheet-identificacao">
-            <button class="fechar-sheet" id="fechar-sheet-identificacao">×</button>
-            <span class="rotulo-estacao rotulo-sheet">Identifique-se</span>
-            <h2>Antes de continuar</h2>
-            <p class="texto-identificacao">Assim a gente já deixa seus dados prontos e você consegue acompanhar seu pedido depois.</p>
-
-            <label for="identificacao-nome">Seu nome</label>
-            <input type="text" id="identificacao-nome" placeholder="Seu nome">
-
-            <label for="identificacao-telefone">Telefone / WhatsApp</label>
-            <input type="text" id="identificacao-telefone" placeholder="(00) 00000-0000">
-
-            <!-- Aparece quando esse telefone já tem senha cadastrada -->
-            <div id="bloco-verificar-pin" class="bloco-pin oculto">
-                <p class="texto-pin">🔒 Você já tem dados salvos com esse telefone. Digite sua senha de 4 números pra recuperar:</p>
-                <div class="linha-pin">
-                    <input type="password" id="input-verificar-pin" inputmode="numeric" maxlength="4" placeholder="0000">
-                    <button type="button" id="btn-verificar-pin">Desbloquear</button>
-                </div>
-                <p id="erro-verificar-pin" class="erro-campo oculto"></p>
-            </div>
-
-            <p id="erro-identificacao" class="erro-campo oculto"></p>
-            <button type="button" class="botao-principal" id="btn-continuar-identificacao">Continuar</button>
-        </div>
-    </div>
-
     <div class="sheet-fundo oculto" id="sheet-fundo-carrinho">
         <div class="sheet" id="sheet-carrinho">
             <button class="fechar-sheet" id="fechar-sheet-carrinho">×</button>
