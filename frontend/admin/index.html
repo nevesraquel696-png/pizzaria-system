@@ -12,7 +12,7 @@
     <!-- Tela de login -->
     <div id="tela-login" class="tela-login">
         <div class="card-login">
-            <img src="../imagens/logo.png" alt="Estação da Pizza" class="logo-login logo-app">
+            <img src="../imagens/logo.png" alt="Estação da Pizza" class="logo-login">
             <span class="rotulo-estacao">Acesso da equipe</span>
             <h2>Login Administrativo</h2>
             <input type="email" id="login-email" placeholder="Email">
@@ -26,7 +26,7 @@
     <div id="painel" class="painel-shell" style="display:none;">
         <header class="topbar">
             <div class="logo-topo">
-                <img src="../imagens/logo.png" alt="Estação da Pizza" class="logo-app">
+                <img src="../imagens/logo.png" alt="Estação da Pizza">
                 <h2>Painel Administrativo</h2>
             </div>
             <div class="acoes-cabecalho">
@@ -49,6 +49,7 @@
                 <button class="aba-btn" data-aba="precos"><span class="icone" data-icone="cifrao"></span><span class="rotulo-aba">Preços</span></button>
                 <button class="aba-btn" data-aba="cupons"><span class="icone" data-icone="etiqueta"></span><span class="rotulo-aba">Cupons</span></button>
                 <button class="aba-btn" data-aba="promocoes"><span class="icone" data-icone="etiqueta"></span><span class="rotulo-aba">Promoções</span></button>
+                <button class="aba-btn" data-aba="aparencia"><span class="icone" data-icone="estrela"></span><span class="rotulo-aba">Aparência</span></button>
                 <button class="aba-btn" data-aba="config"><span class="icone" data-icone="engrenagem"></span><span class="rotulo-aba">Config.</span></button>
             </nav>
 
@@ -86,13 +87,9 @@
                 <label>Nome do Cliente: <input type="text" id="adm-nome" required></label>
 
                 <div class="linha-form-2">
-                    <label>Categoria da Pizza:
+                    <label>Seção da Pizza:
                         <select id="adm-categoria" required onchange="carregarSaboresAdmin()">
                             <option value="">Selecione...</option>
-                            <option value="tradicional">Tradicional</option>
-                            <option value="especial">Especial</option>
-                            <option value="doce">Doce</option>
-                            <option value="promocao">Promoção</option>
                         </select>
                     </label>
 
@@ -150,6 +147,15 @@
 
         <!-- ABA: Gerenciar cardápio -->
         <section id="aba-cardapio" class="aba-conteudo" style="display:none;">
+            <div class="painel-card">
+                <h4 class="titulo-card">Seções do Cardápio</h4>
+                <p class="dica">As seções agrupam os sabores de pizza (ex: Tradicional, Especial, Doce). Crie, renomeie, mude a ordem ou apague. Cada seção tem seus próprios preços na aba Preços.</p>
+                <ul id="lista-secoes-admin"><li class="carregando">Carregando...</li></ul>
+                <div class="linha-form-2">
+                    <input type="text" id="nova-secao-nome" placeholder="👉 Digite aqui o nome da nova seção" maxlength="100">
+                    <button type="button" id="btn-criar-secao">Criar Seção</button>
+                </div>
+            </div>
             <div class="grid-2">
                 <div class="painel-card">
                     <h4 class="titulo-card">Adicionar Novo Produto</h4>
@@ -162,13 +168,8 @@
                                 <option value="outros">Outros</option>
                             </select>
                         </label>
-                        <label id="campo-categoria-produto">Categoria (só para sabor de pizza):
-                            <select id="prod-categoria">
-                                <option value="tradicional">Tradicional</option>
-                                <option value="especial">Especial</option>
-                                <option value="doce">Doce</option>
-                                <option value="promocao">Promoção</option>
-                            </select>
+                        <label id="campo-categoria-produto">Seção do cardápio (só para sabor de pizza):
+                            <select id="prod-categoria"></select>
                         </label>
                         <label id="campo-descricao-produto">Descrição (ingredientes, só para sabor de pizza):
                             <textarea id="prod-descricao" rows="2" placeholder="Ex: Mussarela, calabresa fatiada e cebola"></textarea>
@@ -184,10 +185,7 @@
                 <div class="painel-card">
                     <h4 class="titulo-card">Itens Cadastrados</h4>
                     <nav class="chips-categoria-admin" id="chips-categoria-admin">
-                        <button class="chip-admin ativo" data-filtro="tradicional">Tradicional</button>
-                        <button class="chip-admin" data-filtro="especial">Especial</button>
-                        <button class="chip-admin" data-filtro="doce">Doce</button>
-                        <button class="chip-admin" data-filtro="promocao">Promoção</button>
+                        <span id="chips-secoes-admin"></span>
                         <button class="chip-admin" data-filtro="borda">Bordas</button>
                         <button class="chip-admin" data-filtro="bebida">Bebidas</button>
                         <button class="chip-admin" data-filtro="outros">Outros</button>
@@ -198,15 +196,15 @@
             </div>
         </section>
 
-        <!-- ABA: Grade de preços por categoria/tamanho -->
+        <!-- ABA: Grade de preços por seção/tamanho -->
         <section id="aba-precos" class="aba-conteudo" style="display:none;">
-            <h3>Preços por Categoria e Tamanho</h3>
-            <p class="dica">Esses valores valem para todos os sabores da categoria, igual ao cardápio físico.</p>
+            <h3>Preços por Seção e Tamanho</h3>
+            <p class="dica">Esses valores valem para todos os sabores da seção, igual ao cardápio físico.</p>
             <div class="painel-card">
                 <div class="tabela-precos-scroll">
                     <table id="tabela-precos">
                         <thead>
-                            <tr><th>Categoria</th><th>4 fatias</th><th>6 fatias</th><th>8 fatias</th><th>12 fatias</th><th>14 fatias</th></tr>
+                            <tr><th>Seção</th><th>4 fatias</th><th>6 fatias</th><th>8 fatias</th><th>12 fatias</th><th>14 fatias</th></tr>
                         </thead>
                         <tbody id="corpo-tabela-precos"></tbody>
                     </table>
@@ -288,78 +286,62 @@
             </div>
         </section>
 
+        <!-- ABA: Aparência (logo, cores e som do sino) -->
+        <section id="aba-aparencia" class="aba-conteudo" style="display:none;">
+            <h3>Aparência</h3>
+            <p class="dica">Troque a logo, as cores e o som do sino. Vale para o cardápio do cliente, o painel e a cozinha.</p>
+
+            <div class="grid-2">
+                <div class="painel-card">
+                    <h4 class="titulo-card">Logo</h4>
+                    <div id="aparencia-preview-logo" class="dica">Usando a logo padrão.</div>
+                    <label>👉 Clique aqui e escolha a imagem da logo (até 5MB):
+                        <input type="file" id="aparencia-arquivo-logo" accept="image/*">
+                    </label>
+                    <button type="button" id="btn-salvar-logo">Salvar Logo</button>
+                    <button type="button" id="btn-remover-logo" class="btn-excluir">Voltar à logo padrão</button>
+                </div>
+
+                <div class="painel-card">
+                    <h4 class="titulo-card">Som do Sino (pedido novo)</h4>
+                    <div id="aparencia-preview-sino" class="dica">Usando o som padrão.</div>
+                    <label>👉 Clique aqui e escolha o arquivo de som - mp3, wav ou ogg (até 4MB):
+                        <input type="file" id="aparencia-arquivo-sino" accept="audio/*">
+                    </label>
+                    <button type="button" id="btn-salvar-sino">Salvar Som</button>
+                    <button type="button" id="btn-remover-sino" class="btn-excluir">Voltar ao som padrão</button>
+                </div>
+            </div>
+
+            <div class="painel-card">
+                <h4 class="titulo-card">Cores</h4>
+                <p class="dica">👉 Clique em cada quadrado para escolher a cor.</p>
+                <div id="aparencia-cores" class="grid-2"></div>
+                <button type="button" id="btn-salvar-cores">Salvar Cores</button>
+                <button type="button" id="btn-restaurar-cores" class="btn-excluir">Voltar às cores padrão</button>
+            </div>
+        </section>
+
         <!-- ABA: Configurações gerais -->
         <section id="aba-config" class="aba-conteudo" style="display:none;">
 
             <div class="painel-card secao-config">
-                <h3 class="cabecalho-secao-config"><span class="icone-secao-config icone" data-icone="imagem"></span>Aparência</h3>
-                <p class="dica">Personalize a logo, as cores e o som de notificação usados na loja, no admin e na cozinha. Deixe em branco / clique em "Restaurar padrão" para voltar ao visual original.</p>
-
-                <div class="linha-config" style="align-items:flex-start; flex-wrap:wrap; gap:24px;">
-                    <div>
-                        <label>Logo</label>
-                        <div class="preview-imagem-categoria" style="width:84px; height:84px;">
-                            <img id="preview-logo" src="../imagens/logo.png" alt="Logo atual" style="max-width:100%; max-height:100%; object-fit:contain;">
-                        </div>
-                        <input type="file" accept="image/*" id="arquivo-logo">
-                        <div class="acoes-imagem-categoria">
-                            <button onclick="enviarLogo()">Enviar</button>
-                            <button onclick="removerLogo()" class="btn-secundario-admin">Restaurar padrão</button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label>Som de notificação (novo pedido)</label>
-                        <audio id="preview-sino" controls src="../sounds/sino.mp3" style="display:block; margin:6px 0; max-width:220px;"></audio>
-                        <input type="file" accept="audio/*" id="arquivo-sino">
-                        <div class="acoes-imagem-categoria">
-                            <button onclick="enviarSino()">Enviar</button>
-                            <button onclick="removerSino()" class="btn-secundario-admin">Restaurar padrão</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grade-cores" style="margin-top:18px;">
-                    <div class="grupo-cores">
-                        <h4 class="titulo-grupo-cores">Cores da marca</h4>
-                        <p class="dica">Verde e vermelho aparecem em botões, títulos e links. As versões "escuro" entram automaticamente no hover.</p>
-                        <div class="grade-cores-itens">
-                            <label>Verde <input type="color" class="cor-tema" data-var="--cor-verde" value="#0A6C40"></label>
-                            <label>Verde escuro (hover) <input type="color" class="cor-tema" data-var="--cor-verde-escuro" value="#084F30"></label>
-                            <label>Vermelho <input type="color" class="cor-tema" data-var="--cor-vermelho" value="#A5273A"></label>
-                            <label>Vermelho escuro (hover) <input type="color" class="cor-tema" data-var="--cor-vermelho-escuro" value="#7D1D2C"></label>
-                            <label>Dourado (promoções) <input type="color" class="cor-tema" data-var="--cor-dourado" value="#D9A441"></label>
-                            <label>Terracota (detalhes) <input type="color" class="cor-tema" data-var="--cor-terracota" value="#C97B4A"></label>
-                        </div>
-                    </div>
-
-                    <div class="grupo-cores">
-                        <h4 class="titulo-grupo-cores">Fundo e seções</h4>
-                        <p class="dica">Definem o fundo da página, dos cards de produto e as bordas entre eles.</p>
-                        <div class="grade-cores-itens">
-                            <label>Fundo da página <input type="color" class="cor-tema" data-var="--cor-creme" value="#F2E4C6"></label>
-                            <label>Fundo das seções <input type="color" class="cor-tema" data-var="--cor-papel" value="#EFE3C3"></label>
-                            <label>Fundo dos cards <input type="color" class="cor-tema" data-var="--cor-superficie" value="#FFFFFF"></label>
-                            <label>Borda entre elementos <input type="color" class="cor-tema" data-var="--cor-borda-suave" value="#E5DCC3"></label>
-                        </div>
-                    </div>
-
-                    <div class="grupo-cores">
-                        <h4 class="titulo-grupo-cores">Texto</h4>
-                        <p class="dica">Cor do texto em geral, texto sobre fundo escuro e o destaque atrás do preço.</p>
-                        <div class="grade-cores-itens">
-                            <label>Texto principal <input type="color" class="cor-tema" data-var="--cor-texto" value="#2E2A26"></label>
-                            <label>Texto sobre fundo escuro <input type="color" class="cor-tema" data-var="--cor-branco" value="#FFFFFF"></label>
-                            <label>Marca-texto (etiqueta de preço) <input type="color" class="cor-tema" data-var="--cor-marcador" value="#BFE3EF"></label>
-                        </div>
-                    </div>
-                </div>
-                <div class="acoes-imagem-categoria" style="margin-top:10px;">
-                    <button type="button" onclick="restaurarCoresPadrao()" class="btn-secundario-admin">Restaurar cores padrão</button>
-                </div>
-                <p class="dica">As cores são salvas junto com o botão "Salvar Configurações" abaixo.</p>
+                <h3 class="cabecalho-secao-config"><span class="icone-secao-config icone" data-icone="impressora"></span>Impressora (MTI-773)</h3>
+                <p class="dica">Vale só para este computador. Para imprimir SEM abrir a janela de impressão, siga os passos abaixo uma única vez.</p>
+                <label>👉 Clique aqui e escolha a largura do papel da bobina:
+                    <select id="config-largura-papel">
+                        <option value="80">80mm</option>
+                        <option value="58">58mm</option>
+                    </select>
+                </label>
+                <button type="button" onclick="imprimirTeste()">Imprimir comanda de teste</button>
+                <ol class="dica">
+                    <li>Instale o driver da MTI-773 no Windows (pelo CD ou pelo site do fabricante) e confira que ela imprime uma página de teste.</li>
+                    <li>No Windows, em Impressoras e scanners, deixe a MTI-773 como <strong>impressora padrão</strong> (desmarque "Permitir que o Windows gerencie minha impressora padrão").</li>
+                    <li>Feche o Chrome. Clique com o botão direito no atalho dele, vá em Propriedades e, no campo "Destino", adicione no final: <code>--kiosk-printing</code> (com um espaço antes).</li>
+                    <li>Abra o painel por esse atalho, entre no admin e marque "Impressão automática" no topo. Mantenha o painel aberto neste computador.</li>
+                </ol>
             </div>
-
 
             <div class="painel-card secao-config">
                 <h3 class="cabecalho-secao-config"><span class="icone-secao-config icone" data-icone="relogio"></span>Horário de Funcionamento</h3>
@@ -410,12 +392,12 @@
         </div>
     </div>
 
-    <audio id="som-sino" class="sino-app" src="../sounds/sino.mp3" preload="auto"></audio>
+    <audio id="som-sino" src="../sounds/sino.mp3" preload="auto"></audio>
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="../js/api.js"></script>
-    <script src="../js/icones.js"></script>
     <script src="../js/tema.js"></script>
+    <script src="../js/icones.js"></script>
     <script src="js/imprimir.js"></script>
     <script src="js/admin.js"></script>
 </body>

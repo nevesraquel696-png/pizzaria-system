@@ -9,13 +9,19 @@
 // aberto naquele computador.
 // ============================================
 
-const NOMES_CATEGORIA_COMANDA = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
+
+// Largura do papel da impressora DESTE computador (58 ou 80mm). Fica salva no
+// navegador - a impressora é local, então cada computador tem a sua.
+function larguraPapelMm() {
+    const salva = Number(localStorage.getItem('pizzaria_largura_papel'));
+    return salva === 58 ? 58 : 80;
+}
 
 function descreverItemComanda(item) {
     if (item.tipo_item === 'pizza') {
         const sabores = Array.isArray(item.sabores) ? item.sabores : (item.sabores ? JSON.parse(item.sabores) : []);
-        const rotuloPromocao = item.pizza_categoria === 'promocao' && item.nome_item ? `[${escapeHtml(item.nome_item)}]<br>&nbsp;&nbsp;` : '';
-        return `${rotuloPromocao}${item.quantidade}x Pizza ${NOMES_CATEGORIA_COMANDA[item.pizza_categoria] || ''} (${item.fatias} fatias)<br>&nbsp;&nbsp;${escapeHtml(sabores.join(', '))}${item.borda ? '<br>&nbsp;&nbsp;+ borda ' + escapeHtml(item.borda) : ''}`;
+        const rotuloPromocao = item.nome_item ? `[${escapeHtml(item.nome_item)}]<br>&nbsp;&nbsp;` : '';
+        return `${rotuloPromocao}${item.quantidade}x Pizza ${item.pizza_categoria ? escapeHtml(item.pizza_categoria) + ' ' : ''}(${item.fatias} fatias)<br>&nbsp;&nbsp;${escapeHtml(sabores.join(', '))}${item.borda ? '<br>&nbsp;&nbsp;+ borda ' + escapeHtml(item.borda) : ''}`;
     }
     const nome = item.nome_item ? escapeHtml(item.nome_item) : (item.tipo_item === 'bebida' ? 'Bebida (pedido antigo)' : 'Item (pedido antigo)');
     return `${item.quantidade}x ${nome} - R$ ${Number(item.preco_unitario).toFixed(2)} cada`;
@@ -77,8 +83,8 @@ function imprimirComanda(pedido) {
         <head>
             <meta charset="UTF-8">
             <style>
-                @page { size: 80mm auto; margin: 4mm; }
-                body { font-family: 'Courier New', monospace; font-size: 12px; color: #000; }
+                @page { size: ${larguraPapelMm()}mm auto; margin: ${larguraPapelMm() === 58 ? 2 : 4}mm; }
+                body { font-family: 'Courier New', monospace; font-size: ${larguraPapelMm() === 58 ? 11 : 12}px; color: #000; margin: 0; }
                 hr { border: none; border-top: 1px dashed #000; margin: 6px 0; }
                 .comanda-cabecalho { text-align: center; }
                 .comanda-item { margin: 4px 0; }
@@ -96,6 +102,20 @@ function imprimirComanda(pedido) {
         iframe.contentWindow.print();
         setTimeout(() => iframe.remove(), 1000);
     }, 250);
+}
+
+// Comanda de teste, pra conferir se a MTI-773 está imprimindo certo (largura,
+// corte e se sai sem abrir a janela de impressão).
+function imprimirTeste() {
+    imprimirComanda({
+        numero_pedido_dia: 0,
+        criado_em: new Date().toISOString(),
+        cliente_nome: 'TESTE DE IMPRESSÃO',
+        tipo_entrega: 'local',
+        itens: [{ tipo_item: 'pizza', quantidade: 1, fatias: 8, sabores: ['Sabor de teste'], pizza_categoria: 'Teste', preco_unitario: 0 }],
+        forma_pagamento: 'pix',
+        total: 0
+    });
 }
 
 // Usado pelo botão manual de cada pedido - reaproveita os dados já carregados

@@ -1,6 +1,7 @@
 let socket = null;
 let PRODUTOS_ADMIN = { sabores: [], bordas: [], bebidas: [] };
 let PRECOS_ADMIN = [];
+let SECOES_ADMIN = []; // seções do cardápio (ex: Tradicional/Especial/Doce/Promoção), criadas livremente pelo admin
 
 // Preenche todo elemento <span class="icone" data-icone="NOME"> com o SVG
 // correspondente definido em icones.js. Usado pra ícones fixos no HTML;
@@ -49,14 +50,22 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => trocarAba(btn.dataset.aba));
     });
 
-    document.querySelectorAll('.chip-admin').forEach(chip => {
-        chip.addEventListener('click', () => {
-            document.querySelectorAll('.chip-admin').forEach(c => c.classList.remove('ativo'));
-            chip.classList.add('ativo');
-            FILTRO_CARDAPIO_ATUAL = chip.dataset.filtro;
-            aplicarFiltroCardapio();
-        });
+    // Delegado: os chips das seções são criados dinamicamente
+    document.getElementById('chips-categoria-admin').addEventListener('click', (ev) => {
+        const chip = ev.target.closest('.chip-admin');
+        if (!chip) return;
+        document.querySelectorAll('.chip-admin').forEach(c => c.classList.remove('ativo'));
+        chip.classList.add('ativo');
+        FILTRO_CARDAPIO_ATUAL = chip.dataset.filtro;
+        aplicarFiltroCardapio();
     });
+    document.getElementById('btn-criar-secao').addEventListener('click', criarSecao);
+    document.getElementById('btn-salvar-logo').addEventListener('click', salvarLogo);
+    document.getElementById('btn-remover-logo').addEventListener('click', removerLogo);
+    document.getElementById('btn-salvar-sino').addEventListener('click', salvarSino);
+    document.getElementById('btn-remover-sino').addEventListener('click', removerSino);
+    document.getElementById('btn-salvar-cores').addEventListener('click', salvarCores);
+    document.getElementById('btn-restaurar-cores').addEventListener('click', restaurarCores);
     document.getElementById('busca-cardapio-admin').addEventListener('input', aplicarFiltroCardapio);
 
     if (getToken()) iniciarPainel();
@@ -152,6 +161,8 @@ async function iniciarPainel() {
     // não na soma de todas.
     await Promise.all([
         tentarCarregar(carregarProdutosAdmin, 'produtos'),
+        tentarCarregar(carregarSecoesAdmin, 'seções'),
+        tentarCarregar(carregarAparencia, 'aparência'),
         tentarCarregar(carregarPrecosAdmin, 'preços'),
         tentarCarregar(carregarConfiguracoes, 'configurações'),
         tentarCarregar(carregarImagensTamanho, 'imagens'),
@@ -163,6 +174,7 @@ async function iniciarPainel() {
         }, 'cardápio')
     ]);
 
+    renderizarSecoesAdmin();
     renderizarTabelaPrecos();
     renderizarBebidasAdmin();
     renderizarSaboresPromocao();
@@ -201,6 +213,12 @@ function conectarSocket() {
 
 // Lembra a preferência de impressão automática entre sessões
 function configurarImpressaoAutomatica() {
+    const selectLargura = document.getElementById('config-largura-papel');
+    selectLargura.value = String(larguraPapelMm());
+    selectLargura.addEventListener('change', () => {
+        localStorage.setItem('pizzaria_largura_papel', selectLargura.value);
+    });
+
     const chk = document.getElementById('chk-impressao-automatica');
     chk.checked = localStorage.getItem('pizzaria_impressao_automatica') === 'true';
     chk.addEventListener('change', () => {
@@ -230,15 +248,6 @@ async function carregarConfiguracoes() {
     document.getElementById('config-whatsapp').value = config.whatsapp_numero || '';
     document.getElementById('config-promocao-ativa').checked = !!config.promocao_ativa;
     document.getElementById('config-promocao-texto').value = config.promocao_texto || '';
-
-    document.getElementById('preview-logo').src = config.logo_base64 || '../imagens/logo.png';
-    document.getElementById('preview-sino').src = config.sino_base64 || '../sounds/sino.mp3';
-
-    const cores = config.cores_json ? JSON.parse(config.cores_json) : {};
-    document.querySelectorAll('.cor-tema').forEach(input => {
-        const variavel = input.dataset.var;
-        if (cores[variavel]) input.value = cores[variavel];
-    });
 }
 
 async function salvarConfiguracoes() {
@@ -250,103 +259,14 @@ async function salvarConfiguracoes() {
     const promocao_ativa = document.getElementById('config-promocao-ativa').checked;
     const promocao_texto = document.getElementById('config-promocao-texto').value.trim();
 
-    const cores = {};
-    document.querySelectorAll('.cor-tema').forEach(input => {
-        cores[input.dataset.var] = input.value;
-    });
-    const cores_json = JSON.stringify(cores);
-
     try {
         await apiFetch('/config', {
             method: 'PUT',
-            body: JSON.stringify({ horario_abertura, horario_fechamento, taxa_entrega, chave_pix, whatsapp_numero, promocao_ativa, promocao_texto, cores_json })
+            body: JSON.stringify({ horario_abertura, horario_fechamento, taxa_entrega, chave_pix, whatsapp_numero, promocao_ativa, promocao_texto })
         });
         mostrarToast('Configurações atualizadas com sucesso!');
     } catch (err) {
         alert('Erro ao salvar configurações: ' + err.message);
-    }
-}
-
-// ---------- Aparência (logo, som de notificação e cores) ----------
-async function enviarLogo() {
-    const input = document.getElementById('arquivo-logo');
-    const arquivo = input.files[0];
-    if (!arquivo) return alert('Escolha um arquivo primeiro.');
-
-    if (arquivo.size > 2 * 1024 * 1024) {
-        return alert('Logo muito grande. Escolha uma de até 2MB.');
-    }
-
-    try {
-        const logo_base64 = await lerArquivoComoBase64(arquivo);
-        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ logo_base64 }) });
-        mostrarToast('Logo atualizada!');
-        carregarConfiguracoes();
-    } catch (err) {
-        alert('Erro ao enviar logo: ' + err.message);
-    }
-}
-
-async function removerLogo() {
-    if (!confirm('Restaurar a logo padrão?')) return;
-    try {
-        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ logo_base64: null }) });
-        carregarConfiguracoes();
-    } catch (err) {
-        alert('Erro ao restaurar logo: ' + err.message);
-    }
-}
-
-async function enviarSino() {
-    const input = document.getElementById('arquivo-sino');
-    const arquivo = input.files[0];
-    if (!arquivo) return alert('Escolha um arquivo primeiro.');
-
-    if (arquivo.size > 3.5 * 1024 * 1024) {
-        return alert('Arquivo de som muito grande. Escolha um de até 3.5MB.');
-    }
-
-    try {
-        const sino_base64 = await lerArquivoComoBase64(arquivo);
-        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ sino_base64 }) });
-        mostrarToast('Som de notificação atualizado!');
-        carregarConfiguracoes();
-    } catch (err) {
-        alert('Erro ao enviar som: ' + err.message);
-    }
-}
-
-async function removerSino() {
-    if (!confirm('Restaurar o som padrão?')) return;
-    try {
-        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ sino_base64: null }) });
-        carregarConfiguracoes();
-    } catch (err) {
-        alert('Erro ao restaurar som: ' + err.message);
-    }
-}
-
-const CORES_PADRAO = {
-    '--cor-verde': '#0A6C40', '--cor-verde-escuro': '#084F30',
-    '--cor-vermelho': '#A5273A', '--cor-vermelho-escuro': '#7D1D2C',
-    '--cor-terracota': '#C97B4A', '--cor-dourado': '#D9A441',
-    '--cor-creme': '#F2E4C6', '--cor-papel': '#EFE3C3',
-    '--cor-texto': '#2E2A26', '--cor-branco': '#FFFFFF',
-    '--cor-marcador': '#BFE3EF', '--cor-superficie': '#FFFFFF',
-    '--cor-borda-suave': '#E5DCC3'
-};
-
-async function restaurarCoresPadrao() {
-    if (!confirm('Restaurar todas as cores para o padrão original?')) return;
-    document.querySelectorAll('.cor-tema').forEach(input => {
-        input.value = CORES_PADRAO[input.dataset.var];
-    });
-    try {
-        await apiFetch('/config', { method: 'PUT', body: JSON.stringify({ cores_json: null }) });
-        mostrarToast('Cores restauradas!');
-        carregarConfiguracoes();
-    } catch (err) {
-        alert('Erro ao restaurar cores: ' + err.message);
     }
 }
 
@@ -517,9 +437,8 @@ function renderizarSaboresPromocao() {
         return;
     }
 
-    const nomesCategoria = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
     container.innerHTML = '<div class="grade-selecao-itens">' + PRODUTOS_ADMIN.sabores.map(s => `
-        <label class="opcao-selecao-item"><input type="checkbox" name="promo-sabores" value="${s.id}"> ${escapeHtml(s.nome)} <small>(${nomesCategoria[s.categoria] || s.categoria})</small></label>
+        <label class="opcao-selecao-item"><input type="checkbox" name="promo-sabores" value="${s.id}"> ${escapeHtml(s.nome)} <small>(${escapeHtml(nomeDaSecaoAdmin(s.secao_id))})</small></label>
     `).join('') + '</div>';
 
     container.onchange = () => {
@@ -627,10 +546,9 @@ async function carregarPedidos() {
 // comanda (enquanto não tem impressora, o atendente lê direto daqui).
 function descreverItem(item) {
     if (item.tipo_item === 'pizza') {
-        const nomesCategoria = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
         const sabores = Array.isArray(item.sabores) ? item.sabores : (item.sabores ? JSON.parse(item.sabores) : []);
-        const rotuloPromocao = item.pizza_categoria === 'promocao' && item.nome_item ? `[${escapeHtml(item.nome_item)}] ` : '';
-        return `${rotuloPromocao}${item.quantidade}x Pizza ${nomesCategoria[item.pizza_categoria] || ''} (${item.fatias} fatias) - ${escapeHtml(sabores.join(', '))}${item.borda ? ' + borda ' + escapeHtml(item.borda) : ''}`;
+        const rotuloPromocao = item.nome_item ? `[${escapeHtml(item.nome_item)}] ` : '';
+        return `${rotuloPromocao}${item.quantidade}x Pizza ${item.pizza_categoria ? escapeHtml(item.pizza_categoria) + ' ' : ''}(${item.fatias} fatias) - ${escapeHtml(sabores.join(', '))}${item.borda ? ' + borda ' + escapeHtml(item.borda) : ''}`;
     }
     const nome = item.nome_item ? escapeHtml(item.nome_item) : (item.tipo_item === 'bebida' ? 'Bebida (pedido antigo)' : 'Item (pedido antigo)');
     return `${item.quantidade}x ${nome} (R$ ${Number(item.preco_unitario).toFixed(2)} cada)`;
@@ -813,8 +731,8 @@ async function carregarPrecosAdmin() {
     PRECOS_ADMIN = await apiFetch('/precos-pizza');
 }
 
-function obterPrecoAdmin(categoria, fatias) {
-    const item = PRECOS_ADMIN.find(p => p.categoria === categoria && Number(p.fatias) === Number(fatias));
+function obterPrecoAdmin(secaoId, fatias) {
+    const item = PRECOS_ADMIN.find(p => p.secao_id === Number(secaoId) && Number(p.fatias) === Number(fatias));
     return item ? Number(item.preco) : null;
 }
 
@@ -823,13 +741,13 @@ function carregarSaboresAdmin() {
     const container = document.getElementById('adm-container-sabores');
 
     if (!categoria) {
-        container.innerHTML = '<p class="carregando">Selecione a categoria primeiro.</p>';
+        container.innerHTML = '<p class="carregando">Selecione a seção primeiro.</p>';
         return;
     }
 
-    const sabores = PRODUTOS_ADMIN.sabores.filter(s => s.categoria === categoria);
+    const sabores = PRODUTOS_ADMIN.sabores.filter(s => s.secao_id === Number(categoria));
     if (sabores.length === 0) {
-        container.innerHTML = '<p class="erro">Nenhum sabor cadastrado nessa categoria.</p>';
+        container.innerHTML = '<p class="erro">Nenhum sabor cadastrado nessa seção.</p>';
         return;
     }
 
@@ -891,7 +809,7 @@ async function lancarPedidoAdmin() {
     const troco = document.getElementById('adm-troco').value;
 
     if (!nome) return alert('Digite o nome do cliente.');
-    if (!categoria || !fatias) return alert('Escolha categoria e tamanho da pizza.');
+    if (!categoria || !fatias) return alert('Escolha a seção e o tamanho da pizza.');
     if (saboresMarcados.length === 0) return alert('Escolha ao menos um sabor.');
     if (tipoEntrega === 'entrega' && (!telefone || !endereco)) return alert('Telefone e endereço são obrigatórios para entrega.');
 
@@ -905,7 +823,6 @@ async function lancarPedidoAdmin() {
         itens: [
             {
                 tipo_item: 'pizza',
-                pizza_categoria: categoria,
                 fatias: Number(fatias),
                 sabor_ids: saboresMarcados.map(s => Number(s.value)),
                 borda_id: bordaSelect.value ? Number(bordaSelect.value) : null,
@@ -937,7 +854,7 @@ function alternarCampoCategoria() {
 }
 
 let CARDAPIO_ADMIN_TODOS = [];
-let FILTRO_CARDAPIO_ATUAL = 'tradicional';
+let FILTRO_CARDAPIO_ATUAL = 'borda'; // vira 'secao:ID' da 1ª seção assim que elas carregam
 
 function renderizarCardapio(produtos) {
     CARDAPIO_ADMIN_TODOS = produtos;
@@ -948,8 +865,8 @@ function aplicarFiltroCardapio() {
     const termo = document.getElementById('busca-cardapio-admin').value.trim().toLowerCase();
 
     const filtrados = CARDAPIO_ADMIN_TODOS.filter(p => {
-        const bateCategoria = ['tradicional', 'especial', 'doce', 'promocao'].includes(FILTRO_CARDAPIO_ATUAL)
-            ? p.tipo === 'sabor_pizza' && p.categoria === FILTRO_CARDAPIO_ATUAL
+        const bateCategoria = FILTRO_CARDAPIO_ATUAL.startsWith('secao:')
+            ? p.tipo === 'sabor_pizza' && p.secao_id === Number(FILTRO_CARDAPIO_ATUAL.slice(6))
             : p.tipo === FILTRO_CARDAPIO_ATUAL;
         const bateBusca = !termo || p.nome.toLowerCase().includes(termo);
         return bateCategoria && bateBusca;
@@ -957,7 +874,7 @@ function aplicarFiltroCardapio() {
 
     const lista = document.getElementById('lista-produtos-cardapio');
     if (filtrados.length === 0) {
-        lista.innerHTML = '<li>Nenhum item nessa categoria ainda.</li>';
+        lista.innerHTML = '<li>Nenhum item nessa seção ainda.</li>';
         return;
     }
 
@@ -1013,12 +930,13 @@ async function trocarFotoProduto(id, input) {
 async function adicionarProduto() {
     const nome = document.getElementById('prod-nome').value.trim();
     const tipo = document.getElementById('prod-tipo').value;
-    const categoria = document.getElementById('prod-categoria').value;
+    const secao_id = tipo === 'sabor_pizza' ? Number(document.getElementById('prod-categoria').value) : null;
     const descricao = document.getElementById('prod-descricao').value.trim();
     const preco_base = document.getElementById('prod-preco').value;
     const arquivoImagem = document.getElementById('prod-imagem').files[0];
 
     if (!nome) return alert('Digite o nome do produto.');
+    if (tipo === 'sabor_pizza' && !secao_id) return alert('Crie ao menos uma seção do cardápio primeiro e escolha ela aqui.');
     if (arquivoImagem && arquivoImagem.size > 5 * 1024 * 1024) {
         return alert('Imagem muito grande. Escolha uma de até 5MB.');
     }
@@ -1027,7 +945,7 @@ async function adicionarProduto() {
         const imagem_base64 = arquivoImagem ? await lerArquivoComoBase64(arquivoImagem) : null;
         await apiFetch('/produtos', {
             method: 'POST',
-            body: JSON.stringify({ nome, tipo, categoria, descricao, preco_base: Number(preco_base || 0), imagem_base64 })
+            body: JSON.stringify({ nome, tipo, secao_id, descricao, preco_base: Number(preco_base || 0), imagem_base64 })
         });
         document.getElementById('prod-nome').value = '';
         document.getElementById('prod-descricao').value = '';
@@ -1060,23 +978,250 @@ async function excluirProduto(id) {
     }
 }
 
+// ---------- Aparência (logo, cores, som do sino) ----------
+const CORES_TEMA = [
+    { chave: 'verde', nome: 'Verde principal (topo, botões)', padrao: '#0A6C40' },
+    { chave: 'verde-escuro', nome: 'Verde escuro', padrao: '#084F30' },
+    { chave: 'vermelho', nome: 'Vermelho (destaques, excluir)', padrao: '#A5273A' },
+    { chave: 'vermelho-escuro', nome: 'Vermelho escuro', padrao: '#7D1D2C' },
+    { chave: 'terracota', nome: 'Terracota', padrao: '#C97B4A' },
+    { chave: 'dourado', nome: 'Dourado (promoções, preços)', padrao: '#D9A441' },
+    { chave: 'creme', nome: 'Creme (fundo)', padrao: '#F2E4C6' },
+    { chave: 'texto', nome: 'Cor do texto', padrao: '#2E2A26' }
+];
+
+async function carregarAparencia() {
+    const config = await apiFetch('/config');
+    const salvas = config.tema_cores || {};
+
+    document.getElementById('aparencia-cores').innerHTML = CORES_TEMA.map(c => `
+        <label>${c.nome}
+            <input type="color" data-cor="${c.chave}" value="${salvas[c.chave] || c.padrao}">
+        </label>
+    `).join('');
+
+    document.getElementById('aparencia-preview-logo').innerHTML = config.logo_base64
+        ? `<img src="${config.logo_base64}" alt="Logo atual" style="max-width:160px;max-height:120px;">`
+        : 'Usando a logo padrão.';
+    document.getElementById('btn-remover-logo').style.display = config.logo_base64 ? '' : 'none';
+
+    document.getElementById('aparencia-preview-sino').innerHTML = config.som_sino_base64
+        ? `<audio controls src="${config.som_sino_base64}"></audio>`
+        : 'Usando o som padrão.';
+    document.getElementById('btn-remover-sino').style.display = config.som_sino_base64 ? '' : 'none';
+}
+
+async function salvarLogo() {
+    const arquivo = document.getElementById('aparencia-arquivo-logo').files[0];
+    if (!arquivo) return alert('Escolha uma imagem primeiro.');
+    if (arquivo.size > 5 * 1024 * 1024) return alert('Imagem muito grande. Escolha uma de até 5MB.');
+    try {
+        const logo_base64 = await lerArquivoComoBase64(arquivo);
+        await apiFetch('/config/logo', { method: 'PUT', body: JSON.stringify({ logo_base64 }) });
+        document.querySelectorAll('img[src*="logo.png"]').forEach(img => img.src = logo_base64);
+        document.getElementById('aparencia-arquivo-logo').value = '';
+        mostrarToast('Logo atualizada!');
+        carregarAparencia();
+    } catch (err) {
+        alert('Erro ao salvar logo: ' + err.message);
+    }
+}
+
+async function removerLogo() {
+    if (!confirm('Voltar à logo padrão?')) return;
+    try {
+        await apiFetch('/config/logo', { method: 'PUT', body: JSON.stringify({ logo_base64: null }) });
+        mostrarToast('Logo padrão restaurada. Recarregue a página para ver.');
+        carregarAparencia();
+    } catch (err) {
+        alert('Erro ao remover logo: ' + err.message);
+    }
+}
+
+async function salvarSino() {
+    const arquivo = document.getElementById('aparencia-arquivo-sino').files[0];
+    if (!arquivo) return alert('Escolha um arquivo de som primeiro.');
+    if (arquivo.size > 3 * 1024 * 1024) return alert('Áudio muito grande. Escolha um de até 3MB.');
+    try {
+        const som_sino_base64 = await lerArquivoComoBase64(arquivo);
+        await apiFetch('/config/som', { method: 'PUT', body: JSON.stringify({ som_sino_base64 }) });
+        document.getElementById('som-sino').src = som_sino_base64;
+        document.getElementById('aparencia-arquivo-sino').value = '';
+        mostrarToast('Som do sino atualizado!');
+        carregarAparencia();
+    } catch (err) {
+        alert('Erro ao salvar som: ' + err.message);
+    }
+}
+
+async function removerSino() {
+    if (!confirm('Voltar ao som padrão?')) return;
+    try {
+        await apiFetch('/config/som', { method: 'PUT', body: JSON.stringify({ som_sino_base64: null }) });
+        document.getElementById('som-sino').src = '../sounds/sino.mp3';
+        mostrarToast('Som padrão restaurado.');
+        carregarAparencia();
+    } catch (err) {
+        alert('Erro ao remover som: ' + err.message);
+    }
+}
+
+async function salvarCores() {
+    const tema_cores = {};
+    document.querySelectorAll('#aparencia-cores input[data-cor]').forEach(input => {
+        const padrao = CORES_TEMA.find(c => c.chave === input.dataset.cor).padrao;
+        if (input.value.toLowerCase() !== padrao.toLowerCase()) tema_cores[input.dataset.cor] = input.value;
+    });
+    try {
+        await apiFetch('/config/cores', { method: 'PUT', body: JSON.stringify({ tema_cores }) });
+        Object.entries(tema_cores).forEach(([chave, valor]) => document.documentElement.style.setProperty(`--cor-${chave}`, valor));
+        mostrarToast('Cores atualizadas!');
+    } catch (err) {
+        alert('Erro ao salvar cores: ' + err.message);
+    }
+}
+
+async function restaurarCores() {
+    if (!confirm('Voltar às cores padrão?')) return;
+    try {
+        await apiFetch('/config/cores', { method: 'PUT', body: JSON.stringify({ tema_cores: {} }) });
+        CORES_TEMA.forEach(c => document.documentElement.style.removeProperty(`--cor-${c.chave}`));
+        mostrarToast('Cores padrão restauradas.');
+        carregarAparencia();
+    } catch (err) {
+        alert('Erro ao restaurar cores: ' + err.message);
+    }
+}
+
+// ---------- Seções do cardápio ----------
+
+async function carregarSecoesAdmin() {
+    SECOES_ADMIN = await apiFetch('/secoes-cardapio');
+}
+
+function nomeDaSecaoAdmin(secaoId) {
+    const secao = SECOES_ADMIN.find(s => s.id === secaoId);
+    return secao ? secao.nome : '';
+}
+
+// Preenche tudo que depende da lista de seções: selects, chips de filtro,
+// lista de gerenciamento e tabela de preços.
+function renderizarSecoesAdmin() {
+    const opcoes = SECOES_ADMIN.map(s => `<option value="${s.id}">${escapeHtml(s.nome)}</option>`).join('');
+    const selectProduto = document.getElementById('prod-categoria');
+    const valorProduto = selectProduto.value;
+    selectProduto.innerHTML = opcoes;
+    if (valorProduto) selectProduto.value = valorProduto;
+
+    const selectPedido = document.getElementById('adm-categoria');
+    const valorPedido = selectPedido.value;
+    selectPedido.innerHTML = '<option value="">Selecione...</option>' + opcoes;
+    if (valorPedido) selectPedido.value = valorPedido;
+
+    // Chips do filtro de itens cadastrados: uma por seção + as fixas
+    if (SECOES_ADMIN.length > 0 && !FILTRO_CARDAPIO_ATUAL.startsWith('secao:') && !document.querySelector('.chip-admin.ativo')) {
+        FILTRO_CARDAPIO_ATUAL = `secao:${SECOES_ADMIN[0].id}`;
+    }
+    document.getElementById('chips-secoes-admin').innerHTML = SECOES_ADMIN.map(s => {
+        const filtro = `secao:${s.id}`;
+        return `<button class="chip-admin${filtro === FILTRO_CARDAPIO_ATUAL ? ' ativo' : ''}" data-filtro="${filtro}">${escapeHtml(s.nome)}</button>`;
+    }).join('');
+    if (!FILTRO_CARDAPIO_ATUAL.startsWith('secao:')) {
+        const fixo = document.querySelector(`.chip-admin[data-filtro="${FILTRO_CARDAPIO_ATUAL}"]`);
+        if (fixo) fixo.classList.add('ativo');
+    }
+    aplicarFiltroCardapio();
+
+    // Lista de gerenciamento
+    const lista = document.getElementById('lista-secoes-admin');
+    if (SECOES_ADMIN.length === 0) {
+        lista.innerHTML = '<li class="carregando">Nenhuma seção ainda. Crie a primeira abaixo.</li>';
+    } else {
+        lista.innerHTML = SECOES_ADMIN.map((s, i) => `
+            <li class="item-cupom">
+                <strong>${escapeHtml(s.nome)}</strong>
+                <div class="acoes-item-cupom">
+                    <button type="button" onclick="moverSecao(${s.id}, -1)" ${i === 0 ? 'disabled' : ''} title="Subir">↑</button>
+                    <button type="button" onclick="moverSecao(${s.id}, 1)" ${i === SECOES_ADMIN.length - 1 ? 'disabled' : ''} title="Descer">↓</button>
+                    <button type="button" onclick="renomearSecao(${s.id})">Renomear</button>
+                    <button type="button" class="btn-excluir" onclick="excluirSecao(${s.id})">Excluir</button>
+                </div>
+            </li>
+        `).join('');
+    }
+
+    renderizarTabelaPrecos();
+    renderizarSaboresPromocao();
+}
+
+async function recarregarSecoes() {
+    await Promise.all([carregarSecoesAdmin(), carregarPrecosAdmin()]);
+    renderizarSecoesAdmin();
+}
+
+async function criarSecao() {
+    const input = document.getElementById('nova-secao-nome');
+    const nome = input.value.trim();
+    if (!nome) return alert('Digite o nome da seção.');
+    try {
+        await apiFetch('/secoes-cardapio', { method: 'POST', body: JSON.stringify({ nome }) });
+        input.value = '';
+        mostrarToast('Seção criada! Defina os preços dela na aba Preços.');
+        await recarregarSecoes();
+    } catch (err) {
+        alert('Erro ao criar seção: ' + err.message);
+    }
+}
+
+async function renomearSecao(id) {
+    const atual = nomeDaSecaoAdmin(id);
+    const nome = prompt('Novo nome da seção:', atual);
+    if (nome === null || !nome.trim() || nome.trim() === atual) return;
+    try {
+        await apiFetch(`/secoes-cardapio/${id}`, { method: 'PUT', body: JSON.stringify({ nome: nome.trim() }) });
+        await recarregarSecoes();
+    } catch (err) {
+        alert('Erro ao renomear seção: ' + err.message);
+    }
+}
+
+async function moverSecao(id, direcao) {
+    const ids = SECOES_ADMIN.map(s => s.id);
+    const i = ids.indexOf(id);
+    const j = i + direcao;
+    if (i < 0 || j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    try {
+        await apiFetch('/secoes-cardapio/reordenar', { method: 'PUT', body: JSON.stringify({ ids }) });
+        await recarregarSecoes();
+    } catch (err) {
+        alert('Erro ao reordenar seções: ' + err.message);
+    }
+}
+
+async function excluirSecao(id) {
+    if (!confirm(`Excluir a seção "${nomeDaSecaoAdmin(id)}"? Os preços dela também serão apagados.`)) return;
+    try {
+        await apiFetch(`/secoes-cardapio/${id}`, { method: 'DELETE' });
+        if (FILTRO_CARDAPIO_ATUAL === `secao:${id}`) FILTRO_CARDAPIO_ATUAL = 'borda';
+        await recarregarSecoes();
+    } catch (err) {
+        alert('Erro ao excluir seção: ' + err.message);
+    }
+}
+
 // ---------- Grade de preços ----------
 function renderizarTabelaPrecos() {
-    const categorias = [
-        { chave: 'tradicional', nome: 'Tradicional' },
-        { chave: 'especial', nome: 'Especial' },
-        { chave: 'doce', nome: 'Doce' },
-        { chave: 'promocao', nome: 'Promoção' }
-    ];
+    const categorias = SECOES_ADMIN.map(sec => ({ chave: sec.id, nome: sec.nome }));
     const fatiasList = [4, 6, 8, 12, 14];
 
     const corpo = document.getElementById('corpo-tabela-precos');
     corpo.innerHTML = categorias.map(cat => `
         <tr>
-            <td>${cat.nome}</td>
+            <td>${escapeHtml(cat.nome)}</td>
             ${fatiasList.map(f => {
                 const preco = obterPrecoAdmin(cat.chave, f);
-                return `<td><input type="number" step="0.01" data-categoria="${cat.chave}" data-fatias="${f}" value="${preco !== null ? preco : 0}"></td>`;
+                return `<td><input type="number" step="0.01" data-secao="${cat.chave}" data-fatias="${f}" value="${preco !== null ? preco : 0}"></td>`;
             }).join('')}
         </tr>
     `).join('');
@@ -1085,7 +1230,7 @@ function renderizarTabelaPrecos() {
 async function salvarPrecos() {
     const inputs = document.querySelectorAll('#corpo-tabela-precos input');
     const precos = [...inputs].map(input => ({
-        categoria: input.dataset.categoria,
+        secao_id: Number(input.dataset.secao),
         fatias: Number(input.dataset.fatias),
         preco: Number(input.value)
     }));

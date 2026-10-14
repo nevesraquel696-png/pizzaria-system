@@ -4,7 +4,7 @@ const Configuracao = require('../models/Configuracao');
 const { PrecoPizza, FATIAS_VALIDAS } = require('../models/PrecoPizza');
 const Cupom = require('../models/Cupom');
 const Promocao = require('../models/Promocao');
-const ClientePin = require('../models/ClientePin');
+const SecaoCardapio = require('../models/SecaoCardapio');
 const validarCupom = require('../utils/validarCupom');
 const { obterDiaOperacional } = require('../utils/diaOperacional');
 
@@ -50,15 +50,20 @@ async function processarItens(itensRecebidos) {
 
     // 2) Busca tudo de uma vez: produtos por ID + tabela de preços inteira +
     // promoções envolvidas (se algum item referenciar uma)
-    const [produtosEncontrados, precosPizza, promocoesEncontradas] = await Promise.all([
+    const [produtosEncontrados, precosPizza, promocoesEncontradas, secoes] = await Promise.all([
         Produto.buscarPorIds([...todosOsIds]),
         PrecoPizza.listarTodos(),
-        Promocao.buscarPorIds([...new Set(itensRecebidos.filter(i => i.promocao_id).map(i => i.promocao_id))])
+        Promocao.buscarPorIds([...new Set(itensRecebidos.filter(i => i.promocao_id).map(i => i.promocao_id))]),
+        SecaoCardapio.listarTodas()
     ]);
     const produtosPorId = new Map(produtosEncontrados.map(p => [p.id, p]));
     const promocoesPorId = new Map(promocoesEncontradas.map(p => [p.id, p]));
-    const buscarPreco = (categoria, fatias) => {
-        const encontrado = precosPizza.find(p => p.categoria === categoria && Number(p.fatias) === Number(fatias));
+    // Nome da seção NO MOMENTO do pedido, gravado como texto no item (não o
+    // id) - assim o histórico continua legível mesmo que a seção seja
+    // renomeada ou apagada depois.
+    const nomeSecaoPorId = new Map(secoes.map(s => [s.id, s.nome]));
+    const buscarPreco = (secao_id, fatias) => {
+        const encontrado = precosPizza.find(p => p.secao_id === secao_id && Number(p.fatias) === Number(fatias));
         return encontrado ? Number(encontrado.preco) : null;
     };
 
@@ -117,7 +122,7 @@ async function processarItens(itensRecebidos) {
 
                 itensProcessados.push({
                     tipo_item: 'pizza',
-                    pizza_categoria: 'promocao',
+                    pizza_categoria: null,
                     fatias: Number(fatias),
                     sabores: saboresValidos.map(s => s.nome),
                     borda: nomeBorda,
@@ -129,29 +134,29 @@ async function processarItens(itensRecebidos) {
             }
 
             // Regra de cobrança pra combinação "mista": vale o preço da
-            // categoria mais cara entre as envolvidas na pizza. Nunca confiamos
-            // na categoria enviada pelo cliente - ela é sempre derivada aqui,
-            // a partir da categoria real de cada sabor (já validado no banco).
-            const categoriasEnvolvidas = [...new Set(saboresValidos.map(s => s.categoria))];
-            const precosPorCategoria = categoriasEnvolvidas.map(categoria => ({
-                categoria,
-                preco: buscarPreco(categoria, Number(fatias))
+            // seção mais cara entre as envolvidas na pizza. Nunca confiamos
+            // na seção enviada pelo cliente - ela é sempre derivada aqui,
+            // a partir da seção real de cada sabor (já validada no banco).
+            const secoesEnvolvidas = [...new Set(saboresValidos.map(s => s.secao_id))];
+            const precosPorSecao = secoesEnvolvidas.map(secao_id => ({
+                secao_id,
+                preco: buscarPreco(secao_id, Number(fatias))
             }));
-            if (precosPorCategoria.some(p => p.preco === null)) {
-                return erros.push(`${prefixo} preço não configurado para essa categoria/tamanho.`);
+            if (precosPorSecao.some(p => p.preco === null)) {
+                return erros.push(`${prefixo} preço não configurado para essa seção/tamanho.`);
             }
-            const categoriaMaisCara = precosPorCategoria.reduce((maior, atual) =>
+            const secaoMaisCara = precosPorSecao.reduce((maior, atual) =>
                 atual.preco > maior.preco ? atual : maior
             );
 
             itensProcessados.push({
                 tipo_item: 'pizza',
-                pizza_categoria: categoriaMaisCara.categoria,
+                pizza_categoria: nomeSecaoPorId.get(secaoMaisCara.secao_id) || null,
                 fatias: Number(fatias),
                 sabores: saboresValidos.map(s => s.nome),
                 borda: nomeBorda,
                 quantidade: item.quantidade || 1,
-                preco_unitario: categoriaMaisCara.preco + precoBorda
+                preco_unitario: secaoMaisCara.preco + precoBorda
             });
 
         } else if (item.tipo_item === 'bebida' || item.tipo_item === 'outros') {
@@ -228,23 +233,6 @@ async function processarECriarPedido(req, mensagemSucesso) {
         await Cupom.incrementarUso(cupomAplicado.id);
     }
 
-    // Senha opcional: só cria se o cliente escolheu uma (campo criar_pin,
-    // 4 dígitos) e esse telefone ainda não tem senha. Nunca obrigatório -
-    // quem não quiser continua pedindo do mesmo jeito de sempre.
-    if (req.body.criar_pin && req.body.telefone) {
-        const digitosTelefone = String(req.body.telefone).replace(/\D/g, '');
-        const pin = String(req.body.criar_pin).trim();
-        if (/^\d{4}$/.test(pin) && digitosTelefone.length >= 10) {
-            try {
-                await ClientePin.criar(digitosTelefone, pin);
-            } catch (err) {
-                console.error('Erro ao criar senha do cliente:', err.message);
-                // Não falha o pedido por causa disso - a senha é um extra, o
-                // pedido em si já foi salvo e é o que importa de verdade.
-            }
-        }
-    }
-
     const io = req.app.get('io');
     io.emit('novoPedido', {
         pedidoId,
@@ -307,56 +295,16 @@ exports.buscarClientePorTelefone = async (req, res) => {
     }
 
     try {
-        // Se esse telefone tem senha cadastrada, NÃO devolve nome/endereço
-        // direto - só depois de confirmar a senha em /verificar-pin. Quem
-        // nunca criou senha continua exatamente como antes (sem quebrar
-        // nada pra quem já pediu antes dessa funcionalidade existir).
-        const temSenha = await ClientePin.existe(digitos);
-        if (temSenha) {
-            return res.json({ requer_pin: true });
-        }
-
         const cliente = await Pedido.buscarDadosClientePorTelefone(digitos);
         if (!cliente) return res.status(404).json({ erro: 'Nenhum pedido anterior encontrado com esse telefone.' });
 
         res.json({
-            requer_pin: false,
             cliente_nome: cliente.cliente_nome,
             endereco: cliente.endereco,
             tipo_entrega: cliente.tipo_entrega
         });
     } catch (err) {
         res.status(500).json({ erro: 'Erro ao buscar dados do cliente.' });
-    }
-};
-
-// Confirma a senha de 4 números pra liberar nome/endereço salvos desse
-// telefone. Bloqueio por tentativas erradas é controlado no próprio
-// ClientePin.verificar (por telefone, não por IP - ver comentário lá).
-exports.verificarPinCliente = async (req, res) => {
-    const digitos = String(req.params.telefone || '').replace(/\D/g, '');
-    const pin = String(req.body.pin || '').trim();
-
-    if (digitos.length < 10 || digitos.length > 11) {
-        return res.status(400).json({ erro: 'Telefone inválido.' });
-    }
-    if (!/^\d{4}$/.test(pin)) {
-        return res.status(400).json({ erro: 'Senha deve ter 4 números.' });
-    }
-
-    try {
-        const confere = await ClientePin.verificar(digitos, pin);
-        if (!confere) return res.status(401).json({ erro: 'Senha incorreta.' });
-
-        const cliente = await Pedido.buscarDadosClientePorTelefone(digitos);
-        res.json({
-            cliente_nome: cliente?.cliente_nome || null,
-            endereco: cliente?.endereco || null,
-            tipo_entrega: cliente?.tipo_entrega || null
-        });
-    } catch (err) {
-        // Mensagem de bloqueio por tentativas (vem do model) - 429 = "espere um pouco"
-        res.status(429).json({ erro: err.message });
     }
 };
 

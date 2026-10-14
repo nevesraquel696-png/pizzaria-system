@@ -12,13 +12,13 @@ let CARRINHO = []; // itens acumulados: { tipo_item, pizza_categoria, fatias, sa
 let SABOR_ATUAL = null;
 let CUPOM_APLICADO = null; // { codigo, tipo, valor, desconto } - null se nenhum cupom válido aplicado
 
-const NOMES_CATEGORIA = { tradicional: 'Tradicional', especial: 'Especial', doce: 'Doce', promocao: 'Promoção' };
-const ICONES_CATEGORIA = { tradicional: 'pizza', especial: 'estrela', doce: 'gota', promocao: 'fogo' };
-const CATEGORIAS_ORDEM = ['tradicional', 'especial', 'doce', 'promocao'];
+// Seções do cardápio (Tradicional, Especial, Doce... ou as que o admin criar),
+// já na ordem definida no painel: [{ id, nome, ordem }]
+let SECOES = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
     aplicarIcones();
-    await Promise.all([carregarProdutos(), carregarPrecos(), carregarPromocoes(), carregarStatusLoja(), carregarImagensTamanho()]);
+    await Promise.all([carregarSecoes(), carregarProdutos(), carregarPrecos(), carregarPromocoes(), carregarStatusLoja(), carregarImagensTamanho()]);
     renderizarCardapio();
     configurarEventos();
 });
@@ -72,6 +72,19 @@ async function carregarProdutos() {
         document.getElementById('secoes-cardapio').innerHTML =
             `<p class="erro">Não foi possível carregar o cardápio. Verifique se o servidor está rodando.</p>`;
     }
+}
+
+async function carregarSecoes() {
+    try {
+        SECOES = await apiFetch('/secoes-cardapio');
+    } catch (err) {
+        console.error('Erro ao carregar seções:', err.message);
+    }
+}
+
+function nomeDaSecao(secaoId) {
+    const secao = SECOES.find(s => s.id === secaoId);
+    return secao ? secao.nome : '';
 }
 
 async function carregarPrecos() {
@@ -134,8 +147,8 @@ function renderizarFaixaPromocao(config) {
     }
 }
 
-function obterPreco(categoria, fatias) {
-    const item = PRECOS_PIZZA.find(p => p.categoria === categoria && Number(p.fatias) === Number(fatias));
+function obterPreco(secaoId, fatias) {
+    const item = PRECOS_PIZZA.find(p => p.secao_id === secaoId && Number(p.fatias) === Number(fatias));
     return item ? Number(item.preco) : null;
 }
 
@@ -147,12 +160,12 @@ function obterPreco(categoria, fatias) {
 const FATIAS_OPCOES = [4, 6, 8, 12, 14];
 
 function categoriasComSabores() {
-    return CATEGORIAS_ORDEM.filter(cat => PRODUTOS.sabores.some(s => s.categoria === cat));
+    return SECOES.map(sec => sec.id).filter(id => PRODUTOS.sabores.some(s => s.secao_id === id));
 }
 
 // Categoria usada como ponto de partida ao abrir a ficha do produto.
 function categoriaPadrao() {
-    return categoriasComSabores()[0] || CATEGORIAS_ORDEM[0];
+    return categoriasComSabores()[0] ?? null;
 }
 
 function renderizarCardapio() {
@@ -372,15 +385,16 @@ function renderizarAbasCategoriaSheet() {
         const qtdNaAba = [...SABOR_ATUAL.selecionados.values()].filter(c => c === cat).length;
         return `
         <button type="button" class="pill-categoria-sheet${cat === SABOR_ATUAL.categoriaAtiva ? ' ativo' : ''}" data-categoria="${cat}">
-            ${NOMES_CATEGORIA[cat]}${qtdNaAba > 0 ? ` <span class="badge-contagem-sabor">${qtdNaAba}</span>` : ''}
+            ${escapeHtml(nomeDaSecao(cat))}${qtdNaAba > 0 ? ` <span class="badge-contagem-sabor">${qtdNaAba}</span>` : ''}
         </button>
     `;
     }).join('');
 
     container.querySelectorAll('.pill-categoria-sheet').forEach(pill => {
         pill.addEventListener('click', () => {
-            if (pill.dataset.categoria === SABOR_ATUAL.categoriaAtiva) return;
-            SABOR_ATUAL.categoriaAtiva = pill.dataset.categoria;
+            const secaoClicada = Number(pill.dataset.categoria);
+            if (secaoClicada === SABOR_ATUAL.categoriaAtiva) return;
+            SABOR_ATUAL.categoriaAtiva = secaoClicada;
             renderizarAbasCategoriaSheet();
             renderizarConteudoSheet();
         });
@@ -402,7 +416,7 @@ function renderizarConteudoSheet() {
     // marcou ao criar a promoção (podem ser de categorias diferentes).
     const sabores = promocao
         ? promocao.sabor_ids.map(id => PRODUTOS.sabores.find(s => s.id === id)).filter(Boolean)
-        : PRODUTOS.sabores.filter(s => s.categoria === categoriaAtiva);
+        : PRODUTOS.sabores.filter(s => s.secao_id === categoriaAtiva);
 
     const container = document.getElementById('sheet-sabores-extra');
     container.innerHTML = sabores.map(s => `
@@ -424,7 +438,7 @@ function renderizarConteudoSheet() {
                 return;
             }
             const sabor = sabores.find(s => s.id === id);
-            selecionados.set(id, sabor ? sabor.categoria : categoriaAtiva);
+            selecionados.set(id, sabor ? sabor.secao_id : categoriaAtiva);
         } else {
             selecionados.delete(id);
         }
@@ -488,7 +502,7 @@ function adicionarAoCarrinho() {
     if (promocao) {
         CARRINHO.push({
             tipo_item: 'pizza',
-            pizza_categoria: 'promocao',
+            pizza_categoria: null,
             promocao_id: promocao.id,
             fatias,
             sabor_ids: saborIds,
@@ -516,7 +530,7 @@ function adicionarAoCarrinho() {
 
     CARRINHO.push({
         tipo_item: 'pizza',
-        pizza_categoria: categoriaCobranca,
+        pizza_categoria: nomeDaSecao(categoriaCobranca),
         fatias,
         sabor_ids: saborIds,
         borda_id: bordaId,
@@ -571,12 +585,28 @@ function adicionarOutroRapido(produtoId, cardEl) {
 // agora que o clique é no card inteiro (não tem mais botão "+" separado).
 function piscarFeedbackAdicionado(cardEl) {
     cardEl.classList.remove('card-adicionado');
-    void cardEl.offsetWidth; // força reiniciar a animação em cliques rápidos e seguidos
+    // força reiniciar a animação mesmo em cliques rápidos e seguidos
+    void cardEl.offsetWidth;
     cardEl.classList.add('card-adicionado');
 }
 
 function removerDoCarrinho(index) {
     CARRINHO.splice(index, 1);
+    atualizarBarraCarrinho();
+    renderizarCarrinho();
+    atualizarBadgesRapidos();
+}
+
+// Usado pelo +/- de cada linha do carrinho. Chegando a 0, remove a linha -
+// assim a pessoa ajusta a quantidade sem precisar remover tudo e adicionar
+// de novo do zero.
+function alterarQuantidadeCarrinho(index, delta) {
+    const item = CARRINHO[index];
+    if (!item) return;
+    item.quantidade += delta;
+    if (item.quantidade <= 0) {
+        CARRINHO.splice(index, 1);
+    }
     atualizarBarraCarrinho();
     renderizarCarrinho();
     atualizarBadgesRapidos();
@@ -638,11 +668,16 @@ function renderizarCarrinho() {
     } else {
         container.innerHTML = CARRINHO.map((item, i) => `
             <div class="linha-item-carrinho">
-                <div>
-                    <strong>${item.quantidade}x</strong> ${item._nome}
+                <div class="linha-item-info">
+                    <strong>${escapeHtml(item._nome)}</strong>
                     <div class="preco-item">R$ ${(item._preco * item.quantidade).toFixed(2)}</div>
                 </div>
-                <button class="btn-remover" onclick="removerDoCarrinho(${i})">Remover</button>
+                <div class="stepper-carrinho">
+                    <button type="button" class="btn-qtd" onclick="alterarQuantidadeCarrinho(${i}, -1)" aria-label="Diminuir quantidade">−</button>
+                    <span>${item.quantidade}</span>
+                    <button type="button" class="btn-qtd" onclick="alterarQuantidadeCarrinho(${i}, 1)" aria-label="Aumentar quantidade">+</button>
+                </div>
+                <button type="button" class="btn-remover-item" onclick="removerDoCarrinho(${i})" aria-label="Remover item"><span class="icone">${ICONES.lixeira}</span></button>
             </div>
         `).join('');
     }
@@ -711,6 +746,37 @@ function controlarCamposEntrega(valor) {
     renderizarCarrinho(); // a taxa de entrega muda o total, precisa recalcular na hora
 }
 
+// Ao terminar de digitar o telefone, busca se esse número já fez pedido
+// antes e pré-preenche nome/endereço - só quando esses campos ainda
+// estiverem vazios, pra nunca sobrescrever algo que o cliente já digitou
+// na mão. Silenciosamente não faz nada se não achar (telefone novo é o
+// caso mais comum, não é um erro).
+async function buscarDadosClienteSalvos() {
+    const campoTelefone = document.getElementById('telefone');
+    const digitos = campoTelefone.value.replace(/\D/g, '');
+    const mensagem = document.getElementById('mensagem-cliente-reconhecido');
+    mensagem.classList.add('oculto');
+
+    if (digitos.length < 10) return; // telefone ainda incompleto
+
+    try {
+        const dados = await apiFetch(`/pedidos/cliente/${digitos}`);
+
+        const campoNome = document.getElementById('nome');
+        const campoEndereco = document.getElementById('endereco');
+        if (!campoNome.value.trim()) campoNome.value = dados.cliente_nome;
+        if (!campoEndereco.value.trim()) campoEndereco.value = dados.endereco || '';
+
+        const primeiroNome = dados.cliente_nome.split(' ')[0];
+        mensagem.textContent = `Bem-vindo(a) de volta, ${primeiroNome}! Preenchemos seus dados do último pedido.`;
+        mensagem.classList.remove('oculto');
+    } catch (err) {
+        // 404 (telefone novo, sem pedido anterior) é o caso normal - não avisa nada.
+        // Erros de rede/limite também ficam quietos aqui: é só uma comodidade,
+        // não deve travar o cliente terminando de preencher o pedido na mão.
+    }
+}
+
 function controlarTroco(valor) {
     document.getElementById('campo-troco').classList.toggle('oculto', valor !== 'dinheiro');
 }
@@ -744,9 +810,6 @@ async function confirmarPedido() {
         return mostrarAvisoCarrinho('Telefone e endereço são obrigatórios para entrega.');
     }
 
-    const criarPinMarcado = document.getElementById('checkbox-criar-pin').checked;
-    const criarPinValor = document.getElementById('input-criar-pin').value.trim();
-
     const payload = {
         cliente_nome: nome,
         telefone: telefone || null,
@@ -756,7 +819,6 @@ async function confirmarPedido() {
         forma_pagamento: formaPagamento,
         troco_para: formaPagamento === 'dinheiro' ? Number(troco || 0) : 0,
         cupom_codigo: CUPOM_APLICADO ? CUPOM_APLICADO.codigo : null,
-        criar_pin: (criarPinMarcado && /^\d{4}$/.test(criarPinValor)) ? criarPinValor : null,
         itens: CARRINHO.map(item => {
             if (item.tipo_item === 'pizza') {
                 return {
@@ -842,15 +904,8 @@ function configurarEventos() {
     document.getElementById('barra-carrinho').addEventListener('click', abrirCarrinho);
     document.getElementById('fechar-sheet-carrinho').addEventListener('click', fecharCarrinho);
     document.getElementById('btn-confirmar-pedido').addEventListener('click', confirmarPedido);
-    document.getElementById('checkbox-criar-pin').addEventListener('change', (ev) => {
-        document.getElementById('campo-criar-pin').classList.toggle('oculto', !ev.target.checked);
-    });
+    document.getElementById('telefone').addEventListener('blur', buscarDadosClienteSalvos);
     document.getElementById('btn-aplicar-cupom').addEventListener('click', aplicarCupom);
-
-    document.getElementById('nav-rastreio').addEventListener('click', abrirRastreioPedido);
-    document.getElementById('fechar-sheet-rastreio').addEventListener('click', fecharRastreioPedido);
-    document.getElementById('btn-rastrear-pedido').addEventListener('click', buscarPedidoRastreio);
-    document.getElementById('btn-nova-busca-rastreio').addEventListener('click', reiniciarBuscaRastreio);
 
     document.getElementById('btn-copiar-pix').addEventListener('click', copiarChavePix);
     document.getElementById('btn-fechar-sucesso').addEventListener('click', () => window.location.reload());
@@ -871,6 +926,11 @@ function configurarEventos() {
             if (secao) secao.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
     });
+
+    document.getElementById('nav-rastreio').addEventListener('click', abrirRastreioPedido);
+    document.getElementById('fechar-sheet-rastreio').addEventListener('click', fecharRastreioPedido);
+    document.getElementById('btn-rastrear-pedido').addEventListener('click', buscarPedidoRastreio);
+    document.getElementById('btn-nova-busca-rastreio').addEventListener('click', reiniciarBuscaRastreio);
 }
 
 function filtrarBusca() {
@@ -884,23 +944,18 @@ function preencherRodape(config) {
     document.getElementById('rodape-ano').textContent = new Date().getFullYear();
 
     const horarioEl = document.getElementById('rodape-horario');
-    horarioEl.textContent = ` Funcionamos das ${config.horario_abertura?.slice(0,5)} às ${config.horario_fechamento?.slice(0,5)}`;
+    horarioEl.textContent = `🕒 Funcionamos das ${config.horario_abertura?.slice(0,5)} às ${config.horario_fechamento?.slice(0,5)}`;
 
     const whatsappEl = document.getElementById('rodape-whatsapp');
     if (config.whatsapp_numero) {
         whatsappEl.href = `https://wa.me/55${config.whatsapp_numero.replace(/\D/g, '')}`;
         whatsappEl.classList.remove('oculto');
     }
-
-    const btnFaleConosco = document.getElementById('btn-fale-conosco');
-    if (config.whatsapp_numero) {
-        btnFaleConosco.href = `https://wa.me/55${config.whatsapp_numero.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Vim pelo site e queria tirar uma dúvida 🍕')}`;
-        btnFaleConosco.classList.remove('oculto');
-    }
 }
 
 // ---------- Acompanhar meu pedido ----------
 let intervaloRastreioPedido = null;
+
 const ETAPAS_STATUS = ['pendente', 'preparo', 'saiu_entrega', 'entregue'];
 
 function abrirRastreioPedido() {
@@ -998,8 +1053,9 @@ function iniciarPollingRastreio(pedidoId) {
             atualizarEtapaStatus(status);
             if (status === 'entregue') pararPollingRastreio();
         } catch (err) {
-            // Erro de rede pontual - só tenta de novo na próxima rodada, sem
-            // incomodar o cliente com um aviso por causa de uma atualização.
+            // Se der erro numa atualização (rede instável, etc.), só tenta de
+            // novo na próxima rodada - não vale a pena incomodar o cliente
+            // com um erro por causa de uma consulta de atualização automática.
         }
     }, 20000);
 }

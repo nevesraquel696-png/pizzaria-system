@@ -122,10 +122,10 @@ const Pedido = {
         return linhas[0] || null;
     },
 
-    // Usado pelo card "Acompanhar meu pedido": exige nome E telefone
-    // batendo (não só o telefone) pra dificultar alguém rastrear o pedido
-    // de outra pessoa só sabendo/adivinhando o número. Pega sempre o
-    // pedido mais recente com esse nome+telefone.
+    // Usado pelo card "Acompanhar meu pedido": exige nome E telefone batendo
+    // (não só o telefone) pra dificultar alguém rastrear o pedido de outra
+    // pessoa só adivinhando/sabendo o número. Pega sempre o pedido mais
+    // recente com esse nome+telefone.
     async buscarParaRastreio(digitosTelefone, nome) {
         const [pedidos] = await db.query(
             `SELECT * FROM pedidos

@@ -17,6 +17,7 @@ const precosRoutes = require('./routes/precos');
 const imagensRoutes = require('./routes/imagens');
 const cuponsRoutes = require('./routes/cupons');
 const promocoesRoutes = require('./routes/promocoes');
+const secoesRoutes = require('./routes/secoes');
 
 // Em produção, defina FRONTEND_ORIGINS com a(s) URL(s) real(is) do site
 // (separadas por vírgula), ex: https://minhapizzaria.com,https://www.minhapizzaria.com
@@ -63,6 +64,7 @@ app.use('/api/precos-pizza', precosRoutes);
 app.use('/api/imagens-tamanho', imagensRoutes);
 app.use('/api/cupons', cuponsRoutes);
 app.use('/api/promocoes', promocoesRoutes);
+app.use('/api/secoes-cardapio', secoesRoutes);
 
 app.get('/api/status', (req, res) => {
     res.json({ status: 'online' });
