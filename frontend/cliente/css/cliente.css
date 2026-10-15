@@ -206,7 +206,8 @@ body {
 }
 
 .linha-produto:active {
-    transform: scale(0.99);
+    /* antes encolhia 1% ao tocar (parecia um "zoom"); agora só escurece de leve */
+    filter: brightness(0.97);
 }
 
 .linha-produto-imagem {
@@ -979,4 +980,36 @@ body {
     font-weight: 700;
     text-align: right;
     margin: 0 0 6px;
+}
+
+
+/* ============================================
+   ANTI-ZOOM (celular)
+   1) iPhone/Safari dá zoom automático em qualquer campo com letra menor que
+      16px. Todos os campos da loja ficam com 16px pra isso não acontecer.
+   2) touch-action: manipulation desliga o "zoom por duplo toque" nos
+      botões, cards e campos. O zoom de pinça (2 dedos) continua funcionando.
+   ============================================ */
+input,
+select,
+textarea,
+.sheet input,
+.sheet select,
+.sheet textarea,
+.linha-cupom input {
+    font-size: 16px !important;
+}
+
+button,
+a,
+label,
+input,
+select,
+textarea,
+[role="button"],
+.linha-produto,
+.chip,
+.pill-categoria,
+.opcao-sabor {
+    touch-action: manipulation;
 }
