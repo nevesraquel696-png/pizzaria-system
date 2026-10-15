@@ -335,6 +335,9 @@
                         <option value="80">80mm</option>
                     </select>
                 </label>
+                <label>Margem lateral (mm, de cada lado) - aumente se ainda cortar nas pontas:
+                    <input type="number" id="config-margem-lateral" min="0" max="15" step="0.5" style="width:80px;">
+                </label>
                 <button type="button" onclick="imprimirTeste()">Imprimir comanda de teste</button>
                 <ol class="dica">
                     <li>Instale o driver da MTI-773 no Windows (pelo CD ou pelo site do fabricante) e confira que ela imprime uma página de teste.</li>

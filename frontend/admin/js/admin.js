@@ -219,6 +219,16 @@ function configurarImpressaoAutomatica() {
         localStorage.setItem('pizzaria_largura_papel', selectLargura.value);
     });
 
+    const inputMargem = document.getElementById('config-margem-lateral');
+    inputMargem.value = String(margemLateralMm());
+    inputMargem.addEventListener('change', () => {
+        localStorage.setItem('pizzaria_margem_lateral', inputMargem.value);
+    });
+    selectLargura.addEventListener('change', () => {
+        localStorage.removeItem('pizzaria_margem_lateral');
+        inputMargem.value = String(margemLateralMm());
+    });
+
     const chk = document.getElementById('chk-impressao-automatica');
     chk.checked = localStorage.getItem('pizzaria_impressao_automatica') === 'true';
     chk.addEventListener('change', () => {
