@@ -39,12 +39,6 @@ class Comanda {
     esquerda() { return this.cru(ESC, 0x61, 0); }
     negrito(ligado) { return this.cru(ESC, 0x45, ligado ? 1 : 0); }
     dobrado(ligado) { return this.cru(GS, 0x21, ligado ? 0x11 : 0x00); }
-    // texto em tamanho dobrado só se couber (dobrado ocupa 2 colunas por letra);
-    // senão sai em tamanho normal, pra nunca cortar na lateral
-    destaque(t) {
-        const cabe = String(t).length <= Math.floor(COLUNAS / 2);
-        return this.negrito(true).dobrado(cabe).texto(t).dobrado(false).negrito(false);
-    }
     linha() { return this.texto('-'.repeat(COLUNAS)); }
     // quebra o texto em linhas da largura do papel, com recuo opcional
     paragrafo(t, recuo = '') {
@@ -52,14 +46,8 @@ class Comanda {
         const palavras = String(t ?? '').split(/\s+/).filter(Boolean);
         let atual = '';
         for (const p of palavras) {
-            let palavra = p;
-            while (palavra.length > largura) { // palavra maior que a linha: quebra
-                if (atual) { this.texto(recuo + atual); atual = ''; }
-                this.texto(recuo + palavra.slice(0, largura));
-                palavra = palavra.slice(largura);
-            }
-            if ((atual + ' ' + palavra).trim().length > largura) { this.texto(recuo + atual); atual = palavra; }
-            else atual = (atual + ' ' + palavra).trim();
+            if ((atual + ' ' + p).trim().length > largura) { this.texto(recuo + atual); atual = p; }
+            else atual = (atual + ' ' + p).trim();
         }
         if (atual) this.texto(recuo + atual);
         return this;
@@ -86,7 +74,7 @@ function descreverItem(item) {
 
 function montarVia(pedido) {
     const c = new Comanda();
-    c.centro().destaque(config.nome_pizzaria || 'PIZZARIA');
+    c.centro().negrito(true).dobrado(true).texto(config.nome_pizzaria || 'PIZZARIA').dobrado(false).negrito(false);
     c.texto('Pedido #' + String(pedido.numero_pedido_dia ?? 0).padStart(4, '0'));
     c.texto(new Date(pedido.criado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
     c.esquerda().linha();
@@ -107,7 +95,7 @@ function montarVia(pedido) {
     if (pedido.observacoes) { c.negrito(true).paragrafo('OBS: ' + pedido.observacoes).negrito(false); c.linha(); }
     c.paragrafo('Pagamento: ' + pedido.forma_pagamento + (Number(pedido.troco_para) > 0 ? ` (troco p/ ${dinheiro(pedido.troco_para)})` : ''));
     if (Number(pedido.taxa_entrega) > 0) c.paragrafo('Taxa de entrega: ' + dinheiro(pedido.taxa_entrega));
-    c.destaque('TOTAL ' + dinheiro(pedido.total));
+    c.negrito(true).dobrado(true).texto('TOTAL ' + dinheiro(pedido.total)).dobrado(false).negrito(false);
     c.linha().centro().texto('Obrigado pela preferencia!');
     return c.finalizar();
 }

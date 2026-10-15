@@ -194,6 +194,10 @@ async function tentarCarregar(fn, nomeParaErro) {
 function conectarSocket() {
     socket = io(SOCKET_URL, { auth: { token: getToken() } });
 
+    socket.on('visitantes', (quantidade) => {
+        document.getElementById('visitantes-online-numero').textContent = quantidade;
+    });
+
     socket.on('novoPedido', (dadosDoPedido) => {
         document.getElementById('som-sino').play().catch(() => {});
         mostrarToast(`Novo pedido de ${dadosDoPedido.cliente_nome} (${dadosDoPedido.tipo_entrega})`);
@@ -217,16 +221,6 @@ function configurarImpressaoAutomatica() {
     selectLargura.value = String(larguraPapelMm());
     selectLargura.addEventListener('change', () => {
         localStorage.setItem('pizzaria_largura_papel', selectLargura.value);
-    });
-
-    const inputMargem = document.getElementById('config-margem-lateral');
-    inputMargem.value = String(margemLateralMm());
-    inputMargem.addEventListener('change', () => {
-        localStorage.setItem('pizzaria_margem_lateral', inputMargem.value);
-    });
-    selectLargura.addEventListener('change', () => {
-        localStorage.removeItem('pizzaria_margem_lateral');
-        inputMargem.value = String(margemLateralMm());
     });
 
     const chk = document.getElementById('chk-impressao-automatica');

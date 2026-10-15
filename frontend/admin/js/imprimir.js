@@ -14,17 +14,7 @@
 // navegador - a impressora é local, então cada computador tem a sua.
 function larguraPapelMm() {
     const salva = Number(localStorage.getItem('pizzaria_largura_papel'));
-    return salva === 80 ? 80 : 58;
-}
-
-// Margem lateral (mm) de cada lado. Térmicas de 58mm costumam imprimir só ~48mm
-// no centro do papel, então ~5mm de cada lado ficam "mortos". Se ainda cortar,
-// aumente aqui (painel admin > Configurações). Cada computador tem a sua.
-function margemLateralMm() {
-    const salva = localStorage.getItem('pizzaria_margem_lateral');
-    const n = salva === null ? NaN : Number(salva);
-    if (!Number.isFinite(n)) return larguraPapelMm() === 58 ? 5 : 4;
-    return Math.min(Math.max(n, 0), 15);
+    return salva === 58 ? 58 : 80;
 }
 
 function descreverItemComanda(item) {
@@ -93,17 +83,12 @@ function imprimirComanda(pedido) {
         <head>
             <meta charset="UTF-8">
             <style>
-                /* Papel sem margem no driver; o respiro fica no padding do body.
-                   Em 58mm a área realmente impressa é ~48mm (384 pontos), então o
-                   conteúdo usa largura fixa menor que o papel para não cortar. */
-                @page { size: ${larguraPapelMm()}mm auto; margin: 0; }
-                * { box-sizing: border-box; }
-                html { margin: 0; padding: 0; }
-                body { width: ${larguraPapelMm() - 2 * margemLateralMm()}mm; margin: 0 ${margemLateralMm()}mm; padding: 1mm 0; font-family: 'Courier New', monospace; font-size: ${larguraPapelMm() === 58 ? 10 : 12}px; line-height: 1.25; color: #000; overflow-wrap: anywhere; word-break: break-word; }
-                hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
+                @page { size: ${larguraPapelMm()}mm auto; margin: ${larguraPapelMm() === 58 ? 2 : 4}mm; }
+                body { font-family: 'Courier New', monospace; font-size: ${larguraPapelMm() === 58 ? 11 : 12}px; color: #000; margin: 0; }
+                hr { border: none; border-top: 1px dashed #000; margin: 6px 0; }
                 .comanda-cabecalho { text-align: center; }
                 .comanda-item { margin: 4px 0; }
-                .comanda-total { margin-top: 6px; font-size: ${larguraPapelMm() === 58 ? 12 : 14}px; }
+                .comanda-total { margin-top: 6px; font-size: 14px; }
                 .quebra-pagina { page-break-after: always; }
             </style>
         </head>

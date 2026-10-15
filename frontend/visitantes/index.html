@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visitantes ao vivo</title>
+    <style>
+        body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: system-ui, sans-serif; background: #0A6C40; color: #fff; text-align: center; }
+        #numero { font-size: 22vmin; font-weight: 800; line-height: 1; }
+        #rotulo { font-size: 5vmin; margin-top: 8px; }
+        #status { margin-top: 24px; font-size: 3.5vmin; opacity: .75; }
+    </style>
+</head>
+<body>
+    <div id="numero">–</div>
+    <div id="rotulo">pessoas no site agora</div>
+    <div id="status">Conectando...</div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="../js/api.js"></script>
+    <script>
+        // Sem login: só mostra o número. Nenhum dado de pedido passa por aqui.
+        const socket = io(`${SOCKET_URL}/visitantes`, { query: { monitor: 1 }, transports: ['websocket'] });
+        socket.on('connect', () => { document.getElementById('status').textContent = 'Ao vivo'; });
+        socket.on('disconnect', () => { document.getElementById('status').textContent = 'Reconectando...'; });
+        socket.on('visitantes', (n) => { document.getElementById('numero').textContent = n; });
+    </script>
+</body>
+</html>
