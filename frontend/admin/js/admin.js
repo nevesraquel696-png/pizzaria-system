@@ -848,7 +848,7 @@ async function lancarPedidoAdmin() {
 function alternarCampoCategoria() {
     const tipo = document.getElementById('prod-tipo').value;
     document.getElementById('campo-categoria-produto').style.display = tipo === 'sabor_pizza' ? 'block' : 'none';
-    document.getElementById('campo-descricao-produto').style.display = tipo === 'sabor_pizza' ? 'block' : 'none';
+    document.getElementById('campo-descricao-produto').style.display = (tipo === 'sabor_pizza' || tipo === 'outros') ? 'block' : 'none';
     document.getElementById('campo-preco-produto').style.display = tipo === 'sabor_pizza' ? 'none' : 'block';
     document.getElementById('campo-imagem-produto').style.display = (tipo === 'bebida' || tipo === 'outros') ? 'block' : 'none';
 }

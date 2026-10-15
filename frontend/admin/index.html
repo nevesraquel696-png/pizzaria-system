@@ -171,8 +171,8 @@
                         <label id="campo-categoria-produto">Seção do cardápio (só para sabor de pizza):
                             <select id="prod-categoria"></select>
                         </label>
-                        <label id="campo-descricao-produto">Descrição (ingredientes, só para sabor de pizza):
-                            <textarea id="prod-descricao" rows="2" placeholder="Ex: Mussarela, calabresa fatiada e cebola"></textarea>
+                        <label id="campo-descricao-produto">👉 Digite aqui a descrição dos ingredientes (para sabor de pizza e itens da seção Outros):
+                            <textarea id="prod-descricao" rows="2" placeholder="Ex: Mussarela, calabresa fatiada e cebola (ou, em Outros: Pão, hambúrguer, queijo e salada)"></textarea>
                         </label>
                         <label id="campo-preco-produto">Preço (bebida/borda/outros):
                             <input type="number" id="prod-preco" step="0.01" placeholder="0.00">
@@ -327,7 +327,8 @@
 
             <div class="painel-card secao-config">
                 <h3 class="cabecalho-secao-config"><span class="icone-secao-config icone" data-icone="impressora"></span>Impressora (MTI-773)</h3>
-                <p class="dica">Vale só para este computador. Para imprimir SEM abrir a janela de impressão, siga os passos abaixo uma única vez.</p>
+                <p class="dica"><strong>Impressão direta (recomendada):</strong> use a pasta <code>agente-impressao</code> do projeto no computador da pizzaria - ela imprime na MTI-773 sem navegador e sem janela de impressão. Leia o arquivo LEIA-ME.txt dentro dela. Com o agente rodando, deixe a "Impressão automática" do topo DESLIGADA para não sair duas vezes.</p>
+                <p class="dica"><strong>Opção pelo navegador:</strong> vale só para este computador. Para imprimir sem abrir a janela de impressão, siga os passos abaixo uma única vez.</p>
                 <label>👉 Clique aqui e escolha a largura do papel da bobina:
                     <select id="config-largura-papel">
                         <option value="80">80mm</option>

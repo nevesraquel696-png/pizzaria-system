@@ -1,0 +1,25 @@
+IMPRESSAO DIRETA (sem janela de impressao)
+==========================================
+
+Este programinha roda no computador da pizzaria. Quando chega um pedido novo,
+ele imprime a comanda direto na impressora termica. O navegador NAO precisa
+ficar aberto.
+
+PASSO A PASSO (uma vez so):
+1. Instale o Node.js (https://nodejs.org - versao LTS) no computador da pizzaria.
+2. Instale o driver da MTI-773 e veja se o Windows imprime uma pagina de teste.
+3. Em "Impressoras e scanners" do Windows, veja o NOME exato da impressora
+   e coloque em config.json no campo "nome_impressora_windows".
+4. Em config.json coloque tambem o email e a senha do admin.
+   Se o papel for de 58mm, troque "largura_papel_mm" para 58.
+5. De dois cliques em iniciar.bat. Para testar sem esperar um pedido, abra o
+   prompt nesta pasta e rode:  node agente.js --teste
+6. Para abrir sozinho ao ligar o PC: aperte Win+R, digite shell:startup e
+   coloque la um atalho do iniciar.bat.
+
+Importante: desligue a "Impressao automatica" do painel admin se usar o
+agente, senao cada pedido sai duas vezes.
+
+SE SAIR COM LETRAS ESTRANHAS: em config.json troque "remover_acentos" para
+false e teste "tabela_caracteres" 850 ou 860. Se ainda sair estranho, volte
+"remover_acentos" para true (imprime sem acentos, sempre legivel).

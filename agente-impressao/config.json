@@ -1,0 +1,11 @@
+{
+  "api_url": "https://pizzaria-system-virginia.onrender.com",
+  "email": "COLOQUE_AQUI_O_EMAIL_DO_ADMIN",
+  "senha": "COLOQUE_AQUI_A_SENHA_DO_ADMIN",
+  "nome_impressora_windows": "MTI-773",
+  "largura_papel_mm": 80,
+  "vias_entrega": 2,
+  "remover_acentos": true,
+  "tabela_caracteres": 850,
+  "nome_pizzaria": "ESTAÇÃO DA PIZZA"
+}

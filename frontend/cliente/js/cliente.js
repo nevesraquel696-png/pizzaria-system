@@ -303,7 +303,10 @@ function renderizarOutros() {
     lista.innerHTML = PRODUTOS.outros.map(o => `
         <div class="linha-produto linha-produto-simples linha-produto-clicavel" data-outro-id="${o.id}" role="button" tabindex="0">
             <div class="linha-produto-imagem">${iconeOuImagemProduto(o, ICONES.ferramentas)}</div>
-            <div class="linha-produto-info"><div class="linha-produto-nome">${o.nome}</div></div>
+            <div class="linha-produto-info">
+                <div class="linha-produto-nome">${o.nome}</div>
+                ${o.descricao ? `<div class="linha-produto-desc">${escapeHtml(o.descricao)}</div>` : ''}
+            </div>
             <span class="card-preco">R$ ${Number(o.preco_base).toFixed(2)}</span>
             <span class="badge-qtd-rapida oculto" data-badge-outro="${o.id}"></span>
             <span class="icone icone-add-rapido">${ICONES.mais}</span>

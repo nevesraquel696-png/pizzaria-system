@@ -1,0 +1,11 @@
+{
+  "name": "agente-impressao-pizzaria",
+  "version": "1.0.0",
+  "description": "Imprime as comandas direto na impressora térmica (ESC/POS), sem abrir a janela de impressão do navegador.",
+  "main": "agente.js",
+  "scripts": { "start": "node agente.js", "teste": "node agente.js --teste" },
+  "dependencies": {
+    "iconv-lite": "^0.6.3",
+    "socket.io-client": "^4.7.5"
+  }
+}
