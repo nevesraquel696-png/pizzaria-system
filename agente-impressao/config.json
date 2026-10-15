@@ -1,9 +1,9 @@
 {
   "api_url": "https://pizzaria-system-virginia.onrender.com",
-  "email": "COLOQUE_AQUI_O_EMAIL_DO_ADMIN",
-  "senha": "COLOQUE_AQUI_A_SENHA_DO_ADMIN",
-  "nome_impressora_windows": "MTI-773",
-  "largura_papel_mm": 80,
+  "email": "admin@pizzaria.com",
+  "senha": "123456",
+  "nome_impressora_windows": "POS58",
+  "largura_papel_mm": 58,
   "vias_entrega": 2,
   "remover_acentos": true,
   "tabela_caracteres": 850,

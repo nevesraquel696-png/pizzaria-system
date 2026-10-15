@@ -14,7 +14,7 @@
 // navegador - a impressora é local, então cada computador tem a sua.
 function larguraPapelMm() {
     const salva = Number(localStorage.getItem('pizzaria_largura_papel'));
-    return salva === 58 ? 58 : 80;
+    return salva === 48 ? 48 : 70;
 }
 
 function descreverItemComanda(item) {
